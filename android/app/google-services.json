@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "716766761680",
+    "project_id": "ultrarydes",
+    "storage_bucket": "ultrarydes.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:716766761680:android:379c32f4901795255f44d5",
+        "android_client_info": {
+          "package_name": "com.ultrarydes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "716766761680-vl5rh08i3bqhlim1gvbtlqek167t9ukk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ultrarydes",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "716766761680-uaf4l5b07etjbtac86j7ufnoplfdvagl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDs2arZxBVHnpqkdGEqV14UNUkE_xdyzSs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "716766761680-uaf4l5b07etjbtac86j7ufnoplfdvagl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
