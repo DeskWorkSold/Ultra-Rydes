@@ -13,7 +13,7 @@ import {
   locationPermission,
   getCurrentLocation,
 } from '../../Helper/HelperFunction';
-import {TouchableOpacity} from 'react-native-gesture-handler';
+import {TextInput, TouchableOpacity} from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
@@ -44,7 +44,7 @@ export default function DriverHomeScreen({navigation, route}) {
   //         })
   //   },[])
 
-  const [driverData, setDriverData] = useState({});
+  const [driverData, setDriverData] = useState('');
 
   const [state, setState] = useState({
     pickupCords: null,
@@ -55,64 +55,62 @@ export default function DriverHomeScreen({navigation, route}) {
   const [driverStatus, setDriverStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [passengerBookingData, setPassengerBookingData] = useState([]);
-  const [passengerDataDriverDistance,setPassengerDataDriverDistance] = useState([])
-
-//   const data = [
-//     {
-//       id: 0,
-//       pickUpCords: 'Steel town',
-//       destinationCords: 'Gulshan-e-hadeed',
-//       price: 100,
-//     },
-//     {
-//       id: 1,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 200,
-//     },
-//     {
-//       id: 2,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 500,
-//     },
-//     {
-//       id: 3,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 1000,
-//     },
-//     {
-//       id: 4,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 100,
-//     },
-//     {
-//       id: 5,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 101,
-//     },
-//     {
-//       id: 6,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 101,
-//     },
-//     {
-//       id: 7,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 101,
-//     },
-//     {
-//       id: 8,
-//       pickUpCords: 'Gulistan-e-johar',
-//       destinationCords: 'Defence ph3',
-//       price: 105,
-//     },
-//   ];
+  //   const data = [
+  //     {
+  //       id: 0,
+  //       pickUpCords: 'Steel town',
+  //       destinationCords: 'Gulshan-e-hadeed',
+  //       price: 100,
+  //     },
+  //     {
+  //       id: 1,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 200,
+  //     },
+  //     {
+  //       id: 2,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 500,
+  //     },
+  //     {
+  //       id: 3,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 1000,
+  //     },
+  //     {
+  //       id: 4,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 100,
+  //     },
+  //     {
+  //       id: 5,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 101,
+  //     },
+  //     {
+  //       id: 6,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 101,
+  //     },
+  //     {
+  //       id: 7,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 101,
+  //     },
+  //     {
+  //       id: 8,
+  //       pickUpCords: 'Gulistan-e-johar',
+  //       destinationCords: 'Defence ph3',
+  //       price: 105,
+  //     },
+  //   ];
   const [watchState, setWatchState] = useState(null);
 
   var watchId;
@@ -147,45 +145,9 @@ export default function DriverHomeScreen({navigation, route}) {
     );
   };
 
-  const calculateDistance = (passengerData, ind) => {
-    let dis = getPreciseDistance(
-      {
-        latitude: passengerData.pickupCords.latitude,
-        longitude: passengerData.pickupCords.longitude,
-      },
-      {
-        latitude: driverData.currentLocation.latitude,
-        longitude: driverData.currentLocation.longitude,
-      },
-    );
-
-    console.log(passengerData,"passenger")
-
-    passengerData.driverDistance = dis
-    setPassengerDataDriverDistance([...passengerDataDriverDistance,passengerData])
-
-    // setPassengerBookingData(passengerBookingData.filter((e,i)=>{
-    //     if(dis<10000){
-    //         console.log(e,"eeee")
-    //     }
-    // }))
-    
-  };
-
-  console.log(passengerDataDriverDistance,"passsengeebookingDriver")
-  
-
-
-  useEffect(() => {
-    passengerBookingData &&
-      passengerBookingData.length > 0 &&
-      driverData &&
-      passengerBookingData.map((e, i) => {
-         return calculateDistance(e, i);
-      });
-  }, []);
-
   const getBookingData = async () => {
+    setLoading(true);
+
     const booking = await firestore()
       .collection('booking')
       .onSnapshot(querySnapshot => {
@@ -195,7 +157,11 @@ export default function DriverHomeScreen({navigation, route}) {
 
         querySnapshot.forEach(documentSnapshot => {
           // console.log('User ID: ', documentSnapshot.id, documentSnapshot.data());
-          if (documentSnapshot.data()) {
+          if (
+            documentSnapshot.data() &&
+            driverStatus === 'online' &&
+            driverData.currentLocation
+          ) {
             let flag =
               driverData.vehicleDetails.vehicleCategory &&
               documentSnapshot
@@ -205,17 +171,30 @@ export default function DriverHomeScreen({navigation, route}) {
                     e.carName == driverData.vehicleDetails.vehicleCategory,
                 );
 
+            let dis = getPreciseDistance(
+              {
+                latitude: documentSnapshot.data().pickupCords.latitude,
+                longitude: documentSnapshot.data().pickupCords.longitude,
+              },
+              {
+                latitude: driverData.currentLocation.latitude,
+                longitude: driverData.currentLocation.longitude,
+              },
+            );
 
-
-
-
-            if (flag && driverStatus == 'online' ) {
+            if (
+              flag &&
+              driverStatus == 'online' &&
+              dis < 10000 &&
+              documentSnapshot.data().bookingStatus !== 'done'
+            ) {
               bookingData.push(documentSnapshot.data());
             }
           }
         });
 
         setPassengerBookingData(bookingData);
+        setLoading(false);
       });
   };
 
@@ -231,11 +210,14 @@ export default function DriverHomeScreen({navigation, route}) {
   };
 
   useEffect(() => {
-    getDriverData();
+    !driverData && driverStatus == 'online' && getDriverData();
   }, [driverStatus]);
 
   useEffect(() => {
-    driverData && driverData.vehicleDetails && getBookingData();
+    driverData &&
+      driverData.vehicleDetails &&
+      driverStatus == 'online' &&
+      getBookingData();
   }, [driverData]);
 
   const updateOnlineOnFirebase = () => {
@@ -245,9 +227,7 @@ export default function DriverHomeScreen({navigation, route}) {
         status: 'online',
         currentLocation: pickupCords,
       });
-      // .then(() => {
-      //     console.log('status',s);
-      // });
+      
     } catch (err) {
       console.log('MyError', err);
     }
@@ -288,7 +268,7 @@ export default function DriverHomeScreen({navigation, route}) {
     } else {
       removeLocationUpdates();
     }
-  }, [state, driverStatus]);
+  }, [driverStatus, state]);
 
   const rideList = ({item, index}) => {
     return (
@@ -313,8 +293,12 @@ export default function DriverHomeScreen({navigation, route}) {
           <Text style={styles.itemLocStyle}>{item.dropOffAddress}</Text>
         </Text>
         <Text style={styles.itemTextStyle}>
-          Price:<Text style={styles.itemLocStyle}>{item.fare}$</Text>
+          Fare:<Text style={styles.itemLocStyle}>{item.fare}$</Text>
         </Text>
+        {/* <View style={{flexDirection:row}} >
+        <Text style={styles.itemTextStyle} >Edit Fare</Text>
+        <TextInput/>
+        </View> */}
       </TouchableOpacity>
     );
   };

@@ -149,10 +149,7 @@ export default function PassengerHomeScreen({navigation}) {
         setPickUpAddress(addressPickup);
       })
       .catch(error => console.warn(error));
-    Geocoder.from(
-    dropLocationCords.latitude,
-    dropLocationCords.longitude,
-    )
+    Geocoder.from(dropLocationCords.latitude, dropLocationCords.longitude)
       .then(json => {
         var addressDropOff = json.results[0].formatted_address;
         setDropOffAddress(addressDropOff);
@@ -161,7 +158,9 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   useEffect(() => {
-    pickupCords && dropLocationCords && Object.keys(pickupCords).length > 0 &&
+    pickupCords &&
+      dropLocationCords &&
+      Object.keys(pickupCords).length > 0 &&
       Object.keys(dropLocationCords).length > 0 &&
       getPickUpAndDropOffAddress();
   }, [pickupCords, dropLocationCords]);
@@ -177,6 +176,13 @@ export default function PassengerHomeScreen({navigation}) {
         ToastAndroid.SHORT,
       );
       return false;
+    }
+
+    let flag = dummyDataCat.some((e, i) => e.selected);
+
+    if (!flag) {
+      ToastAndroid.show('Kindly select Car type', ToastAndroid.SHORT);
+      return;
     } else {
       let data = {
         pickupCords: pickupCords,
@@ -187,6 +193,9 @@ export default function PassengerHomeScreen({navigation}) {
         fare: fare,
         pickupAddress: pickupAddress,
         dropOffAddress: dropOffAddress,
+        additionalDetails: additionalDetails,
+        bookingStatus: 'inProcess',
+        id : CurrentUserUid
       };
 
       firestore()
@@ -293,24 +302,12 @@ export default function PassengerHomeScreen({navigation}) {
   );
 
   const checkFare = result => {
-    console.log(fare, 'fare');
-    console.log(pickupCords, 'pickup');
-    console.log(dropLocationCords, 'drop');
-
     if (fare && pickupCords && dropLocationCords) {
       calculateDistance(result);
     }
   };
 
-  console.log(result, 'result');
-
-  console.log(distance, minutes, 'distace minutes');
-
-  console.log(dropLocationCords, 'droplocation');
-
   const changeDropLocation = location => {
-    console.log(location, 'location');
-
     setLocation({
       ...location,
       dropLocationCords: {
@@ -320,8 +317,6 @@ export default function PassengerHomeScreen({navigation}) {
     });
   };
 
-  
-  console.log(onlineDriversLocation,"online")
   return (
     <View style={styles.container}>
       {loading ? (
@@ -350,9 +345,6 @@ export default function PassengerHomeScreen({navigation}) {
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA,
                 }}>
-
-
-
                 <Marker coordinate={pickupCords} title="pickup location" />
                 {onlineDriversLocation.map((b, i) => {
                   const x = geolib.isPointWithinRadius(
@@ -367,7 +359,6 @@ export default function PassengerHomeScreen({navigation}) {
                     5000,
                   );
 
-                  console.log(x,"xx")
                   {
                     /* WHEN CONDITIONS GET TRUE VALUES ITS SHOW DRIVERS */
                   }
@@ -379,7 +370,6 @@ export default function PassengerHomeScreen({navigation}) {
                           latitude: b.currentLocation.latitude,
                           longitude: b.currentLocation.longitude,
                         }}
-                        title="pickup location"
                         pinColor="blue">
                         <Image
                           source={require('../../Assets/Images/mapCar.png')}
