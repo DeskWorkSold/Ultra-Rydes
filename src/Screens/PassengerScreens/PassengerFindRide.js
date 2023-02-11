@@ -6,6 +6,7 @@ import {
   View,
   FlatList,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import CustomButton from '../../Components/CustomButton';
 import Colors from '../../Constants/Colors';
@@ -14,10 +15,9 @@ import firestore from '@react-native-firebase/firestore';
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
 
-  console.log(passengerData, 'passenger');
-
   const [driverData, setDriverData] = useState([]);
   const [availableDriverId, setAvailableDriverId] = useState([]);
+  const [selectedDriver, setSelectedDriver] = useState('');
 
   const [data, setData] = useState([
     {
@@ -72,15 +72,15 @@ export default function PassengerFindRide({navigation, route}) {
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
 
-          if (data && data.availableDriver) {
-            setAvailableDriverId(data.availableDriver);
+          console.log(data, 'data');
+          if (data && data.driverDetail) {
+            setAvailableDriverId(data.driverDetail);
           }
         });
     }
   }, []);
 
   const getAvailableDriver = () => {
-    console.log(availableDriverId, 'id');
     if (
       availableDriverId &&
       availableDriverId.length > 0 &&
@@ -93,30 +93,37 @@ export default function PassengerFindRide({navigation, route}) {
         availableDriverId.map((e, i) => {
           firestore()
             .collection('Drivers')
-            .doc(e)
+            .doc(e.availableDriver)
             .onSnapshot(querySnapshot => {
               let data = querySnapshot.data();
-
+              data.offerFare = e.offerFare;
+              data.id = e.availableDriver;
               myData.push(data);
-
               setDriverData(myData);
             });
         });
     } else if (availableDriverId && !Array.isArray(availableDriverId)) {
       firestore()
         .collection('Drivers')
-        .doc(availableDriverId)
+        .doc(availableDriverId.availableDriver)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
+          data.offerFare = availableDriverId.offerFare;
+          data.id = availableDriverId.availableDriver;
+
           setDriverData([data]);
         });
     }
   };
 
-  console.log(driverData, 'driver');
+  console.log(driverData, 'available');
 
   useEffect(() => {
-    availableDriverId && availableDriverId.length > 0 && getAvailableDriver();
+    if (Array.isArray(availableDriverId)) {
+      availableDriverId && availableDriverId.length > 0 && getAvailableDriver();
+    } else {
+      availableDriverId && getAvailableDriver();
+    }
   }, [availableDriverId]);
 
   //   const getDriverData = async () => {
@@ -137,10 +144,6 @@ export default function PassengerFindRide({navigation, route}) {
   //       });
   //   };
 
-  useEffect(() => {
-    // getDriverData();
-  }, []);
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
@@ -156,6 +159,80 @@ export default function PassengerFindRide({navigation, route}) {
       },
     });
   }, []);
+
+  const AccecptOffer = acceptDriver => {
+    firestore()
+      .collection('booking')
+      .doc(passengerData.id)
+      .onSnapshot(querySnapshot => {
+        let data = querySnapshot.data();
+
+        driverDetail = data.driverDetail;
+        console.log(driverDetail, 'driver');
+
+        if (driverDetail && !Array.isArray(driverDetail)) {
+          console.log('aaaaa');
+          driverDetail.selected = true;
+          setSelectedDriver(driverDetail);
+        } else {
+          setSelectedDriver(
+            driverDetail &&
+              driverDetail.length > 0 &&
+              driverDetail.map((e, i) => {
+
+                if (e.availableDriver == acceptDriver.id) {
+                  return {
+                    ...e,
+                    selected: (e.selected = true),
+                  };
+                } else {
+                  return {
+                    ...e,
+                    selected: (e.selected = false),
+                  };
+                }
+              }),
+          );
+        }
+      });
+  };
+
+  const sendAcceptedDriverInFb = () => {
+    firestore()
+      .collection('booking')
+      .doc(passengerData.id)
+      .update({
+        driverDetail: driverDetail,
+        bookingStatus : "done"
+      })
+      .then(() => {
+        navigation.navigate('PassengerHomeScreen', {
+          selectedDriver: selectedDriver,
+          passenger: passengerData,
+        });
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  };
+
+  useEffect(() => {
+    if (
+      selectedDriver &&
+      Array.isArray(selectedDriver) &&
+      selectedDriver.length > 0
+    ) {
+      sendAcceptedDriverInFb();
+    } else if (
+      selectedDriver &&
+      !Array.isArray(selectedDriver) &&
+      Object.keys(selectedDriver).length > 0
+    ) {
+      sendAcceptedDriverInFb();
+    }
+  }, [selectedDriver]);
+
+  console.log(selectedDriver, 'selectedDriver');
 
   const rideRequests = ({item}) => {
     return (
@@ -177,7 +254,7 @@ export default function PassengerFindRide({navigation, route}) {
             </View>
           </View>
           <View style={styles.priceContainer}>
-            <Text style={styles.priceText}>0</Text>
+            <Text style={styles.priceText}>{item.offerFare}$</Text>
           </View>
         </View>
         <View style={styles.btnContainer}>
@@ -191,6 +268,7 @@ export default function PassengerFindRide({navigation, route}) {
             text="Accept"
             styleContainer={styles.btn}
             btnTextStyle={styles.btnTextStyle}
+            onPress={() => AccecptOffer(item)}
           />
         </View>
       </View>
@@ -207,7 +285,18 @@ export default function PassengerFindRide({navigation, route}) {
           keyExtractor={item => `key-${item.cnic}`}
         />
       ) : (
-        ''
+        <View
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '90%',
+          }}>
+          <ActivityIndicator color="black" size={100} />
+          <Text style={{color: 'black', marginTop: 10}}>
+            {' '}
+            Finding Driver Please wait!{' '}
+          </Text>
+        </View>
       )}
     </View>
   );

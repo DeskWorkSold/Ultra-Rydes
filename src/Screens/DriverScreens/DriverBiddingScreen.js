@@ -28,15 +28,21 @@ import {
 import Geocoder from 'react-native-geocoding';
 import firestore from '@react-native-firebase/firestore';
 import {ToastAndroid} from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 // import { TextInput } from 'react-native-paper';
 
 export default function DriverBiddingScreen({navigation, route}) {
   const {passengerState} = route.params;
 
+  const data = route.params;
+  console.log(data, 'dataa');
+
   useEffect(() => {
     gettingFormattedAddress();
     getBookingData();
   }, [passengerState]);
+
+  console.log(availableDriver, 'available');
 
   const gettingFormattedAddress = () => {
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
@@ -64,6 +70,10 @@ export default function DriverBiddingScreen({navigation, route}) {
   const [dropOffLocation, setdropOffLocation] = useState('');
   const [driverUid, setDriverUid] = useState('');
   const [availableDriver, setAvailableDriver] = useState('');
+  const [availableDriverDetail, setAvailableDriverDetail] = useState('');
+  const [loading,setLoading ] = useState(false)
+  const [bookingData,setBookingData] = useState([])
+  const [offerFare, setOfferFare] = useState(null);
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
   const LATITUDE_DELTA = 0.04;
@@ -81,71 +91,155 @@ export default function DriverBiddingScreen({navigation, route}) {
       .doc(Userid)
       .onSnapshot(querySnapshot => {
         const data = querySnapshot.data();
-        setAvailableDriver(data.availableDriver);
+        setBookingData(data)
+        setAvailableDriverDetail(data.driverDetail);
       });
   };
+
+
+
+  const checkRequestStatus = () => {
+
+
+        if(bookingData && bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)){
+
+            if(bookingData.driverDetail.availableDriver === driverUid){
+              setLoading(false)
+              ToastAndroid.show("Your request has been accepted",ToastAndroid.SHORT)
+            }
+            else{
+              setLoading(false)
+              ToastAndroid.show("Your request has been rejected",ToastAndroid.SHORT)
+              navigation.navigate("driverHomeScreen")
+            }
+
+        }
+
+        if(bookingData && bookingData.driverDetail && Array.isArray(bookingData.driverDetail)){
+
+            bookingData.driverDetail.map((e,i)=>{
+              console.log(e,"eeee")
+              if(e.availableDriver == driverUid && e.selected){
+                setLoading(false)
+                  ToastAndroid.show("Your request has been accepted",ToastAndroid.SHORT)
+
+                  return
+              }
+              if (e.availableDriver == driverUid && !e.selected){
+                setLoading(false)
+                ToastAndroid.show("Your request has been rejected",ToastAndroid.SHORT)
+                setTimeout(()=>{
+
+                  navigation.navigate("DriverHomeScreen")
+
+                },1000)
+              }
+            })
+
+        }
+
+
+  }
+
+useEffect(()=>{
+
+
+      if(bookingData && Object.keys(bookingData).length>0 && bookingData.driverDetail && bookingData.bookingStatus == "done"){
+        console.log("aaa")
+        checkRequestStatus()  
+      }
+
+
+},[bookingData])
+
+
 
   const sendRequest = async () => {
     const Userid = route.params.data.id;
 
-    if (availableDriver && Array.isArray(availableDriver)) {
-      let flag = availableDriver.some((e, i) => e == driverUid);
+    console.log(Array.isArray(availableDriverDetail), 'ARRRAY');
+
+    if (availableDriverDetail && Array.isArray(availableDriverDetail)) {
+      let flag = availableDriverDetail.some(
+        (e, i) => e.availableDriver == driverUid,
+      );
 
       if (flag) {
         ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
+        return;
       }
-      return;
     }
 
-    if (availableDriver && !Array.isArray(availableDriver)) {
-      if (availableDriver === driverUid) {
+    if (availableDriverDetail && !Array.isArray(availableDriverDetail)) {
+      if (availableDriverDetail.availableDriver === driverUid) {
         ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
+        return;
       }
-      return;
     }
 
-    if (availableDriver && !Array.isArray(availableDriver)) {
-      let availableDriverArray = [availableDriver, driverUid];
+    if (availableDriverDetail && !Array.isArray(availableDriverDetail)) {
+      let driverDetail = {
+        availableDriver: driverUid,
+        offeredFare: offerFare ?? bookingData.fare,
+      };
+
+      let availableDriverArray = [availableDriverDetail, driverDetail];
 
       firestore()
         .collection('booking')
         .doc(Userid)
         .update({
-          availableDriver: availableDriverArray,
+          driverDetail: availableDriverArray,
         })
         .then(() => {
           ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+          setLoading(true)
         })
         .catch(error => {
           console.log(error);
         });
-    } else if (availableDriver && Array.isArray(availableDriver)) {
-      let upDateAvailableDriverArray = [...availableDriver, driverUid];
+    } else if (availableDriverDetail && Array.isArray(availableDriverDetail)) {
+      let driverDetail = {
+        availableDriver: driverUid,
+        offeredFare: offerFare ?? bookingData.fare ,
+      };
+
+      let upDateAvailableDriverArray = [...availableDriverDetail, driverDetail];
       firestore()
         .collection('booking')
         .doc(Userid)
         .update({
-          availableDriver: upDateAvailableDriverArray,
+          driverDetail: upDateAvailableDriverArray,
         })
-        .then(() => {
+        .then(() => {  
           ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+          setLoading(true)
         })
         .catch(error => {
           console.log(error);
         });
     } else {
+      let driverDetail = {
+        availableDriver: driverUid,
+        offeredFare: offerFare ?? bookingData.fare,
+      };
+
       firestore()
         .collection('booking')
         .doc(Userid)
-        .update({availableDriver: driverUid})
+        .update({driverDetail})
         .then(() => {
           ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+          setLoading(true)
         })
         .catch(error => {
           console.log(error);
         });
     }
   };
+
+
+
 
   useEffect(() => {
     console.log('hello');
@@ -156,6 +250,12 @@ export default function DriverBiddingScreen({navigation, route}) {
   const mapRef = useRef();
 
   return (
+    loading ? <View style={{alignItems:"center",justifyContent:"center",height:"90%"}} > 
+    <ActivityIndicator size={100} color="black" /> 
+    <Text style={{color:"black",marginTop:20}} >Processing Your request Please Wait!</Text>
+    
+     </View> 
+    :
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <CustomHeader
@@ -216,10 +316,6 @@ export default function DriverBiddingScreen({navigation, route}) {
             nestedScrollEnabled={true}
             keyboardShouldPersistTaps="handled">
             <KeyboardAvoidingView>
-              {/* <ScrollView
-                                    nestedScrollEnabled={true}
-                                    keyboardShouldPersistTaps="handled"
-                                > */}
               <TextInput
                 placeholder="PickUp Location"
                 placeholderTextColor={Colors.gray}
@@ -239,6 +335,15 @@ export default function DriverBiddingScreen({navigation, route}) {
                 activeUnderlineColor={Colors.gray}
                 style={styles.textInputStyle}
                 editable={false}
+              />
+              <TextInput
+                placeholder="Fare"
+                placeholderTextColor={Colors.gray}
+                selectionColor={Colors.black}
+                activeUnderlineColor={Colors.gray}
+                style={styles.textInputStyle}
+                keyboardType="numeric"
+                onChangeText={setOfferFare}
               />
 
               {/* </ScrollView> */}

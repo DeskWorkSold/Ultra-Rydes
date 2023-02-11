@@ -34,11 +34,23 @@ import {set} from 'react-native-reanimated';
 import {FABGroup} from 'react-native-paper/lib/typescript/components/FAB/FABGroup';
 import Geocoder from 'react-native-geocoding';
 
-export default function PassengerHomeScreen({navigation}) {
+export default function PassengerHomeScreen({navigation, route}) {
   useEffect(() => {
     getLiveLocation();
     fetchDrivers();
   }, []);
+
+  const [routeData, setRouteData] = useState([]);
+
+  let data = route.params;
+  console.log(data, 'data');
+
+  useEffect(() => {
+    if (data && Object.keys(data).length > 0) {
+      setRouteData(data);
+      setSelectedDriver(data.selectedDriver[0]);
+    }
+  }, [data]);
 
   const [dummyDataCat, setDummyDataCat] = useState('');
   const [onlineDriversLocation, setOnlineDriversLocation] = useState([]);
@@ -50,6 +62,8 @@ export default function PassengerHomeScreen({navigation}) {
   const [minutes, setMinutes] = useState('');
   const [pickupAddress, setPickUpAddress] = useState('');
   const [dropOffAddress, setDropOffAddress] = useState('');
+  const [selectedDriver, setSelectedDriver] = useState([]);
+  const [oldBookingData,setOldBookingData] = useState([])
 
   const [result, setResult] = useState();
   const screen = Dimensions.get('window');
@@ -90,6 +104,29 @@ export default function PassengerHomeScreen({navigation}) {
     }
   };
 
+  const getRouteDataLocation = () => {
+    // setLocation({
+    //   ...location,
+    //   pickupCords : routeData.passenger.pickupCords,
+    //   dropLocationCords : routeData.passenger.dropLocationCords
+    // })
+
+    setSelectedDriver(routeData.selectedDriver[0]);
+  };
+
+  console.log(location, 'location');
+
+  useEffect(() => {
+    if (
+      routeData &&
+      Object.keys(routeData).length > 0 &&
+      routeData.passenger.pickupCords &&
+      Object.keys(routeData.passenger.pickupCords).length > 0
+    ) {
+      getRouteDataLocation();
+    }
+  }, [routeData]);
+
   const fetchData = async () => {
     firestore()
       .collection('Categories')
@@ -117,11 +154,7 @@ export default function PassengerHomeScreen({navigation}) {
       });
   };
 
-  console.log(onlineDriversLocation, 'online DRIVER');
-
   const fetchPickupCords = (lat, lng, address) => {
-    console.log(lng, lat, address, 'address');
-
     setLocation({
       ...location,
       pickupCords: {
@@ -157,12 +190,18 @@ export default function PassengerHomeScreen({navigation}) {
       .catch(error => console.warn(error));
   };
 
+  console.log(pickupAddress);
+  console.log(dropOffAddress);
+
   useEffect(() => {
-    pickupCords &&
+    if (
+      pickupCords &&
       dropLocationCords &&
       Object.keys(pickupCords).length > 0 &&
-      Object.keys(dropLocationCords).length > 0 &&
+      Object.keys(dropLocationCords).length > 0
+    ) {
       getPickUpAndDropOffAddress();
+    }
   }, [pickupCords, dropLocationCords]);
 
   const checkValidation = () => {
@@ -183,35 +222,162 @@ export default function PassengerHomeScreen({navigation}) {
     if (!flag) {
       ToastAndroid.show('Kindly select Car type', ToastAndroid.SHORT);
       return;
-    } else {
-      let data = {
-        pickupCords: pickupCords,
-        dropLocationCords: dropLocationCords,
-        selectedCar: dummyDataCat.filter((e, i) => e.selected),
-        distance: distance,
-        minutes: minutes,
-        fare: fare,
-        pickupAddress: pickupAddress,
-        dropOffAddress: dropOffAddress,
-        additionalDetails: additionalDetails,
-        bookingStatus: 'inProcess',
-        id : CurrentUserUid
-      };
+    } 
+    else {
 
-      firestore()
-        .collection('booking')
-        .doc(CurrentUserUid)
-        .set(data)
-        .then(res => {
-          console.log('data successfully send');
-        })
-        .catch(error => {
-          console.log(error, 'error');
-        });
+      
+      firestore().collection("booking").doc(CurrentUserUid).onSnapshot(querySnapshot=>{
+        let data = querySnapshot.data()
 
-      navigation.navigate('PassengerFindRide', data);
+        if(data && !Array.isArray(data)){
+          setOldBookingData([data])
+        }else if (data && Array.isArray(data)){
+          setOldBookingData(data.bookingData)
+        }else{
+          setOldBookingData("noData")
+        }
+      })
+
+
+
+
+      // firestore().collection("booking").doc(CurrentUserUid).onSnapshot(querySnapshot=>{
+      //     let  MyoldBookingData = querySnapshot.data()
+          
+      //     if(!Array.isArray(MyoldBookingData)){
+      //       MyoldBookingData = [MyoldBookingData]
+      //     }
+          
+      //   })
+
+        // if(MyoldBookingData && MyoldBookingData.length>0){
+
+        //   MyoldBookingData && !Array.isArray(MyoldBookingData) ? setOldBookingData([MyoldBookingData.bookingDataArray]) : setOldBookingData(MyoldBookingData.bookingDataArray)   
+        // }
+        
+        // else{
+
+        //   let data = {
+        //     pickupCords: pickupCords,
+        //     dropLocationCords: dropLocationCords,
+        //     selectedCar: dummyDataCat.filter((e, i) => e.selected),
+        //     distance: distance,
+        //     minutes: minutes,
+        //     fare: fare,
+        //     pickupAddress: pickupAddress,
+        //     dropOffAddress: dropOffAddress,
+        //     additionalDetails: additionalDetails,
+        //     bookingStatus: 'inProcess',
+        //     id: CurrentUserUid,
+        //   };
+            
+        //   firestore().collection("booking").doc(CurrentUserUid).set(data).then(()=>{
+
+        //          navigation.navigate('PassengerFindRide', data);
+
+        //   }).catch((error)=>{
+        //     console.log(error)
+        //   })
+        // }
+    
+      // firestore()
+      //   .collection('booking')
+      //   .doc(CurrentUserUid)
+      //   .set(data)
+      //   .then(res => {
+      //     console.log('data successfully send');
+      //   })
+      //   .catch(error => {
+      //     console.log(error, 'error');
+      //   });
+
+      // navigation.navigate('PassengerFindRide', data);
     }
   };
+
+  
+  const sendBookingDataInFb = () => {
+    
+    console.log(oldBookingData,"old")
+
+  let flag = oldBookingData.every((e,i)=>e.bookingStatus=="done")
+
+  if(flag){
+        let data = {
+      pickupCords: pickupCords,
+      dropLocationCords: dropLocationCords,
+      selectedCar: dummyDataCat.filter((e, i) => e.selected),
+      distance: distance,
+      minutes: minutes,
+      fare: fare,
+      pickupAddress: pickupAddress,
+      dropOffAddress: dropOffAddress,
+      additionalDetails: additionalDetails,
+      bookingStatus: 'inProcess',
+      id: CurrentUserUid,
+    };
+
+    let bookingDataArray = [...oldBookingData,data]
+    
+    firestore().collection("booking").doc(CurrentUserUid).set({bookingData: bookingDataArray}).then(()=>{
+      console.log("booking data send")
+    }).catch((error)=>{
+      console.log(error,"error")
+    })
+
+  }
+
+  if(!flag){
+    let data = {
+      pickupCords: pickupCords,
+      dropLocationCords: dropLocationCords,
+      selectedCar: dummyDataCat.filter((e, i) => e.selected),
+      distance: distance,
+      minutes: minutes,
+      fare: fare,
+      pickupAddress: pickupAddress,
+      dropOffAddress: dropOffAddress,
+      additionalDetails: additionalDetails,
+      bookingStatus: 'inProcess',
+      id: CurrentUserUid,
+    };
+
+    console.log(oldBookingData,"oldBookingData")
+
+   
+  }
+
+  }
+
+  useEffect(()=>{
+       if(oldBookingData && oldBookingData.length>0)  {
+        sendBookingDataInFb()
+      }
+      else if(oldBookingData == "noData"){
+        let data = {
+      pickupCords: pickupCords,
+      dropLocationCords: dropLocationCords,
+      selectedCar: dummyDataCat.filter((e, i) => e.selected),
+      distance: distance,
+      minutes: minutes,
+      fare: fare,
+      pickupAddress: pickupAddress,
+      dropOffAddress: dropOffAddress,
+      additionalDetails: additionalDetails,
+      bookingStatus: 'inProcess',
+      id: CurrentUserUid,
+    };
+
+    firestore().collection("booking").doc(CurrentUserUid).set(data).then(()=>{
+          console.log("data send")
+          navigation.navigate('PassengerFindRide', data);
+    }).catch((error)=>{
+      console.log(error)
+    })
+      }
+  },[oldBookingData])
+ 
+
   const mapRef = useRef();
   const [selected, setSelected] = useState(false);
   const onClickItem = (item, index) => {
@@ -396,8 +562,8 @@ export default function PassengerHomeScreen({navigation}) {
                 )}
                 {Object.keys(dropLocationCords).length > 0 && (
                   <MapViewDirections
-                    origin={pickupCords}
-                    destination={dropLocationCords}
+                    origin={location.pickupCords}
+                    destination={location.dropLocationCords}
                     apikey={GoogleMapKey.GOOGLE_MAP_KEY}
                     strokeColor={Colors.black}
                     strokeWidth={3}
@@ -447,7 +613,11 @@ export default function PassengerHomeScreen({navigation}) {
                   <TextInput
                     placeholder="Fare"
                     placeholderTextColor={Colors.gray}
-                    value={fare}
+                    value={
+                      selectedDriver && Object.keys(selectedDriver).length > 0
+                        ? selectedDriver.offerFare
+                        : fare
+                    }
                     onChangeText={setFare}
                     selectionColor={Colors.black}
                     activeUnderlineColor={Colors.gray}
@@ -458,8 +628,16 @@ export default function PassengerHomeScreen({navigation}) {
                   {distance && minutes && fare ? (
                     <View style={styles.recommendedText}>
                       <Text style={styles.headingStyle}>
-                        Recommended Fare:
-                        <Text style={styles.valueStyle}>{fare}$ </Text>
+                        {selectedDriver &&
+                        Object.keys(selectedDriver).length > 0
+                          ? 'Offered Fare'
+                          : 'Recommended Fare'}
+                        <Text style={styles.valueStyle}>
+                          {selectedDriver.offerFare
+                            ? selectedDriver.offerFare
+                            : fare}
+                          ${' '}
+                        </Text>
                         Distance:
                         <Text style={styles.valueStyle}>{distance} miles </Text>
                         <Text>
@@ -478,17 +656,26 @@ export default function PassengerHomeScreen({navigation}) {
                     selectionColor={Colors.black}
                     activeUnderlineColor={Colors.gray}
                     style={styles.textInputStyle}
+                    editable={
+                      routeData && Object.keys(routeData).length > 0
+                        ? false
+                        : true
+                    }
                     // left={<TextInput.Icon name="email" color={emailError ? 'red' : Colors.fontColor} />}
                   />
 
                   {/* </ScrollView> */}
-                  <View style={styles.btnContainer}>
-                    <CustomButton
-                      text="Find Rider"
-                      onPress={checkValidation}
-                      // onPress={() => navigation.navigate('PassengerFindRide')}
-                    />
-                  </View>
+                  {routeData && Object.keys(routeData).length > 0 ? (
+                    ''
+                  ) : (
+                    <View style={styles.btnContainer}>
+                      <CustomButton
+                        text="Find Rider"
+                        onPress={checkValidation}
+                        // onPress={() => navigation.navigate('PassengerFindRide')}
+                      />
+                    </View>
+                  )}
                 </KeyboardAvoidingView>
               </ScrollView>
             </KeyboardAvoidingView>
