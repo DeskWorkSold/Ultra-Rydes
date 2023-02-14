@@ -28,7 +28,7 @@ import {
 import Geocoder from 'react-native-geocoding';
 import firestore from '@react-native-firebase/firestore';
 import {ToastAndroid} from 'react-native';
-import { ActivityIndicator } from 'react-native-paper';
+import {ActivityIndicator} from 'react-native-paper';
 // import { TextInput } from 'react-native-paper';
 
 export default function DriverBiddingScreen({navigation, route}) {
@@ -40,7 +40,9 @@ export default function DriverBiddingScreen({navigation, route}) {
   useEffect(() => {
     gettingFormattedAddress();
     getBookingData();
-  }, [passengerState]);
+  }, []);
+
+console.log(bookingData,"booking")
 
   console.log(availableDriver, 'available');
 
@@ -71,8 +73,8 @@ export default function DriverBiddingScreen({navigation, route}) {
   const [driverUid, setDriverUid] = useState('');
   const [availableDriver, setAvailableDriver] = useState('');
   const [availableDriverDetail, setAvailableDriverDetail] = useState('');
-  const [loading,setLoading ] = useState(false)
-  const [bookingData,setBookingData] = useState([])
+  const [loading, setLoading] = useState(false);
+  const [bookingData, setBookingData] = useState([]);
   const [offerFare, setOfferFare] = useState(null);
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -86,81 +88,105 @@ export default function DriverBiddingScreen({navigation, route}) {
 
   const getBookingData = () => {
     const Userid = route.params.data.id;
+
+    let MybookingData = [];
+
     firestore()
       .collection('booking')
-      .doc(Userid)
       .onSnapshot(querySnapshot => {
-        const data = querySnapshot.data();
-        setBookingData(data)
-        setAvailableDriverDetail(data.driverDetail);
+        querySnapshot.forEach(documentSnapshot => {
+          let data = documentSnapshot.data();
+
+          if (data.id == Userid && data.bookingStatus !== 'done') {
+            MybookingData.push(data);
+          }else if(data.id == Userid && data.bookingStatus == "done"&& data.destination == "start")
+
+          MybookingData.push(data)
+        });
+        
+       MybookingData && MybookingData.length>0 && setBookingData(MybookingData[0])
       });
   };
 
 
+  console.log(bookingData,"hello bookingDATA")
+
+console.log(bookingData,"bookingData")
+
 
   const checkRequestStatus = () => {
 
+    console.log("hello world")
 
-        if(bookingData && bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)){
-
-            if(bookingData.driverDetail.availableDriver === driverUid){
-              setLoading(false)
-              ToastAndroid.show("Your request has been accepted",ToastAndroid.SHORT)
-            }
-            else{
-              setLoading(false)
-              ToastAndroid.show("Your request has been rejected",ToastAndroid.SHORT)
-              navigation.navigate("driverHomeScreen")
-            }
-
-        }
-
-        if(bookingData && bookingData.driverDetail && Array.isArray(bookingData.driverDetail)){
-
-            bookingData.driverDetail.map((e,i)=>{
-              console.log(e,"eeee")
-              if(e.availableDriver == driverUid && e.selected){
-                setLoading(false)
-                  ToastAndroid.show("Your request has been accepted",ToastAndroid.SHORT)
-
-                  return
-              }
-              if (e.availableDriver == driverUid && !e.selected){
-                setLoading(false)
-                ToastAndroid.show("Your request has been rejected",ToastAndroid.SHORT)
-                setTimeout(()=>{
-
-                  navigation.navigate("DriverHomeScreen")
-
-                },1000)
-              }
-            })
-
-        }
-
-
-  }
-
-useEffect(()=>{
-
-
-      if(bookingData && Object.keys(bookingData).length>0 && bookingData.driverDetail && bookingData.bookingStatus == "done"){
-        console.log("aaa")
-        checkRequestStatus()  
+    if (
+      bookingData &&
+      bookingData.driverDetail &&
+      !Array.isArray(bookingData.driverDetail)
+    ) {
+      if (
+        bookingData.driverDetail.availableDriver === driverUid &&
+        bookingData.driverDetail.selected
+      ) {
+        setLoading(false);
+        ToastAndroid.show('Your request has been accepted', ToastAndroid.SHORT);
+      } else {
+        setLoading(false);
+        ToastAndroid.show('Your request has been rejected', ToastAndroid.SHORT);
+        navigation.navigate('driverHomeScreen');
       }
+    }
 
+    if (
+      bookingData &&
+      bookingData.driverDetail &&
+      Array.isArray(bookingData.driverDetail)
+    ) {
+     bookingData && bookingData.driverDetail.length>0 && bookingData.driverDetail.map((e, i) => {
+        if (e.availableDriver == driverUid && e.selected) {
+          setLoading(false);
+          ToastAndroid.show(
+            'Your request has been accepted',
+            ToastAndroid.SHORT,
+          );
 
-},[bookingData])
+          return;
+        }
+        if (e.availableDriver == driverUid && !e.selected) {
+          setLoading(false);
+          ToastAndroid.show(
+            'Your request has been rejected',
+            ToastAndroid.SHORT,
+          );
+          setTimeout(() => {
+            navigation.navigate('DriverHomeScreen');
+          }, 1000);
+        }
+      });
+    }
+  };
 
+  useEffect(() => {
+    
+    console.log(bookingData,"bookingDataaaa")
 
+    if (
+      bookingData &&
+      Object.keys(bookingData).length > 0 &&
+      bookingData.driverDetail &&
+      bookingData.bookingStatus == 'done'
+    ) {
+      
+      checkRequestStatus();
+    }
+  }, []);
 
   const sendRequest = async () => {
     const Userid = route.params.data.id;
 
     console.log(Array.isArray(availableDriverDetail), 'ARRRAY');
 
-    if (availableDriverDetail && Array.isArray(availableDriverDetail)) {
-      let flag = availableDriverDetail.some(
+    if (bookingData.driverDetail && Array.isArray(bookingData.driverDetail)) {
+      let flag = bookingData.driverDetail.some(
         (e, i) => e.availableDriver == driverUid,
       );
 
@@ -170,50 +196,56 @@ useEffect(()=>{
       }
     }
 
-    if (availableDriverDetail && !Array.isArray(availableDriverDetail)) {
-      if (availableDriverDetail.availableDriver === driverUid) {
+    if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
+      if (bookingData.driverDetail.availableDriver === driverUid) {
         ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
         return;
       }
     }
 
-    if (availableDriverDetail && !Array.isArray(availableDriverDetail)) {
+    if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
       let driverDetail = {
         availableDriver: driverUid,
         offeredFare: offerFare ?? bookingData.fare,
       };
 
-      let availableDriverArray = [availableDriverDetail, driverDetail];
+      let availableDriverArray = [bookingData.driverDetail, driverDetail];
 
       firestore()
         .collection('booking')
-        .doc(Userid)
+        .doc(`${Userid}booking${bookingData.bookingCount}`)
         .update({
           driverDetail: availableDriverArray,
         })
         .then(() => {
           ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-          setLoading(true)
+          setLoading(true);
         })
         .catch(error => {
           console.log(error);
         });
-    } else if (availableDriverDetail && Array.isArray(availableDriverDetail)) {
+    } else if (
+      bookingData.driverDetail &&
+      Array.isArray(bookingData.driverDetail)
+    ) {
       let driverDetail = {
         availableDriver: driverUid,
-        offeredFare: offerFare ?? bookingData.fare ,
+        offeredFare: offerFare ?? bookingData.fare,
       };
 
-      let upDateAvailableDriverArray = [...availableDriverDetail, driverDetail];
+      let upDateAvailableDriverArray = [
+        ...bookingData.driverDetail,
+        driverDetail,
+      ];
       firestore()
         .collection('booking')
-        .doc(Userid)
+        .doc(`${Userid}booking${bookingData.bookingCount}`)
         .update({
           driverDetail: upDateAvailableDriverArray,
         })
-        .then(() => {  
+        .then(() => {
           ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-          setLoading(true)
+          setLoading(true);
         })
         .catch(error => {
           console.log(error);
@@ -226,11 +258,11 @@ useEffect(()=>{
 
       firestore()
         .collection('booking')
-        .doc(Userid)
+        .doc(`${Userid}booking${bookingData.bookingCount}`)
         .update({driverDetail})
         .then(() => {
           ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-          setLoading(true)
+          setLoading(true);
         })
         .catch(error => {
           console.log(error);
@@ -238,24 +270,22 @@ useEffect(()=>{
     }
   };
 
-
-
-
   useEffect(() => {
-    console.log('hello');
     let uid = auth().currentUser.uid;
     setDriverUid(uid);
   }, []);
 
   const mapRef = useRef();
 
-  return (
-    loading ? <View style={{alignItems:"center",justifyContent:"center",height:"90%"}} > 
-    <ActivityIndicator size={100} color="black" /> 
-    <Text style={{color:"black",marginTop:20}} >Processing Your request Please Wait!</Text>
-    
-     </View> 
-    :
+  return loading ? (
+    <View
+      style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}>
+      <ActivityIndicator size={100} color="black" />
+      <Text style={{color: 'black', marginTop: 20}}>
+        Processing Your request Please Wait!
+      </Text>
+    </View>
+  ) : (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <CustomHeader

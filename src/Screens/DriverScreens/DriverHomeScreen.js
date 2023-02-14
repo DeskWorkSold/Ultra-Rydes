@@ -162,6 +162,7 @@ export default function DriverHomeScreen({navigation, route}) {
             driverStatus === 'online' &&
             driverData.currentLocation
           ) {
+        
             let flag =
               driverData.vehicleDetails.vehicleCategory &&
               documentSnapshot
@@ -181,7 +182,6 @@ export default function DriverHomeScreen({navigation, route}) {
                 longitude: driverData.currentLocation.longitude,
               },
             );
-
             if (
               flag &&
               driverStatus == 'online' &&
@@ -197,6 +197,8 @@ export default function DriverHomeScreen({navigation, route}) {
         setLoading(false);
       });
   };
+
+  
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -227,7 +229,6 @@ export default function DriverHomeScreen({navigation, route}) {
         status: 'online',
         currentLocation: pickupCords,
       });
-      
     } catch (err) {
       console.log('MyError', err);
     }
@@ -271,6 +272,8 @@ export default function DriverHomeScreen({navigation, route}) {
   }, [driverStatus, state]);
 
   const rideList = ({item, index}) => {
+    console.log(item, 'items');
+
     return (
       <TouchableOpacity
         style={styles.listItemContainer}

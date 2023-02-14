@@ -68,15 +68,39 @@ export default function PassengerFindRide({navigation, route}) {
     if (passengerData.id) {
       firestore()
         .collection('booking')
-        .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
-          let data = querySnapshot.data();
+          let bookingData = [];
+          querySnapshot.forEach(documentSnapshot => {
+            let data = documentSnapshot.data();
+            if (
+              data &&
+              data.bookingStatus !== 'done' &&
+              data.id == passengerData.id
+            ) {
+              bookingData.push(data);
+            }
 
-          console.log(data, 'data');
-          if (data && data.driverDetail) {
-            setAvailableDriverId(data.driverDetail);
-          }
+            if (
+              bookingData &&
+              bookingData.length > 0 &&
+              bookingData[0].driverDetail
+            ) {
+              setAvailableDriverId(bookingData[0].driverDetail);
+            }
+          });
         });
+
+      // firestore()
+      //   .collection('booking')
+      //   .doc(passengerData.id)
+      //   .onSnapshot(querySnapshot => {
+      //     let data = querySnapshot.data();
+
+      //     console.log(data, 'data');
+      //     if (data && data.driverDetail) {
+      //       setAvailableDriverId(data.driverDetail);
+      //     }
+      //   });
     }
   }, []);
 
@@ -96,7 +120,7 @@ export default function PassengerFindRide({navigation, route}) {
             .doc(e.availableDriver)
             .onSnapshot(querySnapshot => {
               let data = querySnapshot.data();
-              data.offerFare = e.offerFare;
+              data.offerFare = e.offeredFare;
               data.id = e.availableDriver;
               myData.push(data);
               setDriverData(myData);
@@ -108,16 +132,12 @@ export default function PassengerFindRide({navigation, route}) {
         .doc(availableDriverId.availableDriver)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
-          data.offerFare = availableDriverId.offerFare;
+          data.offerFare = availableDriverId.offeredFare;
           data.id = availableDriverId.availableDriver;
-
           setDriverData([data]);
         });
     }
   };
-
-  console.log(driverData, 'available');
-
   useEffect(() => {
     if (Array.isArray(availableDriverId)) {
       availableDriverId && availableDriverId.length > 0 && getAvailableDriver();
@@ -160,18 +180,22 @@ export default function PassengerFindRide({navigation, route}) {
     });
   }, []);
 
+  console.log(passengerData, 'passenger');
+
   const AccecptOffer = acceptDriver => {
+    console.log(acceptDriver, 'accept');
     firestore()
       .collection('booking')
-      .doc(passengerData.id)
+      .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
       .onSnapshot(querySnapshot => {
         let data = querySnapshot.data();
+        console.log(data, 'datad');
 
-        driverDetail = data.driverDetail;
+        let driverDetail = data.driverDetail;
+
         console.log(driverDetail, 'driver');
 
         if (driverDetail && !Array.isArray(driverDetail)) {
-          console.log('aaaaa');
           driverDetail.selected = true;
           setSelectedDriver(driverDetail);
         } else {
@@ -179,6 +203,7 @@ export default function PassengerFindRide({navigation, route}) {
             driverDetail &&
               driverDetail.length > 0 &&
               driverDetail.map((e, i) => {
+                console.log(e, 'eee');
 
                 if (e.availableDriver == acceptDriver.id) {
                   return {
@@ -197,13 +222,21 @@ export default function PassengerFindRide({navigation, route}) {
       });
   };
 
+
+const rejectOffer = (rejectedDriver) => {
+
+      console.log(rejectedDriver,"rejected")
+
+}
+
   const sendAcceptedDriverInFb = () => {
     firestore()
       .collection('booking')
-      .doc(passengerData.id)
+      .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
       .update({
-        driverDetail: driverDetail,
-        bookingStatus : "done"
+        driverDetail: selectedDriver,
+        bookingStatus: 'done',
+        destination : "start"
       })
       .then(() => {
         navigation.navigate('PassengerHomeScreen', {
@@ -232,9 +265,8 @@ export default function PassengerFindRide({navigation, route}) {
     }
   }, [selectedDriver]);
 
-  console.log(selectedDriver, 'selectedDriver');
-
   const rideRequests = ({item}) => {
+    console.log(item, 'items');
     return (
       <View style={styles.card}>
         <View style={styles.innerItemsUpper}>
@@ -263,6 +295,7 @@ export default function PassengerFindRide({navigation, route}) {
             styleContainer={styles.btn}
             btnTextStyle={styles.btnTextStyle}
             bgColor
+            onPress={() => rejectOffer(item)}
           />
           <CustomButton
             text="Accept"
