@@ -443,7 +443,8 @@ export default function DriverDetailScreen({ navigation }) {
                         cnicFrontImg: cnicFrontImg,
                         cnicBackImg: cnicBackImg,
                         licenseFrontImg: licenseFrontImg,
-                        licenseBackImg: licenseBackImg
+                        licenseBackImg: licenseBackImg,
+                        id : CurrentUser.uid
                     })
                     .then(() => {
                         console.log('User added!');

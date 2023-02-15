@@ -198,7 +198,21 @@ export default function DriverHomeScreen({navigation, route}) {
       });
   };
 
+  const getRequestFromPassengers = () => {
+      let requestData = []
+    firestore().collection("Request").onSnapshot(querySnapshot=>{
+      querySnapshot.forEach(documentSnapshot=>{
+        let data = documentSnapshot.data()
+        if(data && data.driverData.cnic == driverData.cnic ){
+            requestData.push(data)
+        }
+      })
+      setPassengerBookingData(requestData)
+    })
+
+  }
   
+  console.log(passengerBookingData,"passenger")
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -219,7 +233,8 @@ export default function DriverHomeScreen({navigation, route}) {
     driverData &&
       driverData.vehicleDetails &&
       driverStatus == 'online' &&
-      getBookingData();
+      // getBookingData();
+      getRequestFromPassengers()
   }, [driverData]);
 
   const updateOnlineOnFirebase = () => {
@@ -282,21 +297,21 @@ export default function DriverHomeScreen({navigation, route}) {
           navigation.navigate('DriverBiddingScreen', {
             data: item,
             passengerState: {
-              pickupCords: item.pickupCords,
-              dropLocationCords: item.dropLocationCords,
+              pickupCords: item.passengerData.pickupCords,
+              dropLocationCords: item.passengerData.dropLocationCords,
             },
           });
         }}>
         <Text style={styles.itemTextStyle}>
           Pickup Cords:
-          <Text style={styles.itemLocStyle}>{item.pickupAddress}</Text>
+          <Text style={styles.itemLocStyle}>{item.passengerData.pickupAddress}</Text>
         </Text>
         <Text style={styles.itemTextStyle}>
           Destination Cords:
-          <Text style={styles.itemLocStyle}>{item.dropOffAddress}</Text>
+          <Text style={styles.itemLocStyle}>{item.passengerData.dropOffAddress}</Text>
         </Text>
         <Text style={styles.itemTextStyle}>
-          Fare:<Text style={styles.itemLocStyle}>{item.fare}$</Text>
+          Fare:<Text style={styles.itemLocStyle}>{item.passengerData.fare}$</Text>
         </Text>
         {/* <View style={{flexDirection:row}} >
         <Text style={styles.itemTextStyle} >Edit Fare</Text>
@@ -345,7 +360,7 @@ export default function DriverHomeScreen({navigation, route}) {
               ]}
             />
           </View>
-          {driverStatus == 'online' ? (
+          {driverStatus == 'online' && passengerBookingData ? (
             <View style={styles.listContainer}>
               <FlatList
                 data={passengerBookingData}

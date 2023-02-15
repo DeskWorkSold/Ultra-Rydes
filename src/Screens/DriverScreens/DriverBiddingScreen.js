@@ -33,18 +33,16 @@ import {ActivityIndicator} from 'react-native-paper';
 
 export default function DriverBiddingScreen({navigation, route}) {
   const {passengerState} = route.params;
+  const {passengerData} = route.params.data
+  const {driverData} = route.params.data
 
   const data = route.params;
-  console.log(data, 'dataa');
-
   useEffect(() => {
     gettingFormattedAddress();
     getBookingData();
   }, []);
 
-console.log(bookingData,"booking")
 
-  console.log(availableDriver, 'available');
 
   const gettingFormattedAddress = () => {
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
@@ -99,24 +97,22 @@ console.log(bookingData,"booking")
 
           if (data.id == Userid && data.bookingStatus !== 'done') {
             MybookingData.push(data);
-          }else if(data.id == Userid && data.bookingStatus == "done"&& data.destination == "start")
-
-          MybookingData.push(data)
+          } else if (
+            data.id == Userid &&
+            data.bookingStatus == 'done' &&
+            data.destination == 'start'
+          )
+            MybookingData.push(data);
         });
-        
-       MybookingData && MybookingData.length>0 && setBookingData(MybookingData[0])
+
+        MybookingData &&
+          MybookingData.length > 0 &&
+          setBookingData(MybookingData[0]);
       });
   };
 
-
-  console.log(bookingData,"hello bookingDATA")
-
-console.log(bookingData,"bookingData")
-
-
   const checkRequestStatus = () => {
-
-    console.log("hello world")
+    console.log('hello world');
 
     if (
       bookingData &&
@@ -141,33 +137,34 @@ console.log(bookingData,"bookingData")
       bookingData.driverDetail &&
       Array.isArray(bookingData.driverDetail)
     ) {
-     bookingData && bookingData.driverDetail.length>0 && bookingData.driverDetail.map((e, i) => {
-        if (e.availableDriver == driverUid && e.selected) {
-          setLoading(false);
-          ToastAndroid.show(
-            'Your request has been accepted',
-            ToastAndroid.SHORT,
-          );
+      bookingData &&
+        bookingData.driverDetail.length > 0 &&
+        bookingData.driverDetail.map((e, i) => {
+          if (e.availableDriver == driverUid && e.selected) {
+            setLoading(false);
+            ToastAndroid.show(
+              'Your request has been accepted',
+              ToastAndroid.SHORT,
+            );
 
-          return;
-        }
-        if (e.availableDriver == driverUid && !e.selected) {
-          setLoading(false);
-          ToastAndroid.show(
-            'Your request has been rejected',
-            ToastAndroid.SHORT,
-          );
-          setTimeout(() => {
-            navigation.navigate('DriverHomeScreen');
-          }, 1000);
-        }
-      });
+            return;
+          }
+          if (e.availableDriver == driverUid && !e.selected) {
+            setLoading(false);
+            ToastAndroid.show(
+              'Your request has been rejected',
+              ToastAndroid.SHORT,
+            );
+            setTimeout(() => {
+              navigation.navigate('DriverHomeScreen');
+            }, 1000);
+          }
+        });
     }
   };
 
   useEffect(() => {
-    
-    console.log(bookingData,"bookingDataaaa")
+    console.log(bookingData, 'bookingDataaaa');
 
     if (
       bookingData &&
@@ -175,7 +172,6 @@ console.log(bookingData,"bookingData")
       bookingData.driverDetail &&
       bookingData.bookingStatus == 'done'
     ) {
-      
       checkRequestStatus();
     }
   }, []);
@@ -185,89 +181,104 @@ console.log(bookingData,"bookingData")
 
     console.log(Array.isArray(availableDriverDetail), 'ARRRAY');
 
-    if (bookingData.driverDetail && Array.isArray(bookingData.driverDetail)) {
-      let flag = bookingData.driverDetail.some(
-        (e, i) => e.availableDriver == driverUid,
-      );
-
-      if (flag) {
-        ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
-        return;
-      }
+    if(passengerData && !passengerData.bidFare && !passengerData.requestStatus){
+      passengerData.requestStatus = "accepted"
+      firestore().collection("Request").doc(passengerData.id).update({
+        requestStatus : "accepted"
+      }).then(()=>{
+          ToastAndroid.show("You have accepted customer Request",ToastAndroid.SHORT)
+      }).catch((error)=>{
+        console.log(error)
+      })
+      return
     }
-
-    if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
-      if (bookingData.driverDetail.availableDriver === driverUid) {
-        ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
-        return;
-      }
+    else if (passengerData && !passengerData.bidFare && passengerData.requestStatus){
+      ToastAndroid.show("You have already accepted this request",ToastAndroid.SHORT)
     }
+  
+    // if (bookingData.driverDetail && Array.isArray(bookingData.driverDetail)) {
+    //   let flag = bookingData.driverDetail.some(
+    //     (e, i) => e.availableDriver == driverUid,
+    //   );
 
-    if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
-      let driverDetail = {
-        availableDriver: driverUid,
-        offeredFare: offerFare ?? bookingData.fare,
-      };
+    //   if (flag) {
+    //     ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
+    //     return;
+    //   }
+    // }
 
-      let availableDriverArray = [bookingData.driverDetail, driverDetail];
+    // if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
+    //   if (bookingData.driverDetail.availableDriver === driverUid) {
+    //     ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
+    //     return;
+    //   }
+    // }
 
-      firestore()
-        .collection('booking')
-        .doc(`${Userid}booking${bookingData.bookingCount}`)
-        .update({
-          driverDetail: availableDriverArray,
-        })
-        .then(() => {
-          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-          setLoading(true);
-        })
-        .catch(error => {
-          console.log(error);
-        });
-    } else if (
-      bookingData.driverDetail &&
-      Array.isArray(bookingData.driverDetail)
-    ) {
-      let driverDetail = {
-        availableDriver: driverUid,
-        offeredFare: offerFare ?? bookingData.fare,
-      };
+    // if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
+    //   let driverDetail = {
+    //     availableDriver: driverUid,
+    //     offeredFare: offerFare ?? bookingData.fare,
+    //   };
 
-      let upDateAvailableDriverArray = [
-        ...bookingData.driverDetail,
-        driverDetail,
-      ];
-      firestore()
-        .collection('booking')
-        .doc(`${Userid}booking${bookingData.bookingCount}`)
-        .update({
-          driverDetail: upDateAvailableDriverArray,
-        })
-        .then(() => {
-          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-          setLoading(true);
-        })
-        .catch(error => {
-          console.log(error);
-        });
-    } else {
-      let driverDetail = {
-        availableDriver: driverUid,
-        offeredFare: offerFare ?? bookingData.fare,
-      };
+    //   let availableDriverArray = [bookingData.driverDetail, driverDetail];
 
-      firestore()
-        .collection('booking')
-        .doc(`${Userid}booking${bookingData.bookingCount}`)
-        .update({driverDetail})
-        .then(() => {
-          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-          setLoading(true);
-        })
-        .catch(error => {
-          console.log(error);
-        });
-    }
+    //   firestore()
+    //     .collection('booking')
+    //     .doc(`${Userid}booking${bookingData.bookingCount}`)
+    //     .update({
+    //       driverDetail: availableDriverArray,
+    //     })
+    //     .then(() => {
+    //       ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+    //       setLoading(true);
+    //     })
+    //     .catch(error => {
+    //       console.log(error);
+    //     });
+    // } else if (
+    //   bookingData.driverDetail &&
+    //   Array.isArray(bookingData.driverDetail)
+    // ) {
+    //   let driverDetail = {
+    //     availableDriver: driverUid,
+    //     offeredFare: offerFare ?? bookingData.fare,
+    //   };
+
+    //   let upDateAvailableDriverArray = [
+    //     ...bookingData.driverDetail,
+    //     driverDetail,
+    //   ];
+    //   firestore()
+    //     .collection('booking')
+    //     .doc(`${Userid}booking${bookingData.bookingCount}`)
+    //     .update({
+    //       driverDetail: upDateAvailableDriverArray,
+    //     })
+    //     .then(() => {
+    //       ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+    //       setLoading(true);
+    //     })
+    //     .catch(error => {
+    //       console.log(error);
+    //     });
+    // } else {
+    //   let driverDetail = {
+    //     availableDriver: driverUid,
+    //     offeredFare: offerFare ?? bookingData.fare,
+    //   };
+
+    //   firestore()
+    //     .collection('booking')
+    //     .doc(`${Userid}booking${bookingData.bookingCount}`)
+    //     .update({driverDetail})
+    //     .then(() => {
+    //       ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+    //       setLoading(true);
+    //     })
+    //     .catch(error => {
+    //       console.log(error);
+    //     });
+    // }
   };
 
   useEffect(() => {
@@ -374,7 +385,29 @@ console.log(bookingData,"bookingData")
                 style={styles.textInputStyle}
                 keyboardType="numeric"
                 onChangeText={setOfferFare}
+                value = {  `${passengerData.bidFare? "Bid Fare:" : "Recomended Fare:"} ${passengerData.bidFare ?? passengerData.fare}$` }
               />
+                {passengerData.bidFare && (
+                    <TouchableOpacity
+                      onPress={() => setAppearBiddingOption(true)}
+                      style={{
+                        marginTop: 10,
+                        marginHorizontal: 5,
+                        backgroundColor: 'skyblue',
+                        padding: 8,
+                        width: '30%',
+                        borderRadius: 10,
+                      }}>
+                      <Text
+                        style={{
+                          color: 'black',
+                          fontSize: 20,
+                          fontWeight: '700',
+                        }}>
+                        Bid Fare
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
               {/* </ScrollView> */}
               <View style={styles.btnContainer}>

@@ -13,6 +13,7 @@ import {
   TextInput,
   ToastAndroid,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import MapView, {Marker} from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -33,6 +34,8 @@ import firestore from '@react-native-firebase/firestore';
 import {set} from 'react-native-reanimated';
 import {FABGroup} from 'react-native-paper/lib/typescript/components/FAB/FABGroup';
 import Geocoder from 'react-native-geocoding';
+import {Modal} from 'react-native-paper';
+import AppModal from '../../Components/modal';
 
 export default function PassengerHomeScreen({navigation, route}) {
   const [dummyDataCat, setDummyDataCat] = useState('');
@@ -48,6 +51,8 @@ export default function PassengerHomeScreen({navigation, route}) {
   const [selectedDriver, setSelectedDriver] = useState([]);
   const [bookingData, setBookingData] = useState([]);
   const [result, setResult] = useState();
+  const [appearBiddingOption, setAppearBiddingOption] = useState(false);
+  const [bidFare, setBidFare] = useState(null);
 
   useEffect(() => {
     getLiveLocation();
@@ -150,6 +155,7 @@ export default function PassengerHomeScreen({navigation, route}) {
       .doc('8w6hVPveXKR6kTvYVWwy')
       .onSnapshot(documentSnapshot => {
         const GetUserData = documentSnapshot.data();
+        console.log(GetUserData, 'getUser');
         setDummyDataCat(GetUserData.categories);
       });
   };
@@ -231,14 +237,35 @@ export default function PassengerHomeScreen({navigation, route}) {
       return false;
     }
 
-    console.log(bookingData, 'bookingData');
 
     let flag = dummyDataCat.some((e, i) => e.selected);
 
     if (!flag) {
       ToastAndroid.show('Kindly select Car type', ToastAndroid.SHORT);
       return;
-    } else {
+    } 
+
+    if(!bidFare){
+
+      let data = {
+        pickupCords: pickupCords,
+        dropLocationCords: dropLocationCords,
+        selectedCar: dummyDataCat.filter((e, i) => e.selected),
+        distance: distance,
+        minutes: minutes,
+        fare: fare,
+        bidFare : bidFare,
+        pickupAddress: pickupAddress,
+        dropOffAddress: dropOffAddress,
+        additionalDetails: additionalDetails,
+        id: CurrentUserUid,
+      };
+
+      navigation.navigate('PassengerFindRide', data);
+
+    }
+    
+    else {
       firestore()
         .collection('booking')
         .onSnapshot(querySnapshot => {
@@ -416,6 +443,8 @@ export default function PassengerHomeScreen({navigation, route}) {
     );
   };
   const calculateDistance = result => {
+    console.log(result.distance, 'dis');
+
     let myDistance = (result.distance * 0.62137119).toFixed(2);
     let myDuration = Math.ceil(result.duration);
     setDistance(myDistance);
@@ -438,14 +467,14 @@ export default function PassengerHomeScreen({navigation, route}) {
             myfare = miles.mileCharge * distanceMinus + addCharge;
             serviceCharges =
               (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
-            Tfare = Math.round(myfare + serviceCharges);
+            Tfare = myfare + serviceCharges;
+            Tfare = Tfare.toFixed(2);
             if (Tfare < baseCharge) {
               myfare = miles.mileCharge;
               serviceCharges =
                 (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
               Tfare = Math.round(myfare + serviceCharges);
             }
-
             setFare(Tfare.toString());
           }
         });
@@ -474,6 +503,39 @@ export default function PassengerHomeScreen({navigation, route}) {
       },
     });
   };
+
+  console.log(appearBiddingOption, 'appear');
+
+  const closeModal = () => {
+    setAppearBiddingOption(false);
+  };
+
+  const confirmBidFare = selectedBid => {
+    console.log(selectedBid, 'selectedFare');
+
+    let myFare = '';
+
+    if (selectedBid.bidWithMinimumDeduction) {
+      myFare = (fare * (97 / 100)).toFixed(2);
+      setAppearBiddingOption(false);
+    } else if (selectedBid.bidWithMidDeduction) {
+      myFare = (fare * (94 / 100)).toFixed(2);
+      setAppearBiddingOption(false);
+    } else if (selectedBid.bidWithMaximumDeduction) {
+      myFare = (fare * (90 / 100)).toFixed(2);
+      setAppearBiddingOption(false);
+    } else {
+      Alert.alert('Error Alert', 'Kindly selected Bid Fare');
+      return;
+    }
+
+    setBidFare(myFare);
+
+    // setBidFare(selectedFare)
+    // setAppearBiddingOption(false)
+  };
+
+  console.log(bidFare, 'BIDfARE');
 
   return (
     <View style={styles.container}>
@@ -612,6 +674,8 @@ export default function PassengerHomeScreen({navigation, route}) {
                     value={
                       selectedDriver && Object.keys(selectedDriver).length > 0
                         ? selectedDriver.offeredFare
+                        : bidFare
+                        ? bidFare
                         : fare
                     }
                     onChangeText={setFare}
@@ -627,11 +691,15 @@ export default function PassengerHomeScreen({navigation, route}) {
                         {selectedDriver &&
                         Object.keys(selectedDriver).length > 0
                           ? 'Offered Fare'
+                          : bidFare
+                          ? 'Bid Fare'
                           : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
                           {selectedDriver &&
                           Object.keys(selectedDriver).length > 0
                             ? selectedDriver.offeredFare
+                            : bidFare
+                            ? bidFare
                             : fare}
                           ${' '}
                         </Text>
@@ -645,6 +713,35 @@ export default function PassengerHomeScreen({navigation, route}) {
                     </View>
                   ) : null}
 
+                  {fare && (
+                    <TouchableOpacity
+                      onPress={() => setAppearBiddingOption(true)}
+                      style={{
+                        marginTop: 10,
+                        marginHorizontal: 5,
+                        backgroundColor: 'skyblue',
+                        padding: 8,
+                        width: '30%',
+                        borderRadius: 10,
+                      }}>
+                      <Text
+                        style={{
+                          color: 'black',
+                          fontSize: 20,
+                          fontWeight: '700',
+                        }}>
+                        Bid Fare
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {appearBiddingOption && (
+                    <AppModal
+                      modalVisible={appearBiddingOption}
+                      close={closeModal}
+                      fare={fare}
+                      confirm={confirmBidFare}
+                    />
+                  )}
                   <TextInput
                     placeholder="Additional Details"
                     placeholderTextColor={Colors.gray}

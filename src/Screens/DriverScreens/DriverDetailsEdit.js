@@ -196,6 +196,8 @@ export default function DriverDetailsEdit({ navigation, route }) {
                     address: address,
                     city: city,
                     phoneNumber: phoneNumber,
+                    id : currentUser.uid
+                
                 })
                 .then(() => {
                     ToastAndroid.show('Done', ToastAndroid.SHORT);
