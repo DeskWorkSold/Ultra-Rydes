@@ -60,13 +60,18 @@ export default function PassengerHomeScreen({navigation, route}) {
   }, []);
 
   const [routeData, setRouteData] = useState([]);
+  
 
   let data = route.params;
-  console.log(data, 'data');
 
   useEffect(() => {
     if (data && Object.keys(data).length > 0) {
       setRouteData(data);
+
+      if(data && data.driverData){
+        setSelectedDriver(data.driverData)
+      }
+
       if (data && data.selectedDriver && Array.isArray(data.selectedDriver)) {
         data.selectedDriver.map((e, i) => {
           if (e.selected) {
@@ -84,7 +89,8 @@ export default function PassengerHomeScreen({navigation, route}) {
     }
   }, [data]);
 
-  console.log(selectedDriver, 'DRIVER');
+  console.log(selectedDriver, 'Seleted DRIVER');
+  console.log(routeData,"routeData")
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -123,6 +129,10 @@ export default function PassengerHomeScreen({navigation, route}) {
       setLoading(false);
     }
   };
+
+
+
+
 
   // const getRouteDataLocation = () => {
   //   // setLocation({
@@ -245,7 +255,7 @@ export default function PassengerHomeScreen({navigation, route}) {
       return;
     } 
 
-    if(!bidFare){
+    if(!bidFare && !data){
 
       let data = {
         pickupCords: pickupCords,
@@ -264,138 +274,174 @@ export default function PassengerHomeScreen({navigation, route}) {
       navigation.navigate('PassengerFindRide', data);
 
     }
+
+    if(bidFare){
+
+      let data = {
+        pickupCords: pickupCords,
+        dropLocationCords: dropLocationCords,
+        selectedCar: dummyDataCat.filter((e, i) => e.selected),
+        distance: distance,
+        minutes: minutes,
+        fare: fare,
+        bidFare : bidFare,
+        pickupAddress: pickupAddress,
+        dropOffAddress: dropOffAddress,
+        additionalDetails: additionalDetails,
+        id: CurrentUserUid,
+      };
+
+      firestore().collection("Request").doc(CurrentUserUid).set(data).then(()=>{
+
+          ToastAndroid.show("Your request has been sent",ToastAndroid.SHORT)
+
+          setTimeout(()=>{
+            navigation.navigate('PassengerFindRide', data);
+          },1000)
+
+      })
+
+    }
+
+
     
-    else {
-      firestore()
-        .collection('booking')
-        .onSnapshot(querySnapshot => {
-          let myBookingData = [];
+    // else {
+    //   firestore()
+    //     .collection('booking')
+    //     .onSnapshot(querySnapshot => {
+    //       let myBookingData = [];
 
-          querySnapshot.forEach(documentSnapshot => {
-            let data = documentSnapshot.data();
+    //       querySnapshot.forEach(documentSnapshot => {
+    //         let data = documentSnapshot.data();
 
-            if (data && data.id == CurrentUserUid) {
-              myBookingData.push(data);
-            }
-          });
+    //         if (data && data.id == CurrentUserUid) {
+    //           myBookingData.push(data);
+    //         }
+    //       });
 
-          if (myBookingData && myBookingData.length > 0) {
-            setBookingData(myBookingData);
-          } else {
-            setBookingData('noData');
-          }
-        });
-    }
+    //       if (myBookingData && myBookingData.length > 0) {
+    //         setBookingData(myBookingData);
+    //       } else {
+    //         setBookingData('noData');
+    //       }
+    //     });
+    // }
   };
 
-  const sendBookingDataInFb = () => {
-    let myFlag =
-      bookingData &&
-      bookingData.length > 0 &&
-      bookingData.every((e, i) => e.bookingStatus == 'done');
+console.log(routeData,"data")
 
-    if (bookingData && bookingData.length > 0 && !myFlag) {
-      bookingData &&
-        bookingData.map((e, i) => {
-          if (
-            e.id == CurrentUserUid &&
-            e.bookingStatus !== 'done' &&
-            !e.driverDetail
-          ) {
-            let data = {
-              pickupCords: pickupCords,
-              dropLocationCords: dropLocationCords,
-              selectedCar: dummyDataCat.filter((e, i) => e.selected),
-              distance: distance,
-              minutes: minutes,
-              fare: fare,
-              pickupAddress: pickupAddress,
-              dropOffAddress: dropOffAddress,
-              additionalDetails: additionalDetails,
-              bookingStatus: 'inProcess',
-              id: CurrentUserUid,
-              bookingCount: e.bookingCount,
-            };
 
-            firestore()
-              .collection('booking')
-              .doc(`${CurrentUserUid}booking${data.bookingCount}`)
-              .set(data)
-              .then(() => {
-                console.log('Data successfully send');
-                navigation.navigate('PassengerFindRide', data);
-              })
-              .catch(error => {
-                console.log(error);
-              });
-          }
-        });
-    } else if (myFlag && bookingData && bookingData.length > 0) {
-      console.log(bookingData.length, 'length');
-      console.log(bookingData, 'bookingData');
+  // const sendBookingDataInFb = () => {
+  //   let myFlag =
+  //     bookingData &&
+  //     bookingData.length > 0 &&
+  //     bookingData.every((e, i) => e.bookingStatus == 'done');
 
-      let data = {
-        pickupCords: pickupCords,
-        dropLocationCords: dropLocationCords,
-        selectedCar: dummyDataCat.filter((e, i) => e.selected),
-        distance: distance,
-        minutes: minutes,
-        fare: fare,
-        pickupAddress: pickupAddress,
-        dropOffAddress: dropOffAddress,
-        additionalDetails: additionalDetails,
-        bookingStatus: 'inProcess',
-        id: CurrentUserUid,
-        bookingCount: bookingData.length + 1,
-      };
+  //   if (bookingData && bookingData.length > 0 && !myFlag) {
+  //     bookingData &&
+  //       bookingData.map((e, i) => {
+  //         if (
+  //           e.id == CurrentUserUid &&
+  //           e.bookingStatus !== 'done' &&
+  //           !e.driverDetail
+  //         ) {
+  //           let data = {
+  //             pickupCords: pickupCords,
+  //             dropLocationCords: dropLocationCords,
+  //             selectedCar: dummyDataCat.filter((e, i) => e.selected),
+  //             distance: distance,
+  //             minutes: minutes,
+  //             fare: fare,
+  //             pickupAddress: pickupAddress,
+  //             dropOffAddress: dropOffAddress,
+  //             additionalDetails: additionalDetails,
+  //             bookingStatus: 'inProcess',
+  //             id: CurrentUserUid,
+  //             bookingCount: e.bookingCount,
+  //           };
 
-      firestore()
-        .collection('booking')
-        .doc(`${CurrentUserUid}booking${data.bookingCount}`)
-        .set(data)
-        .then(res => {
-          console.log('data successfully send');
-          navigation.navigate('PassengerFindRide', data);
-        })
-        .catch(error => {
-          console.log(error, 'error');
-        });
-    }
-  };
+  //           firestore()
+  //             .collection('booking')
+  //             .doc(`${CurrentUserUid}booking${data.bookingCount}`)
+  //             .set(data)
+  //             .then(() => {
+  //               console.log('Data successfully send');
+  //               navigation.navigate('PassengerFindRide', data);
+  //             })
+  //             .catch(error => {
+  //               console.log(error);
+  //             });
+  //         }
+  //       });
+  //   } else if (myFlag && bookingData && bookingData.length > 0) {
+  //     console.log(bookingData.length, 'length');
+  //     console.log(bookingData, 'bookingData');
 
-  useEffect(() => {
-    console.log(bookingData, 'boooking');
+  //     let data = {
+  //       pickupCords: pickupCords,
+  //       dropLocationCords: dropLocationCords,
+  //       selectedCar: dummyDataCat.filter((e, i) => e.selected),
+  //       distance: distance,
+  //       minutes: minutes,
+  //       fare: fare,
+  //       pickupAddress: pickupAddress,
+  //       dropOffAddress: dropOffAddress,
+  //       additionalDetails: additionalDetails,
+  //       bookingStatus: 'inProcess',
+  //       id: CurrentUserUid,
+  //       bookingCount: bookingData.length + 1,
+  //     };
 
-    if (bookingData && bookingData.length > 0 && Array.isArray(bookingData)) {
-      sendBookingDataInFb();
-    } else if (bookingData == 'noData') {
-      let data = {
-        pickupCords: pickupCords,
-        dropLocationCords: dropLocationCords,
-        selectedCar: dummyDataCat.filter((e, i) => e.selected),
-        distance: distance,
-        minutes: minutes,
-        fare: fare,
-        pickupAddress: pickupAddress,
-        dropOffAddress: dropOffAddress,
-        additionalDetails: additionalDetails,
-        bookingStatus: 'inProcess',
-        id: CurrentUserUid,
-        bookingCount: 1,
-      };
-      firestore()
-        .collection('booking')
-        .doc(`${CurrentUserUid}booking${data.bookingCount}`)
-        .set(data)
-        .then(res => {
-          console.log('data successfully send');
-          navigation.navigate('PassengerFindRide', data);
-        })
-        .catch(error => {
-          console.log(error, 'error');
-        });
-    }
-  }, [bookingData]);
+  //     firestore()
+  //       .collection('booking')
+  //       .doc(`${CurrentUserUid}booking${data.bookingCount}`)
+  //       .set(data)
+  //       .then(res => {
+  //         console.log('data successfully send');
+  //         navigation.navigate('PassengerFindRide', data);
+  //       })
+  //       .catch(error => {
+  //         console.log(error, 'error');
+  //       });
+  //   }
+
+
+
+  // };
+
+  // useEffect(() => {
+    
+
+  //   if (bookingData && bookingData.length > 0 && Array.isArray(bookingData)) {
+  //     sendBookingDataInFb();
+  //   } else if (bookingData == 'noData') {
+  //     let data = {
+  //       pickupCords: pickupCords,
+  //       dropLocationCords: dropLocationCords,
+  //       selectedCar: dummyDataCat.filter((e, i) => e.selected),
+  //       distance: distance,
+  //       minutes: minutes,
+  //       fare: fare,
+  //       pickupAddress: pickupAddress,
+  //       dropOffAddress: dropOffAddress,
+  //       additionalDetails: additionalDetails,
+  //       bookingStatus: 'inProcess',
+  //       id: CurrentUserUid,
+  //       bookingCount: 1,
+  //     };
+  //     firestore()
+  //       .collection('booking')
+  //       .doc(`${CurrentUserUid}booking${data.bookingCount}`)
+  //       .set(data)
+  //       .then(res => {
+  //         console.log('data successfully send');
+  //         navigation.navigate('PassengerFindRide', data);
+  //       })
+  //       .catch(error => {
+  //         console.log(error, 'error');
+  //       });
+  //   }
+  // }, [bookingData]);
 
   const mapRef = useRef();
   const [selected, setSelected] = useState(false);
@@ -475,7 +521,9 @@ export default function PassengerHomeScreen({navigation, route}) {
                 (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
               Tfare = Math.round(myfare + serviceCharges);
             }
-            setFare(Tfare.toString());
+           
+           
+          Tfare &&  setFare(Tfare.toString());
           }
         });
       }
@@ -504,8 +552,6 @@ export default function PassengerHomeScreen({navigation, route}) {
     });
   };
 
-  console.log(appearBiddingOption, 'appear');
-
   const closeModal = () => {
     setAppearBiddingOption(false);
   };
@@ -531,11 +577,9 @@ export default function PassengerHomeScreen({navigation, route}) {
 
     setBidFare(myFare);
 
-    // setBidFare(selectedFare)
-    // setAppearBiddingOption(false)
   };
 
-  console.log(bidFare, 'BIDfARE');
+
 
   return (
     <View style={styles.container}>
@@ -566,9 +610,15 @@ export default function PassengerHomeScreen({navigation, route}) {
                   longitudeDelta: LONGITUDE_DELTA,
                 }}>
                 <Marker coordinate={pickupCords} title="pickup location" />
-                {onlineDriversLocation &&
+                
+                {  
+                
+                onlineDriversLocation &&
                   onlineDriversLocation.length > 0 &&
                   onlineDriversLocation.map((b, i) => {
+                    
+                    
+
                     if (b && b.currentLocation) {
                       const x = geolib.isPointWithinRadius(
                         {
@@ -586,6 +636,7 @@ export default function PassengerHomeScreen({navigation, route}) {
                         /* WHEN CONDITIONS GET TRUE VALUES ITS SHOW DRIVERS */
                       }
                       if (x) {
+                        console.log(x,"xxx")
                         return (
                           <Marker
                             key={i}
@@ -628,7 +679,7 @@ export default function PassengerHomeScreen({navigation, route}) {
                     optimizeWayPoints={true}
                     mode="DRIVING"
                     onReady={result => {
-                      console.log(result, 'result');
+                      
                       setResult(result);
                       calculateDistance(result);
                       mapRef.current.fitToCoordinates(result.coordinates, {
@@ -672,8 +723,9 @@ export default function PassengerHomeScreen({navigation, route}) {
                     placeholder="Fare"
                     placeholderTextColor={Colors.gray}
                     value={
-                      selectedDriver && Object.keys(selectedDriver).length > 0
-                        ? selectedDriver.offeredFare
+                      selectedDriver && Object.keys(selectedDriver).length > 0 && !selectedDriver.bidFare
+                        ? `${selectedDriver.fare}$ `: selectedDriver && Object.keys(selectedDriver).length > 0 && selectedDriver.bidFare
+                        ? `${selectedDriver.bidFare}$`
                         : bidFare
                         ? bidFare
                         : fare
@@ -689,15 +741,17 @@ export default function PassengerHomeScreen({navigation, route}) {
                     <View style={styles.recommendedText}>
                       <Text style={styles.headingStyle}>
                         {selectedDriver &&
-                        Object.keys(selectedDriver).length > 0
-                          ? 'Offered Fare'
+                        Object.keys(selectedDriver).length > 0 && !selectedDriver.bidFare
+                          ? 'Recommended Fare' : selectedDriver &&
+                          Object.keys(selectedDriver).length > 0 && selectedDriver.bidFare ? "Bid Fare"
                           : bidFare
                           ? 'Bid Fare'
                           : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
                           {selectedDriver &&
-                          Object.keys(selectedDriver).length > 0
-                            ? selectedDriver.offeredFare
+                          Object.keys(selectedDriver).length > 0 && !selectedDriver.bidFare
+                            ? selectedDriver.fare : Object.keys(selectedDriver).length > 0 && selectedDriver.bidFare
+                            ? selectedDriver.bidFare
                             : bidFare
                             ? bidFare
                             : fare}
@@ -713,7 +767,7 @@ export default function PassengerHomeScreen({navigation, route}) {
                     </View>
                   ) : null}
 
-                  {fare && (
+                  {fare && !data && (
                     <TouchableOpacity
                       onPress={() => setAppearBiddingOption(true)}
                       style={{

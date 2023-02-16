@@ -21,6 +21,7 @@ import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
 import auth from '@react-native-firebase/auth';
+import AppModal from '../../Components/modal';
 import {
   locationPermission,
   getCurrentLocation,
@@ -32,17 +33,64 @@ import {ActivityIndicator} from 'react-native-paper';
 // import { TextInput } from 'react-native-paper';
 
 export default function DriverBiddingScreen({navigation, route}) {
-  const {passengerState} = route.params;
-  const {passengerData} = route.params.data
-  const {driverData} = route.params.data
+  let passengerData = '';
+  let driverData = '';
 
-  const data = route.params;
+  const {passengerState} = route.params;
+
+  if (
+    route.params &&
+    route.params.data.passengerData &&
+    route.params.data.driverData
+  ) {
+    passengerData = route.params.data.passengerData;
+    driverData = route.params.data.driverData;
+  } else {
+    passengerData = route.params.data;
+  }
+
+  const {data} = route.params;
+
+  const [pickUpLocation, setpickUpLocation] = useState('');
+  const [dropOffLocation, setdropOffLocation] = useState('');
+  const [driverUid, setDriverUid] = useState('');
+  const [availableDriver, setAvailableDriver] = useState('');
+  const [availableDriverDetail, setAvailableDriverDetail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [bookingData, setBookingData] = useState([]);
+  const [offerFare, setOfferFare] = useState(null);
+  const screen = Dimensions.get('window');
+  const ASPECT_RATIO = screen.width / screen.height;
+  const LATITUDE_DELTA = 0.04;
+  const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+  const [state, setState] = useState({
+    pickupCords: passengerState.pickupCords,
+    dropLocationCords: passengerState.dropLocationCords,
+  });
+  const {pickupCords, dropLocationCords} = state;
+  const [appearBiddingOption, setAppearBiddingOption] = useState(false);
+  const [driverBidFare, setDriverBidFare] = useState(false);
+  const [driverPersonalData, setDriverPersonalData] = useState({});
+
   useEffect(() => {
     gettingFormattedAddress();
-    getBookingData();
+    // getBookingData();
+    getDriverUid();
+
+    // if (
+    //   bookingData &&
+    //   Object.keys(bookingData).length > 0 &&
+    //   bookingData.driverDetail &&
+    //   bookingData.bookingStatus == 'done'
+    // ) {
+    //   checkRequestStatus();
+    // }
   }, []);
 
-
+  const getDriverUid = () => {
+    let uid = auth().currentUser.uid;
+    setDriverUid(uid);
+  };
 
   const gettingFormattedAddress = () => {
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
@@ -66,225 +114,263 @@ export default function DriverBiddingScreen({navigation, route}) {
       .catch(error => console.warn(error));
   };
 
-  const [pickUpLocation, setpickUpLocation] = useState('');
-  const [dropOffLocation, setdropOffLocation] = useState('');
-  const [driverUid, setDriverUid] = useState('');
-  const [availableDriver, setAvailableDriver] = useState('');
-  const [availableDriverDetail, setAvailableDriverDetail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [bookingData, setBookingData] = useState([]);
-  const [offerFare, setOfferFare] = useState(null);
-  const screen = Dimensions.get('window');
-  const ASPECT_RATIO = screen.width / screen.height;
-  const LATITUDE_DELTA = 0.04;
-  const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-  const [state, setState] = useState({
-    pickupCords: passengerState.pickupCords,
-    dropLocationCords: passengerState.dropLocationCords,
-  });
-  const {pickupCords, dropLocationCords} = state;
+  // const getBookingData = () => {
+  //   const Userid = route.params.data.id;
 
-  const getBookingData = () => {
-    const Userid = route.params.data.id;
+  //   let MybookingData = [];
 
-    let MybookingData = [];
+  //   firestore()
+  //     .collection('booking')
+  //     .onSnapshot(querySnapshot => {
+  //       querySnapshot.forEach(documentSnapshot => {
+  //         let data = documentSnapshot.data();
 
-    firestore()
-      .collection('booking')
-      .onSnapshot(querySnapshot => {
-        querySnapshot.forEach(documentSnapshot => {
-          let data = documentSnapshot.data();
+  //         if (data.id == Userid && data.bookingStatus !== 'done') {
+  //           MybookingData.push(data);
+  //         } else if (
+  //           data.id == Userid &&
+  //           data.bookingStatus == 'done' &&
+  //           data.destination == 'start'
+  //         )
+  //           MybookingData.push(data);
+  //       });
 
-          if (data.id == Userid && data.bookingStatus !== 'done') {
-            MybookingData.push(data);
-          } else if (
-            data.id == Userid &&
-            data.bookingStatus == 'done' &&
-            data.destination == 'start'
-          )
-            MybookingData.push(data);
-        });
+  //       MybookingData &&
+  //         MybookingData.length > 0 &&
+  //         setBookingData(MybookingData[0]);
+  //     });
+  // };
 
-        MybookingData &&
-          MybookingData.length > 0 &&
-          setBookingData(MybookingData[0]);
-      });
-  };
+  // const checkRequestStatus = () => {
 
-  const checkRequestStatus = () => {
-    console.log('hello world');
+  //   if (
+  //     bookingData &&
+  //     bookingData.driverDetail &&
+  //     !Array.isArray(bookingData.driverDetail)
+  //   ) {
+  //     if (
+  //       bookingData.driverDetail.availableDriver === driverUid &&
+  //       bookingData.driverDetail.selected
+  //     ) {
+  //       setLoading(false);
+  //       ToastAndroid.show('Your request has been accepted', ToastAndroid.SHORT);
+  //     } else {
+  //       setLoading(false);
+  //       ToastAndroid.show('Your request has been rejected', ToastAndroid.SHORT);
+  //       navigation.navigate('driverHomeScreen');
+  //     }
+  //   }
+  //   if (
+  //     bookingData &&
+  //     bookingData.driverDetail &&
+  //     Array.isArray(bookingData.driverDetail)
+  //   ) {
+  //     bookingData &&
+  //       bookingData.driverDetail.length > 0 &&
+  //       bookingData.driverDetail.map((e, i) => {
+  //         if (e.availableDriver == driverUid && e.selected) {
+  //           setLoading(false);
+  //           ToastAndroid.show(
+  //             'Your request has been accepted',
+  //             ToastAndroid.SHORT,
+  //           );
 
-    if (
-      bookingData &&
-      bookingData.driverDetail &&
-      !Array.isArray(bookingData.driverDetail)
-    ) {
-      if (
-        bookingData.driverDetail.availableDriver === driverUid &&
-        bookingData.driverDetail.selected
-      ) {
-        setLoading(false);
-        ToastAndroid.show('Your request has been accepted', ToastAndroid.SHORT);
-      } else {
-        setLoading(false);
-        ToastAndroid.show('Your request has been rejected', ToastAndroid.SHORT);
-        navigation.navigate('driverHomeScreen');
-      }
-    }
+  //           return;
+  //         }
+  //         if (e.availableDriver == driverUid && !e.selected) {
+  //           setLoading(false);
+  //           ToastAndroid.show(
+  //             'Your request has been rejected',
+  //             ToastAndroid.SHORT,
+  //           );
+  //           setTimeout(() => {
+  //             navigation.navigate('DriverHomeScreen');
+  //           }, 1000);
+  //         }
+  //       });
+  //   }
+  // };
 
-    if (
-      bookingData &&
-      bookingData.driverDetail &&
-      Array.isArray(bookingData.driverDetail)
-    ) {
-      bookingData &&
-        bookingData.driverDetail.length > 0 &&
-        bookingData.driverDetail.map((e, i) => {
-          if (e.availableDriver == driverUid && e.selected) {
-            setLoading(false);
-            ToastAndroid.show(
-              'Your request has been accepted',
-              ToastAndroid.SHORT,
-            );
-
-            return;
-          }
-          if (e.availableDriver == driverUid && !e.selected) {
-            setLoading(false);
-            ToastAndroid.show(
-              'Your request has been rejected',
-              ToastAndroid.SHORT,
-            );
-            setTimeout(() => {
-              navigation.navigate('DriverHomeScreen');
-            }, 1000);
-          }
-        });
-    }
-  };
-
-  useEffect(() => {
-    console.log(bookingData, 'bookingDataaaa');
-
-    if (
-      bookingData &&
-      Object.keys(bookingData).length > 0 &&
-      bookingData.driverDetail &&
-      bookingData.bookingStatus == 'done'
-    ) {
-      checkRequestStatus();
-    }
-  }, []);
+  console.log(passengerData, 'paasenger');
 
   const sendRequest = async () => {
     const Userid = route.params.data.id;
+    if (
+      passengerData &&
+      !passengerData.bidFare &&
+      !passengerData.requestStatus
+    ) {
+      passengerData.requestStatus = 'accepted';
+      firestore()
+        .collection('Request')
+        .doc(passengerData.id)
+        .update({
+          requestStatus: 'accepted',
+        })
+        .then(() => {
+          ToastAndroid.show(
+            'You have accepted customer Request',
+            ToastAndroid.SHORT,
+          );
+        })
+        .catch(error => {
+          console.log(error);
+        });
+      return;
+    } else if (
+      passengerData &&
+      !passengerData.bidFare &&
+      passengerData.requestStatus
+    ) {
+      ToastAndroid.show(
+        'You have already accepted this request',
 
-    console.log(Array.isArray(availableDriverDetail), 'ARRRAY');
-
-    if(passengerData && !passengerData.bidFare && !passengerData.requestStatus){
-      passengerData.requestStatus = "accepted"
-      firestore().collection("Request").doc(passengerData.id).update({
-        requestStatus : "accepted"
-      }).then(()=>{
-          ToastAndroid.show("You have accepted customer Request",ToastAndroid.SHORT)
-      }).catch((error)=>{
-        console.log(error)
-      })
-      return
+        ToastAndroid.SHORT,
+      );
+    } else if (
+      passengerData &&
+      passengerData.bidFare &&
+      !passengerData.requestStatus
+    ) {
+      firestore()
+        .collection('Drivers')
+        .doc(driverUid)
+        .onSnapshot(querySnapshot => {
+          let driver = querySnapshot.data();
+          driver.id = driverUid;
+          driver.bidFare = driverBidFare
+            ? driverBidFare
+            : passengerData.bidFare;
+          setDriverPersonalData(driver);
+        });
+    } else if (
+      passengerData &&
+      passengerData.bidFare &&
+      passengerData.requestStatus == 'accepted'
+    ) {
+      ToastAndroid.show(
+        'You have already accepted this request',
+        ToastAndroid.SHORT,
+      );
     }
-    else if (passengerData && !passengerData.bidFare && passengerData.requestStatus){
-      ToastAndroid.show("You have already accepted this request",ToastAndroid.SHORT)
-    }
-  
-    // if (bookingData.driverDetail && Array.isArray(bookingData.driverDetail)) {
-    //   let flag = bookingData.driverDetail.some(
-    //     (e, i) => e.availableDriver == driverUid,
-    //   );
+  };
 
-    //   if (flag) {
-    //     ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
-    //     return;
-    //   }
-    // }
+  const sendDriverRequestInFirebase = () => {
+    console.log('heeelooo');
 
-    // if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
-    //   if (bookingData.driverDetail.availableDriver === driverUid) {
-    //     ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
-    //     return;
-    //   }
-    // }
+    let otherDriverData = [];
+    firestore()
+      .collection('Request')
+      .doc(passengerData.id)
+      .onSnapshot(querySnapshot => {
+        let data = querySnapshot.data();
 
-    // if (bookingData.driverDetail && !Array.isArray(bookingData.driverDetail)) {
-    //   let driverDetail = {
-    //     availableDriver: driverUid,
-    //     offeredFare: offerFare ?? bookingData.fare,
-    //   };
+        if (data && !data.myDriversData) {
+          firestore()
+            .collection('Request')
+            .doc(data.id)
+            .update({
+              myDriversData: driverPersonalData,
+            })
+            .then(() => {
+              ToastAndroid.show(
+                'Your request has been send to passenger',
+                ToastAndroid.SHORT,
+              );
+              setLoading(true);
+            })
+            .catch(error => {
+              console.log(error);
+            });
+        } else if (data && Array.isArray(data.myDriversData)) {
+          let flag = data.myDriversData.some(
+            (e, i) => e.id == driverPersonalData.id,
+          );
 
-    //   let availableDriverArray = [bookingData.driverDetail, driverDetail];
-
-    //   firestore()
-    //     .collection('booking')
-    //     .doc(`${Userid}booking${bookingData.bookingCount}`)
-    //     .update({
-    //       driverDetail: availableDriverArray,
-    //     })
-    //     .then(() => {
-    //       ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-    //       setLoading(true);
-    //     })
-    //     .catch(error => {
-    //       console.log(error);
-    //     });
-    // } else if (
-    //   bookingData.driverDetail &&
-    //   Array.isArray(bookingData.driverDetail)
-    // ) {
-    //   let driverDetail = {
-    //     availableDriver: driverUid,
-    //     offeredFare: offerFare ?? bookingData.fare,
-    //   };
-
-    //   let upDateAvailableDriverArray = [
-    //     ...bookingData.driverDetail,
-    //     driverDetail,
-    //   ];
-    //   firestore()
-    //     .collection('booking')
-    //     .doc(`${Userid}booking${bookingData.bookingCount}`)
-    //     .update({
-    //       driverDetail: upDateAvailableDriverArray,
-    //     })
-    //     .then(() => {
-    //       ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-    //       setLoading(true);
-    //     })
-    //     .catch(error => {
-    //       console.log(error);
-    //     });
-    // } else {
-    //   let driverDetail = {
-    //     availableDriver: driverUid,
-    //     offeredFare: offerFare ?? bookingData.fare,
-    //   };
-
-    //   firestore()
-    //     .collection('booking')
-    //     .doc(`${Userid}booking${bookingData.bookingCount}`)
-    //     .update({driverDetail})
-    //     .then(() => {
-    //       ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
-    //       setLoading(true);
-    //     })
-    //     .catch(error => {
-    //       console.log(error);
-    //     });
-    // }
+          if (flag) {
+            ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
+          } else {
+            let driverDataArray = [...data.myDriversData, driverPersonalData];
+            firestore()
+              .collection('Request')
+              .doc(data.id)
+              .update({
+                myDriversData: driverDataArray,
+              })
+              .then(() => {
+                ToastAndroid.show(
+                  'Your request has been send',
+                  ToastAndroid.SHORT,
+                );
+                setLoading(true);
+              })
+              .catch(error => {
+                console.log(error);
+              });
+          }
+        } else if (
+          data &&
+          data.myDriversData &&
+          driverPersonalData.id !== data.myDriversData.id &&
+          !Array.isArray(data.myDriversData)
+        ) {
+          let myData = [data.myDriversData];
+          let driverDataArray = [...myData, driverPersonalData];
+          firestore()
+            .collection('Request')
+            .doc(data.id)
+            .update({
+              myDriversData: driverDataArray,
+            })
+            .then(() => {
+              ToastAndroid.show(
+                'Your request has been send',
+                ToastAndroid.SHORT,
+              );
+              setLoading(true);
+            });
+        } else if (
+          data &&
+          data.myDriversData &&
+          driverPersonalData.id == data.myDriversData.id &&
+          !Array.isArray(data.myDriversData)
+        ) {
+          ToastAndroid.show('You have already Requested', ToastAndroid.SHORT);
+        }
+      });
   };
 
   useEffect(() => {
-    let uid = auth().currentUser.uid;
-    setDriverUid(uid);
-  }, []);
+    if (driverPersonalData && Object.keys(driverPersonalData).length > 0) {
+      sendDriverRequestInFirebase();
+    }
+  }, [driverPersonalData]);
+
+  const closeModal = () => {
+    setAppearBiddingOption(false);
+  };
+
+  const confirmBidFare = selectedBid => {
+    console.log(selectedBid, 'selectedFare');
+
+    let myFare = '';
+
+    if (selectedBid.bidWithMinimumDeduction) {
+      myFare = (passengerData.bidFare * (103 / 100)).toFixed(2);
+      setAppearBiddingOption(false);
+    } else if (selectedBid.bidWithMidDeduction) {
+      myFare = (passengerData.bidFare * (106 / 100)).toFixed(2);
+      setAppearBiddingOption(false);
+    } else if (selectedBid.bidWithMaximumDeduction) {
+      myFare = (passengerData.bidFare * (110 / 100)).toFixed(2);
+      setAppearBiddingOption(false);
+    } else {
+      Alert.alert('Error Alert', 'Kindly selected Bid Fare');
+      return;
+    }
+
+    setDriverBidFare(myFare);
+  };
 
   const mapRef = useRef();
 
@@ -383,31 +469,56 @@ export default function DriverBiddingScreen({navigation, route}) {
                 selectionColor={Colors.black}
                 activeUnderlineColor={Colors.gray}
                 style={styles.textInputStyle}
+                editable={false}
                 keyboardType="numeric"
                 onChangeText={setOfferFare}
-                value = {  `${passengerData.bidFare? "Bid Fare:" : "Recomended Fare:"} ${passengerData.bidFare ?? passengerData.fare}$` }
+                value={`${
+                  passengerData.bidFare ? 'Customer Bid:' : 'Recomended Fare:'
+                } ${passengerData.bidFare ?? passengerData.fare}$`}
               />
-                {passengerData.bidFare && (
-                    <TouchableOpacity
-                      onPress={() => setAppearBiddingOption(true)}
-                      style={{
-                        marginTop: 10,
-                        marginHorizontal: 5,
-                        backgroundColor: 'skyblue',
-                        padding: 8,
-                        width: '30%',
-                        borderRadius: 10,
-                      }}>
-                      <Text
-                        style={{
-                          color: 'black',
-                          fontSize: 20,
-                          fontWeight: '700',
-                        }}>
-                        Bid Fare
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+              {driverBidFare && (
+                <TextInput
+                  placeholder="Your Bid"
+                  placeholderTextColor={Colors.gray}
+                  selectionColor={Colors.black}
+                  activeUnderlineColor={Colors.gray}
+                  style={styles.textInputStyle}
+                  keyboardType="numeric"
+                  editable={false}
+                  onChangeText={setDriverBidFare}
+                  value={`Your Bid ${driverBidFare}$`}
+                />
+              )}
+              {passengerData.bidFare && (
+                <TouchableOpacity
+                  onPress={() => setAppearBiddingOption(true)}
+                  style={{
+                    marginTop: 10,
+                    marginHorizontal: 5,
+                    backgroundColor: 'skyblue',
+                    padding: 8,
+                    width: '30%',
+                    borderRadius: 10,
+                  }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 20,
+                      fontWeight: '700',
+                    }}>
+                    Bid Fare
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {appearBiddingOption && (
+                <AppModal
+                  modalVisible={appearBiddingOption}
+                  close={closeModal}
+                  fare={passengerData.bidFare}
+                  confirm={confirmBidFare}
+                  state="driver"
+                />
+              )}
 
               {/* </ScrollView> */}
               <View style={styles.btnContainer}>

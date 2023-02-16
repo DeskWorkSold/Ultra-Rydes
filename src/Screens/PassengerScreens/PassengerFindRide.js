@@ -21,12 +21,11 @@ import GoogleMapKey from '../../Constants/GoogleMapKey';
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
 
-  
-
   const [driverData, setDriverData] = useState([]);
   const [availableDriverId, setAvailableDriverId] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [request, setRequest] = useState(false);
+  const [minutes, setMinutes] = useState([]);
 
   const [data, setData] = useState([
     {
@@ -75,29 +74,30 @@ export default function PassengerFindRide({navigation, route}) {
 
   useEffect(() => {
     if (passengerData.id && passengerData.bidFare) {
-      firestore()
-        .collection('booking')
-        .onSnapshot(querySnapshot => {
-          let bookingData = [];
-          querySnapshot.forEach(documentSnapshot => {
-            let data = documentSnapshot.data();
-            if (
-              data &&
-              data.bookingStatus !== 'done' &&
-              data.id == passengerData.id
-            ) {
-              bookingData.push(data);
-            }
+      setRequest(true)
+      // firestore()
+      //   .collection('booking')
+      //   .onSnapshot(querySnapshot => {
+      //     let bookingData = [];
+      //     querySnapshot.forEach(documentSnapshot => {
+      //       let data = documentSnapshot.data();
+      //       if (
+      //         data &&
+      //         data.bookingStatus !== 'done' &&
+      //         data.id == passengerData.id
+      //       ) {
+      //         bookingData.push(data);
+      //       }
 
-            if (
-              bookingData &&
-              bookingData.length > 0 &&
-              bookingData[0].driverDetail
-            ) {
-              setAvailableDriverId(bookingData[0].driverDetail);
-            }
-          });
-        });
+      //       if (
+      //         bookingData &&
+      //         bookingData.length > 0 &&
+      //         bookingData[0].driverDetail
+      //       ) {
+      //         setAvailableDriverId(bookingData[0].driverDetail);
+      //       }
+      //     });
+      //   });
     }
 
     if (passengerData && !passengerData.bidFare) {
@@ -148,6 +148,7 @@ export default function PassengerFindRide({navigation, route}) {
             );
             mileDistance = (dis / 1609.34).toFixed(2);
           }
+
           if (driverData.status == 'online' && mileDistance <= 3 && flag) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -201,47 +202,49 @@ export default function PassengerFindRide({navigation, route}) {
       });
   };
 
-  const getAvailableDriver = () => {
-    if (
-      availableDriverId &&
-      availableDriverId.length > 0 &&
-      Array.isArray(availableDriverId)
-    ) {
-      let myData = [];
+  
 
-      availableDriverId &&
-        availableDriverId.length > 0 &&
-        availableDriverId.map((e, i) => {
-          firestore()
-            .collection('Drivers')
-            .doc(e.availableDriver)
-            .onSnapshot(querySnapshot => {
-              let data = querySnapshot.data();
-              data.offerFare = e.offeredFare;
-              data.id = e.availableDriver;
-              myData.push(data);
-              setDriverData(myData);
-            });
-        });
-    } else if (availableDriverId && !Array.isArray(availableDriverId)) {
-      firestore()
-        .collection('Drivers')
-        .doc(availableDriverId.availableDriver)
-        .onSnapshot(querySnapshot => {
-          let data = querySnapshot.data();
-          data.offerFare = availableDriverId.offeredFare;
-          data.id = availableDriverId.availableDriver;
-          setDriverData([data]);
-        });
-    }
-  };
-  useEffect(() => {
-    if (Array.isArray(availableDriverId)) {
-      availableDriverId && availableDriverId.length > 0 && getAvailableDriver();
-    } else {
-      availableDriverId && getAvailableDriver();
-    }
-  }, [availableDriverId]);
+  // const getAvailableDriver = () => {
+  //   if (
+  //     availableDriverId &&
+  //     availableDriverId.length > 0 &&
+  //     Array.isArray(availableDriverId)
+  //   ) {
+  //     let myData = [];
+
+  //     availableDriverId &&
+  //       availableDriverId.length > 0 &&
+  //       availableDriverId.map((e, i) => {
+  //         firestore()
+  //           .collection('Drivers')
+  //           .doc(e.availableDriver)
+  //           .onSnapshot(querySnapshot => {
+  //             let data = querySnapshot.data();
+  //             data.offerFare = e.offeredFare;
+  //             data.id = e.availableDriver;
+  //             myData.push(data);
+  //             setDriverData(myData);
+  //           });
+  //       });
+  //   } else if (availableDriverId && !Array.isArray(availableDriverId)) {
+  //     firestore()
+  //       .collection('Drivers')
+  //       .doc(availableDriverId.availableDriver)
+  //       .onSnapshot(querySnapshot => {
+  //         let data = querySnapshot.data();
+  //         data.offerFare = availableDriverId.offeredFare;
+  //         data.id = availableDriverId.availableDriver;
+  //         setDriverData([data]);
+  //       });
+  //   }
+  // };
+  // useEffect(() => {
+  //   if (Array.isArray(availableDriverId)) {
+  //     availableDriverId && availableDriverId.length > 0 && getAvailableDriver();
+  //   } else {
+  //     availableDriverId && getAvailableDriver();
+  //   }
+  // }, [availableDriverId]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -259,47 +262,48 @@ export default function PassengerFindRide({navigation, route}) {
     });
   }, []);
 
-  console.log(passengerData, 'passenger');
+
 
   const AccecptOffer = acceptDriver => {
-    if (passengerData && passengerData.bidFare) {
-      firestore()
-        .collection('booking')
-        .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
-        .onSnapshot(querySnapshot => {
-          let data = querySnapshot.data();
-          console.log(data, 'datad');
+    // if (passengerData && passengerData.bidFare) {
+    //   firestore()
+    //     .collection('booking')
+    //     .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
+    //     .onSnapshot(querySnapshot => {
+    //       let data = querySnapshot.data();
+    //       console.log(data, 'datad');
 
-          let driverDetail = data.driverDetail;
+    //       let driverDetail = data.driverDetail;
 
-          console.log(driverDetail, 'driver');
+    //       console.log(driverDetail, 'driver');
 
-          if (driverDetail && !Array.isArray(driverDetail)) {
-            driverDetail.selected = true;
-            setSelectedDriver(driverDetail);
-          } else {
-            setSelectedDriver(
-              driverDetail &&
-                driverDetail.length > 0 &&
-                driverDetail.map((e, i) => {
-                  console.log(e, 'eee');
+    //       if (driverDetail && !Array.isArray(driverDetail)) {
+    //         driverDetail.selected = true;
+    //         setSelectedDriver(driverDetail);
+    //       } else {
+    //         setSelectedDriver(
+    //           driverDetail &&
+    //             driverDetail.length > 0 &&
+    //             driverDetail.map((e, i) => {
+    //               console.log(e, 'eee');
 
-                  if (e.availableDriver == acceptDriver.id) {
-                    return {
-                      ...e,
-                      selected: (e.selected = true),
-                    };
-                  } else {
-                    return {
-                      ...e,
-                      selected: (e.selected = false),
-                    };
-                  }
-                }),
-            );
-          }
-        });
-    } else if (passengerData && !passengerData.bidFare) {
+    //               if (e.availableDriver == acceptDriver.id) {
+    //                 return {
+    //                   ...e,
+    //                   selected: (e.selected = true),
+    //                 };
+    //               } else {
+    //                 return {
+    //                   ...e,
+    //                   selected: (e.selected = false),
+    //                 };
+    //               }
+    //             }),
+    //         );
+    //       }
+    //     });
+    // }
+      if (passengerData && !passengerData.bidFare) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
@@ -317,10 +321,6 @@ export default function PassengerFindRide({navigation, route}) {
     }
   };
 
-  console.log(request, 'request');
-
-  console.log(selectedDriver, 'selected');
-
   const checkRequestStatus = () => {
     console.log('hello world outside');
 
@@ -329,9 +329,9 @@ export default function PassengerFindRide({navigation, route}) {
       .doc(passengerData.id)
       .onSnapshot(querySnapshot => {
         let data = querySnapshot.data();
-
-        if (data && Object.keys(data.length>0)) {
+        if (data && Object.keys(data).length>0 && data.driverData && !data.bidFare) {
           if (data.requestStatus == 'accepted') {
+
             ToastAndroid.show(
               'Your request has been accepted',
               ToastAndroid.SHORT,
@@ -341,8 +341,9 @@ export default function PassengerFindRide({navigation, route}) {
                 passengerData: passengerData,
                 driverData: selectedDriver,
               });
+              setRequest(false)
             }, 1000);
-          } else if (data && data.requestStatus == 'rejected') {
+          } else if (data && data.requestStatus == 'rejected' && !data.bidFare) {
             console.log('elseif');
             setTimeout(() => {
               setDriverData(
@@ -362,6 +363,7 @@ export default function PassengerFindRide({navigation, route}) {
       });
   };
 
+
   // useEffect(() => {
 
   //   if (request) {
@@ -378,7 +380,6 @@ export default function PassengerFindRide({navigation, route}) {
   //   }
   // }, [request]);
 
-
   const rejectOffer = rejectedDriver => {
     if (rejectedDriver && !rejectedDriver.bidFare) {
       setDriverData(
@@ -389,47 +390,62 @@ export default function PassengerFindRide({navigation, route}) {
     }
   };
 
+  // const sendAcceptedDriverInFb = () => {
+  //   firestore()
+  //     .collection('booking')
+  //     .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
+  //     .update({
+  //       driverDetail: selectedDriver,
+  //       bookingStatus: 'done',
+  //       destination: 'start',
+  //     })
+  //     .then(() => {
+  //       navigation.navigate('PassengerHomeScreen', {
+  //         selectedDriver: selectedDriver,
+  //         passenger: passengerData,
+  //       });
+  //     })
+  //     .catch(error => {
+  //       console.log(error);
+  //     });
+  // };
 
-  const sendAcceptedDriverInFb = () => {
-    firestore()
-      .collection('booking')
-      .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
-      .update({
-        driverDetail: selectedDriver,
-        bookingStatus: 'done',
-        destination: 'start',
-      })
-      .then(() => {
-        navigation.navigate('PassengerHomeScreen', {
-          selectedDriver: selectedDriver,
-          passenger: passengerData,
-        });
-      })
-      .catch(error => {
-        console.log(error);
-      });
+  // useEffect(() => {
+  //   if (
+  //     selectedDriver &&
+  //     Array.isArray(selectedDriver) &&
+  //     selectedDriver.length > 0
+  //   ) {
+  //     sendAcceptedDriverInFb();
+  //   } else if (
+  //     selectedDriver &&
+  //     !Array.isArray(selectedDriver) &&
+  //     Object.keys(selectedDriver).length > 0
+  //   ) {
+  //     sendAcceptedDriverInFb();
+  //   }
+  // }, [selectedDriver]);
+
+  const calculateMinutes = (result, item) => {
+    let duration = Math.ceil(result.duration);
+    setMinutes([...minutes, duration]);
+    item.minutes = Math.ceil(result.duration);
+    console.log(item, 'items');
   };
 
-  useEffect(() => {
-    if (
-      selectedDriver &&
-      Array.isArray(selectedDriver) &&
-      selectedDriver.length > 0
-    ) {
-      sendAcceptedDriverInFb();
-    } else if (
-      selectedDriver &&
-      !Array.isArray(selectedDriver) &&
-      Object.keys(selectedDriver).length > 0
-    ) {
-      sendAcceptedDriverInFb();
-    }
-  }, [selectedDriver]);
+  console.log(minutes, 'minutes');
 
   const rideRequests = ({item}) => {
-    console.log(item, 'items');
     return (
       <View style={styles.card}>
+        <MapViewDirections
+          origin={item.currentLocation}
+          destination={passengerData.pickupCords}
+          apikey={GoogleMapKey.GOOGLE_MAP_KEY}
+          onReady={result => {
+            calculateMinutes(result, item);
+          }}
+        />
         <View style={styles.innerItemsUpper}>
           <View style={styles.imgContainer}>
             <Image
@@ -447,24 +463,18 @@ export default function PassengerFindRide({navigation, route}) {
             </View>
           </View>
           <View style={styles.priceContainer}>
-            <Text style={styles.priceText}>{item.offerFare ?? item.fare}$</Text>
-            
-        <Text style={{color:"black"}} >{item.minutes}</Text>
+            <View style={{alignItems: 'flex-end'}}>
+              <Text style={styles.priceText}>
+                {item.offerFare ?? item.fare}$
+              </Text>
+              <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                {item.minutes} minutes away
+              </Text>
+            </View>
           </View>
         </View>
-        {/* <MapViewDirections
-        origin={item.currentLocation}
-        destination={passengerData.pickupCords}
-        apikey={GoogleMapKey.GOOGLE_MAP_KEY}
-        strokeWidth={3}
-        strokeColor="hotpink"
-        onReady={result => {
-              console.log(result,"result")
 
-        }}
-        /> */}
         <View style={styles.btnContainer}>
-        
           <CustomButton
             text="Reject"
             styleContainer={styles.btn}
@@ -478,25 +488,27 @@ export default function PassengerFindRide({navigation, route}) {
             btnTextStyle={styles.btnTextStyle}
             onPress={() => AccecptOffer(item)}
           />
-        
         </View>
       </View>
     );
   };
 
+  
+
+console.log(driverData,"driver")
+
   return (
     <View>
       {Object.keys(driverData).length > 0 && !request ? (
         <View>
-        <FlatList
-          data={driverData}
-          renderItem={rideRequests}
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => `key-${item.cnic}`}
-        />
-        
+          <FlatList
+            data={driverData}
+            renderItem={rideRequests}
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={item => `key-${item.cnic}`}
+          />
         </View>
-      ) : (
+      ) : 
         <View
           style={{
             alignItems: 'center',
@@ -508,9 +520,8 @@ export default function PassengerFindRide({navigation, route}) {
             {' '}
             Finding Driver Please wait!{' '}
           </Text>
-
         </View>
-      )}
+      }
     </View>
   );
 }

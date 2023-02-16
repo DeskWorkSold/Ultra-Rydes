@@ -145,74 +145,72 @@ export default function DriverHomeScreen({navigation, route}) {
     );
   };
 
-  const getBookingData = async () => {
-    setLoading(true);
-
-    const booking = await firestore()
-      .collection('booking')
-      .onSnapshot(querySnapshot => {
-        // console.log('Total users: ', querySnapshot.size);
-
-        let bookingData = [];
-
-        querySnapshot.forEach(documentSnapshot => {
-          // console.log('User ID: ', documentSnapshot.id, documentSnapshot.data());
-          if (
-            documentSnapshot.data() &&
-            driverStatus === 'online' &&
-            driverData.currentLocation
-          ) {
-        
-            let flag =
-              driverData.vehicleDetails.vehicleCategory &&
-              documentSnapshot
-                .data()
-                .selectedCar.some(
-                  (e, i) =>
-                    e.carName == driverData.vehicleDetails.vehicleCategory,
-                );
+  const getRequestFromPassengers = () => {
+    let requestData = [];
+    if (driverData)
+      firestore()
+        .collection('Request')
+        .onSnapshot(querySnapshot => {
+          querySnapshot.forEach(documentSnapshot => {
+            let data = documentSnapshot.data();
 
             let dis = getPreciseDistance(
               {
-                latitude: documentSnapshot.data().pickupCords.latitude,
-                longitude: documentSnapshot.data().pickupCords.longitude,
+                latitude:
+                  data && data.passengerData
+                    ? data.passengerData.pickupCords.latitude
+                    : data && data.pickupCords.latitude,
+                longitude:
+                  data && data.passengerData
+                    ? data.passengerData.pickupCords.longitude
+                    : data.pickupCords.longitude,
               },
               {
-                latitude: driverData.currentLocation.latitude,
-                longitude: driverData.currentLocation.longitude,
+                latitude:
+                  data && data.driverData
+                    ? data.driverData.currentLocation.latitude
+                    : driverData && driverData.currentLocation.latitude,
+                longitude:
+                  data && data.driverData
+                    ? data.driverData.currentLocation.longitude
+                    : driverData && driverData.currentLocation.longitude,
               },
             );
-            if (
-              flag &&
-              driverStatus == 'online' &&
-              dis < 10000 &&
-              documentSnapshot.data().bookingStatus !== 'done'
-            ) {
-              bookingData.push(documentSnapshot.data());
-            }
-          }
-        });
 
-        setPassengerBookingData(bookingData);
-        setLoading(false);
-      });
+            mileDistance = (dis / 1609.34).toFixed(2);
+
+            if (
+              data &&
+              data.passengerData &&
+              driverData.cnic == data.driverData.cnic
+            ) {
+              console.log(data, 'data');
+
+              setPassengerBookingData([data]);
+            } else {
+              if (
+                data &&
+                data.bidFare &&
+                !data.requestStatus &&
+                mileDistance < 25
+              ) {
+                requestData.push(data);
+              }
+
+              requestData && setPassengerBookingData(requestData);
+            }
+          });
+        });
   };
 
-  const getRequestFromPassengers = () => {
-      let requestData = []
-    firestore().collection("Request").onSnapshot(querySnapshot=>{
-      querySnapshot.forEach(documentSnapshot=>{
-        let data = documentSnapshot.data()
-        if(data && data.driverData.cnic == driverData.cnic ){
-            requestData.push(data)
-        }
-      })
-      setPassengerBookingData(requestData)
-    })
 
-  }
-  
   console.log(passengerBookingData,"passenger")
+
+  useEffect(() => {
+    if (driverData && driverData.currentLocation) {
+      getRequestFromPassengers();
+    }
+  }, [driverData]);
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -228,14 +226,6 @@ export default function DriverHomeScreen({navigation, route}) {
   useEffect(() => {
     !driverData && driverStatus == 'online' && getDriverData();
   }, [driverStatus]);
-
-  useEffect(() => {
-    driverData &&
-      driverData.vehicleDetails &&
-      driverStatus == 'online' &&
-      // getBookingData();
-      getRequestFromPassengers()
-  }, [driverData]);
 
   const updateOnlineOnFirebase = () => {
     try {
@@ -255,9 +245,6 @@ export default function DriverHomeScreen({navigation, route}) {
         status: 'offline',
         currentLocation: null,
       });
-      // .then(() => {
-      //     console.log('status',s);
-      // });
     } catch (err) {
       console.log(err);
     }
@@ -292,31 +279,47 @@ export default function DriverHomeScreen({navigation, route}) {
     return (
       <TouchableOpacity
         style={styles.listItemContainer}
-        key={item.id}
+        key={item.passengerData ? item.passengerData.id : item.id}
         onPress={() => {
           navigation.navigate('DriverBiddingScreen', {
             data: item,
             passengerState: {
-              pickupCords: item.passengerData.pickupCords,
-              dropLocationCords: item.passengerData.dropLocationCords,
+              pickupCords: item.passengerData
+                ? item.passengerData.pickupCords
+                : item.pickupCords,
+              dropLocationCords: item.passengerData
+                ? item.passengerData.dropLocationCords
+                : item.dropLocationCords,
             },
           });
         }}>
         <Text style={styles.itemTextStyle}>
           Pickup Cords:
-          <Text style={styles.itemLocStyle}>{item.passengerData.pickupAddress}</Text>
+          <Text style={styles.itemLocStyle}>
+            {item.passengerData
+              ? item.passengerData.pickupAddress
+              : item.pickupAddress}
+          </Text>
         </Text>
         <Text style={styles.itemTextStyle}>
           Destination Cords:
-          <Text style={styles.itemLocStyle}>{item.passengerData.dropOffAddress}</Text>
+          <Text style={styles.itemLocStyle}>
+            {item.passengerData
+              ? item.passengerData.dropOffAddress
+              : item.dropOffAddress}
+          </Text>
         </Text>
         <Text style={styles.itemTextStyle}>
-          Fare:<Text style={styles.itemLocStyle}>{item.passengerData.fare}$</Text>
+          Fare:
+          <Text style={styles.itemLocStyle}>
+            {item.passengerData ? item.passengerData.fare : item.fare}$
+          </Text>
         </Text>
-        {/* <View style={{flexDirection:row}} >
-        <Text style={styles.itemTextStyle} >Edit Fare</Text>
-        <TextInput/>
-        </View> */}
+        {item.bidFare && (
+          <Text style={styles.itemTextStyle}>
+            Bid Fare:<Text style={styles.itemLocStyle}>{item.bidFare}$</Text>
+          </Text>
+        )}
       </TouchableOpacity>
     );
   };
@@ -326,7 +329,7 @@ export default function DriverHomeScreen({navigation, route}) {
         <View style={styles.activityIndicatorStyles}>
           <ActivityIndicator size="large" color={Colors.fontColor} />
         </View>
-      ) : (
+      ) :   (
         <View style={styles.container}>
           <View style={styles.headerContainer}>
             <CustomHeader
@@ -360,15 +363,18 @@ export default function DriverHomeScreen({navigation, route}) {
               ]}
             />
           </View>
-          {driverStatus == 'online' && passengerBookingData ? (
+          {driverStatus == 'online' && passengerBookingData && passengerBookingData.length>0 ? (
             <View style={styles.listContainer}>
+              
               <FlatList
                 data={passengerBookingData}
                 renderItem={rideList}
                 keyExtractor={item => item.id}
               />
             </View>
-          ) : (
+          ) : passengerBookingData && passengerBookingData.length == 0 && driverStatus == "online"? 
+          <View style={{height:"70%",alignItems:"center",justifyContent:"center"}} ><Text style={{color:"black",fontSize:24,fontWeight:"700",width:"95%",textAlign:"center"}} >No Request Wait for passenger Request</Text></View> 
+          : (
             <View style={styles.innerContainerOffline}>
               <Text style={styles.textStyleOffline}>
                 Press online to get Rides
