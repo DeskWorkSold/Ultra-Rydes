@@ -45,7 +45,6 @@ export default function DriverHomeScreen({navigation, route}) {
   //   },[])
 
   const [driverData, setDriverData] = useState('');
-
   const [state, setState] = useState({
     pickupCords: null,
     dropLocationCords: {},
@@ -147,13 +146,13 @@ export default function DriverHomeScreen({navigation, route}) {
 
   const getRequestFromPassengers = () => {
     let requestData = [];
-    if (driverData)
+    if (driverData && driverData.currentLocation)
       firestore()
         .collection('Request')
         .onSnapshot(querySnapshot => {
           querySnapshot.forEach(documentSnapshot => {
             let data = documentSnapshot.data();
-
+            console.log(data, 'data');
             let dis = getPreciseDistance(
               {
                 latitude:
@@ -179,38 +178,52 @@ export default function DriverHomeScreen({navigation, route}) {
 
             mileDistance = (dis / 1609.34).toFixed(2);
 
+            let flag = '';
+            if (
+              data &&
+              !data.passengerData &&
+              data.selectedCar &&
+              driverData &&
+              driverData.vehicleDetails
+            ) {
+              let selectedVehicle = data.selectedCar.map((e, i) => e.carName);
+
+              flag =
+                selectedVehicle == driverData.vehicleDetails.vehicleCategory;
+            }
+
             if (
               data &&
               data.passengerData &&
               driverData.cnic == data.driverData.cnic
             ) {
-              console.log(data, 'data');
-
-              setPassengerBookingData([data]);
+              requestData.push(data);
             } else {
               if (
                 data &&
                 data.bidFare &&
                 !data.requestStatus &&
-                mileDistance < 25
+                mileDistance < 25 &&
+                flag
               ) {
                 requestData.push(data);
               }
-
-              requestData && setPassengerBookingData(requestData);
+              
+              requestData &&
+                requestData.length > 0 &&
+                setPassengerBookingData(requestData);
             }
           });
         });
   };
 
 
-  console.log(passengerBookingData,"passenger")
-
   useEffect(() => {
     if (driverData && driverData.currentLocation) {
       getRequestFromPassengers();
     }
   }, [driverData]);
+
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -329,7 +342,7 @@ export default function DriverHomeScreen({navigation, route}) {
         <View style={styles.activityIndicatorStyles}>
           <ActivityIndicator size="large" color={Colors.fontColor} />
         </View>
-      ) :   (
+      ) : (
         <View style={styles.container}>
           <View style={styles.headerContainer}>
             <CustomHeader
@@ -363,18 +376,37 @@ export default function DriverHomeScreen({navigation, route}) {
               ]}
             />
           </View>
-          {driverStatus == 'online' && passengerBookingData && passengerBookingData.length>0 ? (
+          {driverStatus == 'online' &&
+          passengerBookingData &&
+          passengerBookingData.length > 0 ? (
             <View style={styles.listContainer}>
-              
               <FlatList
                 data={passengerBookingData}
                 renderItem={rideList}
                 keyExtractor={item => item.id}
               />
             </View>
-          ) : passengerBookingData && passengerBookingData.length == 0 && driverStatus == "online"? 
-          <View style={{height:"70%",alignItems:"center",justifyContent:"center"}} ><Text style={{color:"black",fontSize:24,fontWeight:"700",width:"95%",textAlign:"center"}} >No Request Wait for passenger Request</Text></View> 
-          : (
+          ) : passengerBookingData &&
+            passengerBookingData.length == 0 &&
+            driverStatus == 'online' ? (
+            <View
+              style={{
+                height: '70%',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <Text
+                style={{
+                  color: 'black',
+                  fontSize: 24,
+                  fontWeight: '700',
+                  width: '95%',
+                  textAlign: 'center',
+                }}>
+                No Request Wait for passenger Request
+              </Text>
+            </View>
+          ) : (
             <View style={styles.innerContainerOffline}>
               <Text style={styles.textStyleOffline}>
                 Press online to get Rides

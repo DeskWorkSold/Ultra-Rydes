@@ -22,7 +22,7 @@ export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
 
   const [driverData, setDriverData] = useState([]);
-  const [availableDriverId, setAvailableDriverId] = useState([]);
+  const [availableDriver, setAvailableDriver] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [request, setRequest] = useState(false);
   const [minutes, setMinutes] = useState([]);
@@ -72,9 +72,37 @@ export default function PassengerFindRide({navigation, route}) {
     },
   ]);
 
+  const checkAvailableDriverStatus = () => {
+    if (passengerData && passengerData.bidFare) {
+      firestore()
+        .collection('Request')
+        .doc(passengerData.id)
+        .onSnapshot(querySnapshot => {
+          let data = querySnapshot.data();
+
+          if (
+            data &&
+            data.bidFare &&
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData)
+          ) {
+            console.log(data, 'data');
+            setDriverData([data.myDriversData]);
+          } else if (
+            data &&
+            data.myDriversData &&
+            Array.isArray(data.myDriversData)
+          ) {
+            setDriverData(data.myDriversData);
+          }
+        });
+    }
+  };
+
   useEffect(() => {
     if (passengerData.id && passengerData.bidFare) {
-      setRequest(true)
+      setRequest(true);
+
       // firestore()
       //   .collection('booking')
       //   .onSnapshot(querySnapshot => {
@@ -104,9 +132,59 @@ export default function PassengerFindRide({navigation, route}) {
       getDriverData();
     }
 
-    if (request) {
-      checkRequestStatus();
+    checkAvailableDriverStatus();
+  }, []);
+  const checkRequestStatus = () => {
+    if (request && !passengerData.bidFare) {
+      firestore()
+        .collection('Request')
+        .doc(passengerData.id)
+        .onSnapshot(querySnapshot => {
+          let data = querySnapshot.data();
+          if (
+            data &&
+            Object.keys(data).length > 0 &&
+            data.driverData &&
+            !data.bidFare
+          ) {
+            if (data.requestStatus == 'accepted') {
+              ToastAndroid.show(
+                'Your request has been accepted',
+                ToastAndroid.SHORT,
+              );
+              setTimeout(() => {
+                navigation.navigate('PassengerHomeScreen', {
+                  passengerData: passengerData,
+                  driverData: selectedDriver,
+                });
+                setRequest(false);
+              }, 1000);
+            } else if (
+              data &&
+              data.requestStatus == 'rejected' &&
+              !data.bidFare
+            ) {
+              setTimeout(() => {
+                setDriverData(
+                  driverData.filter((e, i) => {
+                    return e.cnic !== selectedDriver.cnic;
+                  }),
+                );
+                setRequest(false);
+                Alert.alert(
+                  'MESSAGE',
+                  'Your request has been rejected by driver',
+                );
+              }, 1000);
+              setSelectedDriver([]);
+            }
+          }
+        });
     }
+  };
+
+  useEffect(() => {
+    checkRequestStatus();
   }, []);
 
   const getDriverData = async () => {
@@ -202,49 +280,6 @@ export default function PassengerFindRide({navigation, route}) {
       });
   };
 
-  
-
-  // const getAvailableDriver = () => {
-  //   if (
-  //     availableDriverId &&
-  //     availableDriverId.length > 0 &&
-  //     Array.isArray(availableDriverId)
-  //   ) {
-  //     let myData = [];
-
-  //     availableDriverId &&
-  //       availableDriverId.length > 0 &&
-  //       availableDriverId.map((e, i) => {
-  //         firestore()
-  //           .collection('Drivers')
-  //           .doc(e.availableDriver)
-  //           .onSnapshot(querySnapshot => {
-  //             let data = querySnapshot.data();
-  //             data.offerFare = e.offeredFare;
-  //             data.id = e.availableDriver;
-  //             myData.push(data);
-  //             setDriverData(myData);
-  //           });
-  //       });
-  //   } else if (availableDriverId && !Array.isArray(availableDriverId)) {
-  //     firestore()
-  //       .collection('Drivers')
-  //       .doc(availableDriverId.availableDriver)
-  //       .onSnapshot(querySnapshot => {
-  //         let data = querySnapshot.data();
-  //         data.offerFare = availableDriverId.offeredFare;
-  //         data.id = availableDriverId.availableDriver;
-  //         setDriverData([data]);
-  //       });
-  //   }
-  // };
-  // useEffect(() => {
-  //   if (Array.isArray(availableDriverId)) {
-  //     availableDriverId && availableDriverId.length > 0 && getAvailableDriver();
-  //   } else {
-  //     availableDriverId && getAvailableDriver();
-  //   }
-  // }, [availableDriverId]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -262,48 +297,75 @@ export default function PassengerFindRide({navigation, route}) {
     });
   }, []);
 
-
-
   const AccecptOffer = acceptDriver => {
-    // if (passengerData && passengerData.bidFare) {
-    //   firestore()
-    //     .collection('booking')
-    //     .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
-    //     .onSnapshot(querySnapshot => {
-    //       let data = querySnapshot.data();
-    //       console.log(data, 'datad');
+    if (passengerData && passengerData.bidFare && acceptDriver.bidFare) {
+      
+      if (driverData && !Array.isArray(driverData) && Object.keys(driverData).length>0 ) {
+        console.log("HELLO1")
+        acceptDriver.selected = true;
+        acceptDriver.requestStatus = "accepted"
 
-    //       let driverDetail = data.driverDetail;
+        firestore()
+          .collection('Request')
+          .doc(passengerData.id)
+          .update({
+            myDriversData: acceptDriver,
+            requestStatus: 'accepted',
+          })
+          .then(() => {
+            navigation
+              .navigate('PassengerHomeScreen', {
+                passengerData: passengerData,
+                driverData: acceptDriver,
+              })
+              .catch(error => {
+                console.log(error, 'error');
+              });
+          });
+      } else {
+        console.log("HELLO2")
+        mySelectedDriver =
+          driverData &&
+          driverData.map((e, i) => {
+            if (e.id == acceptDriver.id) {
+              return {
+                ...e,
+                selected: (e.selected = true),
+                requestStatus: 'accepted',
+              };
+            } else {
+              return {
+                ...e,
+                selected: (e.selected = false),
+                requestStatus: 'rejected',
+              };
+            }
+          });
 
-    //       console.log(driverDetail, 'driver');
+        let selectedDriverData = mySelectedDriver.filter((e, i) => e.selected);
 
-    //       if (driverDetail && !Array.isArray(driverDetail)) {
-    //         driverDetail.selected = true;
-    //         setSelectedDriver(driverDetail);
-    //       } else {
-    //         setSelectedDriver(
-    //           driverDetail &&
-    //             driverDetail.length > 0 &&
-    //             driverDetail.map((e, i) => {
-    //               console.log(e, 'eee');
+        firestore()
+          .collection('Request')
+          .doc(passengerData.id)
+          .update({
+            
+            myDriversData: mySelectedDriver,
+            requestStatus: 'accepted',
+          })
+          .then(() => {
+            navigation
+              .navigate('PassengerHomeScreen', {
+                passengerData: passengerData,
+                driverData: selectedDriverData,
+              })
+              .catch(() => {
+                console.log(error, 'error');
+              });
+          });
+      }
+    }
 
-    //               if (e.availableDriver == acceptDriver.id) {
-    //                 return {
-    //                   ...e,
-    //                   selected: (e.selected = true),
-    //                 };
-    //               } else {
-    //                 return {
-    //                   ...e,
-    //                   selected: (e.selected = false),
-    //                 };
-    //               }
-    //             }),
-    //         );
-    //       }
-    //     });
-    // }
-      if (passengerData && !passengerData.bidFare) {
+    if (passengerData && !passengerData.bidFare) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
@@ -320,49 +382,6 @@ export default function PassengerFindRide({navigation, route}) {
         });
     }
   };
-
-  const checkRequestStatus = () => {
-    console.log('hello world outside');
-
-    firestore()
-      .collection('Request')
-      .doc(passengerData.id)
-      .onSnapshot(querySnapshot => {
-        let data = querySnapshot.data();
-        if (data && Object.keys(data).length>0 && data.driverData && !data.bidFare) {
-          if (data.requestStatus == 'accepted') {
-
-            ToastAndroid.show(
-              'Your request has been accepted',
-              ToastAndroid.SHORT,
-            );
-            setTimeout(() => {
-              navigation.navigate('PassengerHomeScreen', {
-                passengerData: passengerData,
-                driverData: selectedDriver,
-              });
-              setRequest(false)
-            }, 1000);
-          } else if (data && data.requestStatus == 'rejected' && !data.bidFare) {
-            console.log('elseif');
-            setTimeout(() => {
-              setDriverData(
-                driverData.filter((e, i) => {
-                  return e.cnic !== selectedDriver.cnic;
-                }),
-              );
-              setRequest(false);
-              Alert.alert(
-                'MESSAGE',
-                'Your request has been rejected by driver',
-              );
-            }, 1000);
-            setSelectedDriver([]);
-          }
-        }
-      });
-  };
-
 
   // useEffect(() => {
 
@@ -381,12 +400,78 @@ export default function PassengerFindRide({navigation, route}) {
   // }, [request]);
 
   const rejectOffer = rejectedDriver => {
-    if (rejectedDriver && !rejectedDriver.bidFare) {
+    if (rejectedDriver && !passengerData.bidFare) {
       setDriverData(
         driverData.filter((e, i) => {
           return e.cnic !== rejectedDriver.cnic;
         }),
       );
+    } else if (rejectedDriver && passengerData.bidFare) {
+      firestore()
+        .collection('Request')
+        .doc(passengerData.id)
+        .onSnapshot(querySnapshot => {
+          let data = querySnapshot.data();
+
+          if (
+            data &&
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData)
+          ) {
+            data.myDriversData.selected = false;
+            data.myDriversData.requestStatus = 'rejected';
+
+            firestore()
+              .collection('Request')
+              .doc(passengerData.id)
+              .update({
+                myDriversData: data.myDriversData,
+              })
+              .then(() => {
+                setDriverData(
+                  driverData.filter((e, i) => {
+                    return e.cnic !== rejectedDriver.cnic;
+                  }),
+                );
+              })
+              .catch(error => {
+                console.log(error);
+              });
+          } else if (
+            data &&
+            data.myDriversData &&
+            Array.isArray(data.myDriversData)
+          ) {
+            myDriverData = data.myDriversData.map((e, i) => {
+              if (e.id == rejectedDriver.id) {
+                return {
+                  ...e,
+                  selected: false,
+                  requestStatus: e.requestStatus = 'rejected',
+                };
+              } else {
+                return e;
+              }
+            });
+
+            firestore()
+              .collection('Request')
+              .doc(passengerData.id)
+              .update({
+                myDriversData: myDriverData,
+              })
+              .then(() => {
+                setDriverData(
+                  driverData.filter((e, i) => {
+                    return e.id !== rejectedDriver.id;
+                  }),
+                );
+              })
+              .catch(error => {
+                console.log(error);
+              });
+          }
+        });
     }
   };
 
@@ -430,12 +515,18 @@ export default function PassengerFindRide({navigation, route}) {
     let duration = Math.ceil(result.duration);
     setMinutes([...minutes, duration]);
     item.minutes = Math.ceil(result.duration);
-    console.log(item, 'items');
   };
 
-  console.log(minutes, 'minutes');
+  const rideRequests = ({item, index}) => {
+    let distanceMinutes =
+      minutes &&
+      minutes.length > 0 &&
+      minutes.map((e, i) => {
+        if (index == i) {
+          return e;
+        }
+      });
 
-  const rideRequests = ({item}) => {
     return (
       <View style={styles.card}>
         <MapViewDirections
@@ -464,11 +555,9 @@ export default function PassengerFindRide({navigation, route}) {
           </View>
           <View style={styles.priceContainer}>
             <View style={{alignItems: 'flex-end'}}>
-              <Text style={styles.priceText}>
-                {item.offerFare ?? item.fare}$
-              </Text>
+              <Text style={styles.priceText}>{item.bidFare ?? item.fare}$</Text>
               <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
-                {item.minutes} minutes away
+                {item.minutes ?? distanceMinutes} minutes away
               </Text>
             </View>
           </View>
@@ -493,13 +582,12 @@ export default function PassengerFindRide({navigation, route}) {
     );
   };
 
-  
-
-console.log(driverData,"driver")
+  console.log(driverData);
 
   return (
     <View>
-      {Object.keys(driverData).length > 0 && !request ? (
+      {(driverData && driverData.length > 0 && passengerData.bidFare) ||
+      !request ? (
         <View>
           <FlatList
             data={driverData}
@@ -508,7 +596,7 @@ console.log(driverData,"driver")
             keyExtractor={item => `key-${item.cnic}`}
           />
         </View>
-      ) : 
+      ) : (
         <View
           style={{
             alignItems: 'center',
@@ -521,7 +609,7 @@ console.log(driverData,"driver")
             Finding Driver Please wait!{' '}
           </Text>
         </View>
-      }
+      )}
     </View>
   );
 }

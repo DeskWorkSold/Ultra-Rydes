@@ -298,13 +298,8 @@ export default function PassengerHomeScreen({navigation, route}) {
           setTimeout(()=>{
             navigation.navigate('PassengerFindRide', data);
           },1000)
-
       })
-
     }
-
-
-    
     // else {
     //   firestore()
     //     .collection('booking')
@@ -327,9 +322,6 @@ export default function PassengerHomeScreen({navigation, route}) {
     //     });
     // }
   };
-
-console.log(routeData,"data")
-
 
   // const sendBookingDataInFb = () => {
   //   let myFlag =
@@ -616,9 +608,7 @@ console.log(routeData,"data")
                 onlineDriversLocation &&
                   onlineDriversLocation.length > 0 &&
                   onlineDriversLocation.map((b, i) => {
-                    
-                    
-
+                  
                     if (b && b.currentLocation) {
                       const x = geolib.isPointWithinRadius(
                         {

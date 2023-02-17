@@ -77,15 +77,107 @@ export default function DriverBiddingScreen({navigation, route}) {
     // getBookingData();
     getDriverUid();
 
+    // checkRequestStatus();
+
     // if (
     //   bookingData &&
     //   Object.keys(bookingData).length > 0 &&
     //   bookingData.driverDetail &&
     //   bookingData.bookingStatus == 'done'
     // ) {
-    //   checkRequestStatus();
+    checkRequestStatus();
     // }
   }, []);
+
+console.log(driverUid,"driverUiD")
+
+  const checkRequestStatus =  () => {
+    if (passengerData && passengerData.bidFare) {
+      console.log("helloooooo")
+      firestore()
+        .collection('Request')
+        .doc(passengerData.id)
+        .onSnapshot(querySnapshot => {
+          let data = querySnapshot.data();
+            
+
+          if(data && data.myDriversData && !Array.isArray(data.myDriversData) && data.myDriversData.requestStatus == "rejected"){
+            setLoading(false)
+            ToastAndroid.show("Your Request has been rejected",ToastAndroid.SHORT)
+            navigation.navigate('DriverHomeScreen');
+            return
+          }
+          if(data && data.myDriversData && Array.isArray(data.myDriversData)){
+            console.log(data.myDriversData,"data")
+            let flag = data.myDriversData.some((e,i)=> e.id == driverUid && e.requestStatus == "rejected")
+            console.log(flag,"flag")
+            if(flag){
+              setLoading(false)
+            ToastAndroid.show("Your Request has been rejected",ToastAndroid.SHORT)
+            navigation.navigate('DriverHomeScreen');
+          }
+          return
+          }
+
+          if (
+            data &&
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData)  && data.requestStatus
+            
+          ) {
+
+            console.log(driverUid,"uid")
+
+            if (
+              data.myDriversData.id == driverUid &&
+              data.myDriversData.selected
+            ) {
+              ToastAndroid.show(
+                'Your request has been accepted',
+                ToastAndroid.SHORT,
+              );
+              setLoading(false);
+            } else if (data.myDriversData.id == driverUid && !data.myDriversData.selected) {
+              ToastAndroid.show(
+                'Your request has been rejected',
+                ToastAndroid.SHORT,
+              );
+              setLoading(false);
+              navigation.navigate('DriverHomeScreen');
+            }
+          }
+          if (
+            data &&
+            data.myDriversData &&
+            Array.isArray(data.myDriversData) 
+          ) {
+
+            console.log(driverUid,"UUUIIIIDDD")
+
+            let flag = data.myDriversData.some(
+              (e, i) => e.selected && e.id == driverUid,
+            );
+
+            let flag1 = data.myDriversData.some((e,i)=>e.requestStatus)
+
+            if (flag,flag1) {
+              ToastAndroid.show(
+                'Your request has been accepted',
+                ToastAndroid.SHORT,
+              );
+              setLoading(false);
+            } else if (flag1){
+              ToastAndroid.show(
+                'Your request has been rejected',
+                ToastAndroid.SHORT,
+              );
+              setLoading(false);
+              navigation.navigate('DriverHomeScreen');
+            }
+          }
+        });
+    }
+  };
 
   const getDriverUid = () => {
     let uid = auth().currentUser.uid;
@@ -114,85 +206,6 @@ export default function DriverBiddingScreen({navigation, route}) {
       .catch(error => console.warn(error));
   };
 
-  // const getBookingData = () => {
-  //   const Userid = route.params.data.id;
-
-  //   let MybookingData = [];
-
-  //   firestore()
-  //     .collection('booking')
-  //     .onSnapshot(querySnapshot => {
-  //       querySnapshot.forEach(documentSnapshot => {
-  //         let data = documentSnapshot.data();
-
-  //         if (data.id == Userid && data.bookingStatus !== 'done') {
-  //           MybookingData.push(data);
-  //         } else if (
-  //           data.id == Userid &&
-  //           data.bookingStatus == 'done' &&
-  //           data.destination == 'start'
-  //         )
-  //           MybookingData.push(data);
-  //       });
-
-  //       MybookingData &&
-  //         MybookingData.length > 0 &&
-  //         setBookingData(MybookingData[0]);
-  //     });
-  // };
-
-  // const checkRequestStatus = () => {
-
-  //   if (
-  //     bookingData &&
-  //     bookingData.driverDetail &&
-  //     !Array.isArray(bookingData.driverDetail)
-  //   ) {
-  //     if (
-  //       bookingData.driverDetail.availableDriver === driverUid &&
-  //       bookingData.driverDetail.selected
-  //     ) {
-  //       setLoading(false);
-  //       ToastAndroid.show('Your request has been accepted', ToastAndroid.SHORT);
-  //     } else {
-  //       setLoading(false);
-  //       ToastAndroid.show('Your request has been rejected', ToastAndroid.SHORT);
-  //       navigation.navigate('driverHomeScreen');
-  //     }
-  //   }
-  //   if (
-  //     bookingData &&
-  //     bookingData.driverDetail &&
-  //     Array.isArray(bookingData.driverDetail)
-  //   ) {
-  //     bookingData &&
-  //       bookingData.driverDetail.length > 0 &&
-  //       bookingData.driverDetail.map((e, i) => {
-  //         if (e.availableDriver == driverUid && e.selected) {
-  //           setLoading(false);
-  //           ToastAndroid.show(
-  //             'Your request has been accepted',
-  //             ToastAndroid.SHORT,
-  //           );
-
-  //           return;
-  //         }
-  //         if (e.availableDriver == driverUid && !e.selected) {
-  //           setLoading(false);
-  //           ToastAndroid.show(
-  //             'Your request has been rejected',
-  //             ToastAndroid.SHORT,
-  //           );
-  //           setTimeout(() => {
-  //             navigation.navigate('DriverHomeScreen');
-  //           }, 1000);
-  //         }
-  //       });
-  //   }
-  // };
-
-  console.log(passengerData, 'paasenger');
-
   const sendRequest = async () => {
     const Userid = route.params.data.id;
     if (
@@ -216,7 +229,6 @@ export default function DriverBiddingScreen({navigation, route}) {
         .catch(error => {
           console.log(error);
         });
-      return;
     } else if (
       passengerData &&
       !passengerData.bidFare &&
@@ -254,7 +266,6 @@ export default function DriverBiddingScreen({navigation, route}) {
       );
     }
   };
-
   const sendDriverRequestInFirebase = () => {
     console.log('heeelooo');
 
