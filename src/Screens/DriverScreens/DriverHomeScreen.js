@@ -116,13 +116,11 @@ export default function DriverHomeScreen({navigation, route}) {
   const getLocationUpdates = async () => {
     const hasLocationPermission = await locationPermission();
 
-    console.log(hasLocationPermission, 'location');
-
     if (!hasLocationPermission) return;
     watchId = Geolocation.watchPosition(
       position => {
         const {latitude, longitude} = position.coords;
-        console.log('My Function', latitude, longitude);
+
         setState({
           ...state,
           pickupCords: {
@@ -146,13 +144,18 @@ export default function DriverHomeScreen({navigation, route}) {
 
   const getRequestFromPassengers = () => {
     let requestData = [];
-    if (driverData && driverData.currentLocation)
+
+    if (driverData && driverData.status == 'offline') {
+      setLoading(true);
+    }
+
+    if (driverStatus == 'online' && driverData.currentLocation)
       firestore()
         .collection('Request')
         .onSnapshot(querySnapshot => {
           querySnapshot.forEach(documentSnapshot => {
             let data = documentSnapshot.data();
-            console.log(data, 'data');
+
             let dis = getPreciseDistance(
               {
                 latitude:
@@ -177,53 +180,80 @@ export default function DriverHomeScreen({navigation, route}) {
             );
 
             mileDistance = (dis / 1609.34).toFixed(2);
+            if (data && !data.requestStatus) {
+              let matchUid = false;
+              let uid = auth().currentUser.uid;
 
-            let flag = '';
-            if (
-              data &&
-              !data.passengerData &&
-              data.selectedCar &&
-              driverData &&
-              driverData.vehicleDetails
-            ) {
-              let selectedVehicle = data.selectedCar.map((e, i) => e.carName);
-
-              flag =
-                selectedVehicle == driverData.vehicleDetails.vehicleCategory;
-            }
-
-            if (
-              data &&
-              data.passengerData &&
-              driverData.cnic == data.driverData.cnic
-            ) {
-              requestData.push(data);
-            } else {
               if (
                 data &&
-                data.bidFare &&
-                !data.requestStatus &&
-                mileDistance < 25 &&
-                flag
+                data.myDriversData &&
+                !Array.isArray(data.myDriversData)
+              ) {
+                matchUid =
+                  data.myDriversData.id == uid &&
+                  data.myDriversData.requestStatus;
+              } else if (
+                data &&
+                data.myDriversData &&
+                Array.isArray(data.myDriversData)
+              ) {
+                matchUid = data.myDriversData.some(
+                  (e, i) => e.id == uid && e.requestStatus,
+                );
+              }
+
+              let flag = '';
+              if (
+                data &&
+                !data.passengerData &&
+                data.selectedCar &&
+                driverData &&
+                driverData.vehicleDetails
+              ) {
+                let selectedVehicle = data.selectedCar.map((e, i) => e.carName);
+
+                flag =
+                  selectedVehicle == driverData.vehicleDetails.vehicleCategory;
+              }
+
+              if (
+                data &&
+                data.passengerData &&
+                driverData.cnic == data.driverData.cnic &&
+                !data.requestStatus
               ) {
                 requestData.push(data);
+              } else {
+                if (
+                  data &&
+                  data.bidFare &&
+                  !data.requestStatus &&
+                  mileDistance < 25 &&
+                  flag &&
+                  !matchUid
+                ) {
+                  requestData.push(data);
+                }
+
+                requestData &&
+                  requestData.length > 0 &&
+                  setPassengerBookingData(requestData);
               }
-              
-              requestData &&
-                requestData.length > 0 &&
-                setPassengerBookingData(requestData);
             }
           });
         });
+    setLoading(false);
   };
 
+  useEffect(() => {
+    getRequestFromPassengers();
+  }, [driverStatus, driverData]);
 
   useEffect(() => {
-    if (driverData && driverData.currentLocation) {
+    if (driverStatus == 'online') {
       getRequestFromPassengers();
     }
-  }, [driverData]);
-
+  }, []);
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -237,7 +267,7 @@ export default function DriverHomeScreen({navigation, route}) {
   };
 
   useEffect(() => {
-    !driverData && driverStatus == 'online' && getDriverData();
+    getDriverData();
   }, [driverStatus]);
 
   const updateOnlineOnFirebase = () => {
@@ -287,8 +317,6 @@ export default function DriverHomeScreen({navigation, route}) {
   }, [driverStatus, state]);
 
   const rideList = ({item, index}) => {
-    console.log(item, 'items');
-
     return (
       <TouchableOpacity
         style={styles.listItemContainer}
@@ -336,6 +364,7 @@ export default function DriverHomeScreen({navigation, route}) {
       </TouchableOpacity>
     );
   };
+
   return (
     <>
       {loading ? (

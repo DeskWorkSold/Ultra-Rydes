@@ -27,50 +27,50 @@ export default function PassengerFindRide({navigation, route}) {
   const [request, setRequest] = useState(false);
   const [minutes, setMinutes] = useState([]);
 
-  const [data, setData] = useState([
-    {
-      id: '1',
-      src: require('../../Assets/Images/dummyPic.png'),
-      vehicleName: 'Civic',
-      price: 900,
-      driverName: 'Sameed',
-    },
-    {
-      id: '2',
-      src: require('../../Assets/Images/dummyPic.png'),
-      vehicleName: 'Honda City',
-      price: 800,
-      driverName: 'Aziz',
-    },
-    {
-      id: '3',
-      src: require('../../Assets/Images/dummyPic.png'),
-      vehicleName: 'Corolla',
-      price: 700,
-      driverName: 'Ali',
-    },
-    {
-      id: '4',
-      src: require('../../Assets/Images/dummyPic.png'),
-      vehicleName: 'City',
-      price: 600,
-      driverName: 'Rayan',
-    },
-    {
-      id: '5',
-      src: require('../../Assets/Images/dummyPic.png'),
-      vehicleName: 'Liana',
-      price: 750,
-      driverName: 'Hassan',
-    },
-    {
-      id: '6',
-      src: require('../../Assets/Images/dummyPic.png'),
-      vehicleName: 'Changan',
-      price: 850,
-      driverName: 'Hamza',
-    },
-  ]);
+  // const [data, setData] = useState([
+  //   {
+  //     id: '1',
+  //     src: require('../../Assets/Images/dummyPic.png'),
+  //     vehicleName: 'Civic',
+  //     price: 900,
+  //     driverName: 'Sameed',
+  //   },
+  //   {
+  //     id: '2',
+  //     src: require('../../Assets/Images/dummyPic.png'),
+  //     vehicleName: 'Honda City',
+  //     price: 800,
+  //     driverName: 'Aziz',
+  //   },
+  //   {
+  //     id: '3',
+  //     src: require('../../Assets/Images/dummyPic.png'),
+  //     vehicleName: 'Corolla',
+  //     price: 700,
+  //     driverName: 'Ali',
+  //   },
+  //   {
+  //     id: '4',
+  //     src: require('../../Assets/Images/dummyPic.png'),
+  //     vehicleName: 'City',
+  //     price: 600,
+  //     driverName: 'Rayan',
+  //   },
+  //   {
+  //     id: '5',
+  //     src: require('../../Assets/Images/dummyPic.png'),
+  //     vehicleName: 'Liana',
+  //     price: 750,
+  //     driverName: 'Hassan',
+  //   },
+  //   {
+  //     id: '6',
+  //     src: require('../../Assets/Images/dummyPic.png'),
+  //     vehicleName: 'Changan',
+  //     price: 850,
+  //     driverName: 'Hamza',
+  //   },
+  // ]);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -86,7 +86,7 @@ export default function PassengerFindRide({navigation, route}) {
             data.myDriversData &&
             !Array.isArray(data.myDriversData)
           ) {
-            console.log(data, 'data');
+            
             setDriverData([data.myDriversData]);
           } else if (
             data &&
@@ -128,12 +128,24 @@ export default function PassengerFindRide({navigation, route}) {
       //   });
     }
 
-    if (passengerData && !passengerData.bidFare) {
-      getDriverData();
-    }
+    
 
     checkAvailableDriverStatus();
   }, []);
+
+
+
+  useEffect(()=>{
+
+    if (passengerData && !passengerData.bidFare) {
+      getDriverData();
+    }else{
+      setDriverData([])
+    }
+
+  },[passengerData,passengerData.minutes,passengerData.selectedCar.carName])
+
+
   const checkRequestStatus = () => {
     if (request && !passengerData.bidFare) {
       firestore()

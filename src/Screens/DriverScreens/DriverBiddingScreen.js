@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   TextInput,
+  Alert,
 } from 'react-native';
 import MapView, {Marker} from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -22,6 +23,8 @@ import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
 import auth from '@react-native-firebase/auth';
 import AppModal from '../../Components/modal';
+import {BackHandler} from 'react-native';
+import Icon from "react-native-vector-icons/FontAwesome"
 import {
   locationPermission,
   getCurrentLocation,
@@ -30,6 +33,11 @@ import Geocoder from 'react-native-geocoding';
 import firestore from '@react-native-firebase/firestore';
 import {ToastAndroid} from 'react-native';
 import {ActivityIndicator} from 'react-native-paper';
+import { getPreciseDistance } from 'geolib';
+import { Modal } from 'react-native';
+
+import {USES_DEFAULT_IMPLEMENTATION} from 'react-native-maps/lib/decorateMapComponent';
+import {useCallback} from 'react';
 // import { TextInput } from 'react-native-paper';
 
 export default function DriverBiddingScreen({navigation, route}) {
@@ -37,6 +45,11 @@ export default function DriverBiddingScreen({navigation, route}) {
   let driverData = '';
 
   const {passengerState} = route.params;
+
+  console.log(pickupCords)
+  console.log(dropLocationCords)
+
+  let myData = route.params;
 
   if (
     route.params &&
@@ -54,11 +67,9 @@ export default function DriverBiddingScreen({navigation, route}) {
   const [pickUpLocation, setpickUpLocation] = useState('');
   const [dropOffLocation, setdropOffLocation] = useState('');
   const [driverUid, setDriverUid] = useState('');
-  const [availableDriver, setAvailableDriver] = useState('');
-  const [availableDriverDetail, setAvailableDriverDetail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [bookingData, setBookingData] = useState([]);
   const [offerFare, setOfferFare] = useState(null);
+  const [selectedDriver, setSelectedDriver] = useState('');
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
   const LATITUDE_DELTA = 0.04;
@@ -71,237 +82,439 @@ export default function DriverBiddingScreen({navigation, route}) {
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
   const [driverBidFare, setDriverBidFare] = useState(false);
   const [driverPersonalData, setDriverPersonalData] = useState({});
+  const [myDriverData, setMyDriverData] = useState([]);
+  const [arrivePickUpLocation,setArrivePickupLocation] = useState(false)
+
+  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
+    useState({
+      minutes: '',
+      distance: '',
+      details: '',
+    });
+  const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
 
   useEffect(() => {
+    if(!selectedDriver){
     gettingFormattedAddress();
-    // getBookingData();
     getDriverUid();
-
-    // checkRequestStatus();
-
-    // if (
-    //   bookingData &&
-    //   Object.keys(bookingData).length > 0 &&
-    //   bookingData.driverDetail &&
-    //   bookingData.bookingStatus == 'done'
-    // ) {
     checkRequestStatus();
+    getDriverData();
+  }
+    getLocationUpdates();
     // }
   }, []);
 
-console.log(driverUid,"driverUiD")
+  console.log(selectedDriver,"selected")
 
-  const checkRequestStatus =  () => {
-    if (passengerData && passengerData.bidFare) {
-      console.log("helloooooo")
+  const getLocationUpdates = () => {
+
+    if(driverCurrentLocation && driverCurrentLocation.latitude && driverCurrentLocation.longitude && pickupCords.latitude && pickupCords.longitude){
+
+    const dis = getPreciseDistance(
+      { latitude:  driverCurrentLocation.latitude, longitude: driverCurrentLocation.longitude },
+      { latitude:  pickupCords.latitude, longitude: pickupCords.longitude }
+    );
+
+    if(dis<50){
+          setArrivePickupLocation(true)
+    }  
+  }
+    getCurrentLocation()
+      .then(res => {
+        let {latitude, longitude} = res;
+        latitude = pickupCords.latitude
+        longitude = pickupCords.longitude
+        setDriverCurrentLocation({
+          ...driverCurrentLocation,
+          latitude: latitude,
+          longitude: longitude,
+        });
+      })
+      .catch(error => {
+        console.log(error, 'error');
+      });
+  };
+
+  console.log(driverCurrentLocation,"currentLoation")
+
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      getLocationUpdates();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  });
+
+  useEffect(() => {
+    sendDriverLocationToPassenger();
+  }, [driverCurrentLocation]);
+
+  useEffect(() => {
+    if (selectedDriver || loading) {
+      const backAction = () => {
+        Alert.alert('Hold on!', 'You can not go back from here?', [
+          {
+            text: 'Cancel',
+            onPress: () => null,
+            style: 'cancel',
+          },
+        ]);
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
+
+      return () => backHandler.remove();
+    }
+  }, []);
+
+  const sendDriverLocationToPassenger =  () => {
+    if (
+      selectedDriver &&
+      Object.keys(selectedDriver).length > 0 &&
+      driverCurrentLocation &&
+      driverCurrentLocation.latitude &&
+      driverCurrentLocation.longitude
+    ) {
+      myDriverData.currentLocation = driverCurrentLocation;
+
+      firestore()
+        .collection('Request')
+        .doc(passengerData.id)
+        .update({
+          myDriversData: myDriverData,
+        })
+        .then(() => {
+          setLoading(false);
+          console.log("location send in firebase")
+        })
+        .catch(error => {
+          console.log(error, 'error');
+        });
+    }
+  };
+
+
+  const getDriverData = () => {
+    if (!selectedDriver) {
+      const driverId = auth().currentUser.uid;
+
+      firestore()
+        .collection('Drivers')
+        .doc(driverId)
+        .onSnapshot(querySnapshot => {
+          let data = querySnapshot.data();
+          data.id = driverId
+          setMyDriverData(data);
+        });
+    }
+  };
+
+  const checkRequestStatus = () => {
+    if (!selectedDriver) {
+      if (passengerData && passengerData.bidFare) {
+        firestore()
+          .collection('Request')
+          .doc(passengerData.id)
+          .onSnapshot(querySnapshot => {
+            let data = querySnapshot.data();
+
+            if (
+              data &&
+              data.myDriversData &&
+              !Array.isArray(data.myDriversData) &&
+              data.myDriversData.requestStatus == 'rejected'
+            ) {
+              setLoading(false);
+              ToastAndroid.show(
+                'Your Request has been rejected',
+                ToastAndroid.SHORT,
+              );
+              navigation.navigate('DriverHomeScreen');
+              return;
+            }
+            if (
+              data &&
+              data.myDriversData &&
+              Array.isArray(data.myDriversData)
+            ) {
+              let flag = data.myDriversData.some(
+                (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
+              );
+
+              if (flag) {
+                setLoading(false);
+                ToastAndroid.show(
+                  'Your Request has been rejected',
+                  ToastAndroid.SHORT,
+                );
+                navigation.navigate('DriverHomeScreen');
+              }
+              return;
+            }
+            if (
+              data &&
+              data.myDriversData &&
+              !Array.isArray(data.myDriversData) &&
+              data.myDriversData.requestStatus
+            ) {
+              if (
+                data.myDriversData.id == driverUid &&
+                data.myDriversData.requestStatus == 'accepted'
+              ) {
+                ToastAndroid.show(
+                  'Your request has been accepted',
+                  ToastAndroid.SHORT,
+                );
+                setSelectedDriver(data.myDriversData);
+                setLoading(false);
+              } else if (
+                data.myDriversData.id == driverUid &&
+                data.myDriversData.requestStatus == 'rejected'
+              ) {
+                ToastAndroid.show(
+                  'Your request has been rejected',
+                  ToastAndroid.SHORT,
+                );
+                setLoading(false);
+                navigation.navigate('DriverHomeScreen');
+              }
+            }
+            if (
+              data &&
+              data.myDriversData &&
+              Array.isArray(data.myDriversData)
+            ) {
+              let flag = data.myDriversData.some(
+                (e, i) => e.selected && e.id == driverUid,
+              );
+
+              let flag1 = data.myDriversData.some(
+                (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
+              );
+
+              if (flag && !flag1) {
+                ToastAndroid.show(
+                  'Your request has been accepted',
+                  ToastAndroid.SHORT,
+                );
+                setSelectedDriver(myDriverData);
+                setLoading(false);
+              } else if (!flag && flag1) {
+                ToastAndroid.show(
+                  'Your request has been rejected',
+                  ToastAndroid.SHORT,
+                );
+                setLoading(false);
+                navigation.navigate('DriverHomeScreen');
+              }
+            }
+          });
+      }
+    }
+  };
+
+const ArriveModal = useCallback(()=>{
+
+  return (
+    <View style={styles.centeredView}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={arrivePickUpLocation}
+        onRequestClose={() => {
+            setArrivePickupLocation(false)
+        }}>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <View>
+              <Icon  size={80} color="white" name = "hand-stop-o" />
+            </View>
+            <Text style={styles.modalText}>You have arrived at customer location!</Text>
+      <TouchableOpacity
+        style={[styles.button,{marginBottom:10}]}
+        onPress={() => setArrivePickupLocation(false)}>
+        <Text style={styles.textStyle}>confirm</Text>
+      </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );        
+
+
+},[arrivePickUpLocation])
+
+
+
+  const getDriverUid = () => {
+    if (!selectedDriver) {
+      let uid = auth().currentUser.uid;
+      setDriverUid(uid);
+    }
+  };
+  const gettingFormattedAddress = () => {
+    if (!selectedDriver) {
+      Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
+      Geocoder.from(
+        passengerState.pickupCords.latitude,
+        passengerState.pickupCords.longitude,
+      )
+        .then(json => {
+          var addressPickup = json.results[0].formatted_address;
+          setpickUpLocation(addressPickup);
+        })
+        .catch(error => console.warn(error));
+      Geocoder.from(
+        passengerState.dropLocationCords.latitude,
+        passengerState.dropLocationCords.longitude,
+      )
+        .then(json => {
+          var addressDropOff = json.results[0].formatted_address;
+          setdropOffLocation(addressDropOff);
+        })
+        .catch(error => console.warn(error));
+    }
+  };
+
+  const sendRequest = () => {
+    if (!selectedDriver) {
+      const Userid = route.params.data.id;
+
+      if (
+        passengerData &&
+        !passengerData.bidFare &&
+        passengerData.requestStatus
+      ) {
+        ToastAndroid.show(
+          'You have already accepted this request',
+
+          ToastAndroid.SHORT,
+        );
+        return
+      }
+
+      if (
+        passengerData &&
+        !passengerData.bidFare &&
+        !passengerData.requestStatus
+      ) {
+        passengerData.requestStatus = 'accepted';
+        firestore()
+          .collection('Request')
+          .doc(passengerData.id)
+          .update({
+            requestStatus: 'accepted',
+          })
+          .then(() => {
+            ToastAndroid.show(
+              'You have accepted customer Request',
+              ToastAndroid.SHORT,
+            );
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      }
+
+
+      else if (
+        passengerData &&
+        passengerData.bidFare &&  selectedDriver && driverPersonalData &&
+        selectedDriver.id == driverPersonalData.id
+      ) {
+        ToastAndroid.show(
+          'You have already accepted this request',
+          ToastAndroid.SHORT,
+        );
+      } 
+      
+      else if (passengerData && passengerData.bidFare && !selectedDriver) {
+        const uid = auth().currentUser.uid;
+        firestore()
+          .collection('Drivers')
+          .doc(uid)
+          .onSnapshot(querySnapshot => {
+            let driver = querySnapshot.data();
+            driver.id = uid;
+            driver.bidFare = driverBidFare
+              ? driverBidFare
+              : passengerData.bidFare;
+            setDriverPersonalData(driver);
+          });
+      } 
+    }
+  };
+  const sendDriverRequestInFirebase = () => {
+    console.log(selectedDriver, 'selectedDriver');
+
+    console.log(typeof selectedDriver,"typeof")
+
+    if (!selectedDriver && typeof selectedDriver !== "object" ) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
-            
 
-          if(data && data.myDriversData && !Array.isArray(data.myDriversData) && data.myDriversData.requestStatus == "rejected"){
-            setLoading(false)
-            ToastAndroid.show("Your Request has been rejected",ToastAndroid.SHORT)
-            navigation.navigate('DriverHomeScreen');
-            return
-          }
-          if(data && data.myDriversData && Array.isArray(data.myDriversData)){
-            console.log(data.myDriversData,"data")
-            let flag = data.myDriversData.some((e,i)=> e.id == driverUid && e.requestStatus == "rejected")
-            console.log(flag,"flag")
-            if(flag){
-              setLoading(false)
-            ToastAndroid.show("Your Request has been rejected",ToastAndroid.SHORT)
-            navigation.navigate('DriverHomeScreen');
-          }
-          return
-          }
-
-          if (
-            data &&
-            data.myDriversData &&
-            !Array.isArray(data.myDriversData)  && data.requestStatus
-            
-          ) {
-
-            console.log(driverUid,"uid")
-
-            if (
-              data.myDriversData.id == driverUid &&
-              data.myDriversData.selected
-            ) {
-              ToastAndroid.show(
-                'Your request has been accepted',
-                ToastAndroid.SHORT,
-              );
-              setLoading(false);
-            } else if (data.myDriversData.id == driverUid && !data.myDriversData.selected) {
-              ToastAndroid.show(
-                'Your request has been rejected',
-                ToastAndroid.SHORT,
-              );
-              setLoading(false);
-              navigation.navigate('DriverHomeScreen');
-            }
-          }
-          if (
-            data &&
-            data.myDriversData &&
-            Array.isArray(data.myDriversData) 
-          ) {
-
-            console.log(driverUid,"UUUIIIIDDD")
-
+          if (data && !data.myDriversData) {
+            firestore()
+              .collection('Request')
+              .doc(data.id)
+              .update({
+                myDriversData: driverPersonalData,
+              })
+              .then(() => {
+                ToastAndroid.show(
+                  'Your request has been send to passenger',
+                  ToastAndroid.SHORT,
+                );
+                setLoading(true);
+              })
+              .catch(error => {
+                console.log(error);
+              });
+          } else if (data && Array.isArray(data.myDriversData)) {
             let flag = data.myDriversData.some(
-              (e, i) => e.selected && e.id == driverUid,
+              (e, i) => e.id == driverPersonalData.id,
             );
 
-            let flag1 = data.myDriversData.some((e,i)=>e.requestStatus)
-
-            if (flag,flag1) {
+            if (flag) {
               ToastAndroid.show(
-                'Your request has been accepted',
+                'You have already requested',
                 ToastAndroid.SHORT,
               );
-              setLoading(false);
-            } else if (flag1){
-              ToastAndroid.show(
-                'Your request has been rejected',
-                ToastAndroid.SHORT,
-              );
-              setLoading(false);
-              navigation.navigate('DriverHomeScreen');
+            } else {
+              let driverDataArray = [...data.myDriversData, driverPersonalData];
+              firestore()
+                .collection('Request')
+                .doc(data.id)
+                .update({
+                  myDriversData: driverDataArray,
+                })
+                .then(() => {
+                  ToastAndroid.show(
+                    'Your request has been send',
+                    ToastAndroid.SHORT,
+                  );
+                  setLoading(true);
+                })
+                .catch(error => {
+                  console.log(error);
+                });
             }
-          }
-        });
-    }
-  };
-
-  const getDriverUid = () => {
-    let uid = auth().currentUser.uid;
-    setDriverUid(uid);
-  };
-
-  const gettingFormattedAddress = () => {
-    Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
-    Geocoder.from(
-      passengerState.pickupCords.latitude,
-      passengerState.pickupCords.longitude,
-    )
-      .then(json => {
-        var addressPickup = json.results[0].formatted_address;
-        setpickUpLocation(addressPickup);
-      })
-      .catch(error => console.warn(error));
-    Geocoder.from(
-      passengerState.dropLocationCords.latitude,
-      passengerState.dropLocationCords.longitude,
-    )
-      .then(json => {
-        var addressDropOff = json.results[0].formatted_address;
-        setdropOffLocation(addressDropOff);
-      })
-      .catch(error => console.warn(error));
-  };
-
-  const sendRequest = async () => {
-    const Userid = route.params.data.id;
-    if (
-      passengerData &&
-      !passengerData.bidFare &&
-      !passengerData.requestStatus
-    ) {
-      passengerData.requestStatus = 'accepted';
-      firestore()
-        .collection('Request')
-        .doc(passengerData.id)
-        .update({
-          requestStatus: 'accepted',
-        })
-        .then(() => {
-          ToastAndroid.show(
-            'You have accepted customer Request',
-            ToastAndroid.SHORT,
-          );
-        })
-        .catch(error => {
-          console.log(error);
-        });
-    } else if (
-      passengerData &&
-      !passengerData.bidFare &&
-      passengerData.requestStatus
-    ) {
-      ToastAndroid.show(
-        'You have already accepted this request',
-
-        ToastAndroid.SHORT,
-      );
-    } else if (
-      passengerData &&
-      passengerData.bidFare &&
-      !passengerData.requestStatus
-    ) {
-      firestore()
-        .collection('Drivers')
-        .doc(driverUid)
-        .onSnapshot(querySnapshot => {
-          let driver = querySnapshot.data();
-          driver.id = driverUid;
-          driver.bidFare = driverBidFare
-            ? driverBidFare
-            : passengerData.bidFare;
-          setDriverPersonalData(driver);
-        });
-    } else if (
-      passengerData &&
-      passengerData.bidFare &&
-      passengerData.requestStatus == 'accepted'
-    ) {
-      ToastAndroid.show(
-        'You have already accepted this request',
-        ToastAndroid.SHORT,
-      );
-    }
-  };
-  const sendDriverRequestInFirebase = () => {
-    console.log('heeelooo');
-
-    let otherDriverData = [];
-    firestore()
-      .collection('Request')
-      .doc(passengerData.id)
-      .onSnapshot(querySnapshot => {
-        let data = querySnapshot.data();
-
-        if (data && !data.myDriversData) {
-          firestore()
-            .collection('Request')
-            .doc(data.id)
-            .update({
-              myDriversData: driverPersonalData,
-            })
-            .then(() => {
-              ToastAndroid.show(
-                'Your request has been send to passenger',
-                ToastAndroid.SHORT,
-              );
-              setLoading(true);
-            })
-            .catch(error => {
-              console.log(error);
-            });
-        } else if (data && Array.isArray(data.myDriversData)) {
-          let flag = data.myDriversData.some(
-            (e, i) => e.id == driverPersonalData.id,
-          );
-
-          if (flag) {
-            ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
-          } else {
-            let driverDataArray = [...data.myDriversData, driverPersonalData];
+          } else if (
+            data &&
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData) &&
+            driverPersonalData.id !== data.myDriversData.id 
+          ) {
+            let myData = [data.myDriversData];
+            let driverDataArray = [...myData, driverPersonalData];
             firestore()
               .collection('Request')
               .doc(data.id)
@@ -314,45 +527,26 @@ console.log(driverUid,"driverUiD")
                   ToastAndroid.SHORT,
                 );
                 setLoading(true);
-              })
-              .catch(error => {
-                console.log(error);
               });
           }
-        } else if (
-          data &&
-          data.myDriversData &&
-          driverPersonalData.id !== data.myDriversData.id &&
-          !Array.isArray(data.myDriversData)
-        ) {
-          let myData = [data.myDriversData];
-          let driverDataArray = [...myData, driverPersonalData];
-          firestore()
-            .collection('Request')
-            .doc(data.id)
-            .update({
-              myDriversData: driverDataArray,
-            })
-            .then(() => {
-              ToastAndroid.show(
-                'Your request has been send',
-                ToastAndroid.SHORT,
-              );
-              setLoading(true);
-            });
-        } else if (
-          data &&
-          data.myDriversData &&
-          driverPersonalData.id == data.myDriversData.id &&
-          !Array.isArray(data.myDriversData)
-        ) {
-          ToastAndroid.show('You have already Requested', ToastAndroid.SHORT);
-        }
-      });
+          // else if (
+          //   data &&
+          //   data.myDriversData &&
+          //   driverPersonalData.id == data.myDriversData.id &&
+          //   !Array.isArray(data.myDriversData)
+          // ) {
+          //   ToastAndroid.show('You have already Requested', ToastAndroid.SHORT);
+          // }
+        });
+    }
   };
 
   useEffect(() => {
-    if (driverPersonalData && Object.keys(driverPersonalData).length > 0) {
+    if (
+      driverPersonalData &&
+      Object.keys(driverPersonalData).length > 0 &&
+      !selectedDriver
+    ) {
       sendDriverRequestInFirebase();
     }
   }, [driverPersonalData]);
@@ -362,8 +556,6 @@ console.log(driverUid,"driverUiD")
   };
 
   const confirmBidFare = selectedBid => {
-    console.log(selectedBid, 'selectedFare');
-
     let myFare = '';
 
     if (selectedBid.bidWithMinimumDeduction) {
@@ -382,6 +574,46 @@ console.log(driverUid,"driverUiD")
 
     setDriverBidFare(myFare);
   };
+
+  const getMinutesAndDistance = result => {
+    setMinutesAndDistanceDifference({
+      ...minutesAndDistanceDifference,
+      minutes: result.duration,
+      distance: result.distance,
+      details: result.legs[0],
+    });
+  };
+
+  const getViewLocation = useCallback(() => {
+    
+    return (
+      <MapViewDirections
+        origin={myDriverData.currentLocation}
+        destination={
+          myDriverData.currentLocation.latitude == pickupCords.latitude &&
+          myDriverData.currentLocation.longitude == pickupCords.longitude
+            ? dropLocationCords
+            : pickupCords
+        }
+        apikey={GoogleMapKey.GOOGLE_MAP_KEY}
+        strokeColor={Colors.black}
+        strokeWidth={3}
+        optimizeWayPoints={true}
+        onReady={result => {
+          getMinutesAndDistance(result);
+
+          mapRef.current.fitToCoordinates(result.coordinates, {
+            edgePadding: {
+              right: 30,
+              bottom: 100,
+              left: 30,
+              top: 100,
+            },
+          });
+        }}
+      />
+    );
+  }, [myDriverData, selectedDriver,]);
 
   const mapRef = useRef();
 
@@ -406,6 +638,7 @@ console.log(driverUid,"driverUiD")
         />
       </View>
       <View style={styles.mapContainer}>
+      
         {state.pickupCords && (
           <MapView
             ref={mapRef}
@@ -415,16 +648,46 @@ console.log(driverUid,"driverUiD")
               latitudeDelta: LATITUDE_DELTA,
               longitudeDelta: LONGITUDE_DELTA,
             }}>
-            <Marker coordinate={pickupCords} />
-            {/* <Marker
-                        coordinate={dropLocationCords}
-                    /> */}
+            <Marker
+              coordinate={pickupCords}
+              title="pickup Location"
+              description={passengerData.pickupAddress}
+            />
+
             {Object.keys(dropLocationCords).length > 0 && (
               <Marker
                 coordinate={dropLocationCords}
+                title="DropOff Location"
+                description={passengerData.dropOffAddress}
                 // image={ImagePath.isGreenMarker}
               />
             )}
+            {driverCurrentLocation &&
+              driverCurrentLocation.latitude &&
+              dropLocationCords.longitude && (
+                <Marker
+                  coordinate={{
+                    latitude:
+                      driverCurrentLocation && driverCurrentLocation.latitude,
+                    longitude:
+                      driverCurrentLocation && driverCurrentLocation.longitude,
+                  }}
+                  title="Your Location"
+                  description={
+                    minutesAndDistanceDifference.details.start_address
+                  }
+                  pinColor="blue">
+                  <Image
+                    source={require('../../Assets/Images/mapCar.png')}
+                    style={{width: 40, height: 40}}
+                    resizeMode="contain"
+                  />
+                </Marker>
+              )}
+            {myDriverData &&
+              myDriverData.currentLocation &&
+              myDriverData.currentLocation.longitude &&
+              getViewLocation()}
             {Object.keys(dropLocationCords).length > 0 && (
               <MapViewDirections
                 origin={pickupCords}
@@ -447,6 +710,28 @@ console.log(driverUid,"driverUiD")
             )}
           </MapView>
         )}
+
+        <View style={{position: 'absolute', right: 10, top: 10}}>
+          <Text
+            style={{
+              color: 'black',
+              fontSize: 18,
+              fontWeight: '900',
+              marginTop: 10,
+            }}>
+            Duration: {Math.ceil(minutesAndDistanceDifference.minutes)} Minutes
+          </Text>
+          <Text
+            style={{
+              color: 'black',
+              fontSize: 18,
+              fontWeight: '900',
+              marginTop: 5,
+            }}>
+            Distance:{' '}
+            {Math.ceil(minutesAndDistanceDifference.distance * 0.621371)} Miles{' '}
+          </Text>
+        </View>
       </View>
       <View style={styles.bottomCard}>
         <KeyboardAvoidingView>
@@ -487,7 +772,7 @@ console.log(driverUid,"driverUiD")
                   passengerData.bidFare ? 'Customer Bid:' : 'Recomended Fare:'
                 } ${passengerData.bidFare ?? passengerData.fare}$`}
               />
-              {driverBidFare && (
+              {driverBidFare && !selectedDriver && (
                 <TextInput
                   placeholder="Your Bid"
                   placeholderTextColor={Colors.gray}
@@ -500,7 +785,7 @@ console.log(driverUid,"driverUiD")
                   value={`Your Bid ${driverBidFare}$`}
                 />
               )}
-              {passengerData.bidFare && (
+              {passengerData.bidFare && !selectedDriver && (
                 <TouchableOpacity
                   onPress={() => setAppearBiddingOption(true)}
                   style={{
@@ -530,11 +815,18 @@ console.log(driverUid,"driverUiD")
                   state="driver"
                 />
               )}
+              {arrivePickUpLocation && (
+                <ArriveModal
+                  modalVisible={arrivePickUpLocation}
+                />
+              )}
 
               {/* </ScrollView> */}
-              <View style={styles.btnContainer}>
-                <CustomButton text="Request" onPress={sendRequest} />
-              </View>
+              {!selectedDriver && (
+                <View style={styles.btnContainer}>
+                  <CustomButton text="Request" onPress={sendRequest} />
+                </View>
+              )}
             </KeyboardAvoidingView>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -574,6 +866,59 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderColor: 'grey',
     borderBottomWidth: 1,
-    paddingLeft: 10, //
+
+    // paddingLeft: 10, //
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'black',
+    height : "40%",
+    width:"80%",
+    borderRadius: 20,
+    padding: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 10,
+    padding: 10,
+    elevation: 2,
+    width:"90%",
+    color:"white",
+    borderWidth:1,
+    borderColor:"white",
+    position:"absolute",
+    bottom:20
+  },
+  buttonOpen: {
+    backgroundColor: '#white',
+  },
+  
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize:18,
+    marginTop:30,
+    fontWeight:"800"
   },
 });
+
