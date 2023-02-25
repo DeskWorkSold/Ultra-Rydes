@@ -23,19 +23,19 @@ import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
+import Icon from "react-native-vector-icons/AntDesign"
 import {
   locationPermission,
   getCurrentLocation,
 } from '../../Helper/HelperFunction';
-import storage from '@react-native-firebase/storage';
 import auth from '@react-native-firebase/auth';
 import * as geolib from 'geolib';
 import firestore from '@react-native-firebase/firestore';
-import {set} from 'react-native-reanimated';
-import {FABGroup} from 'react-native-paper/lib/typescript/components/FAB/FABGroup';
 import Geocoder from 'react-native-geocoding';
-import {Modal} from 'react-native-paper';
+import { Modal } from 'react-native';
 import AppModal from '../../Components/modal';
+import {BackHandler} from 'react-native';
+import { useCallback } from 'react';
 
 export default function PassengerHomeScreen({navigation, route}) {
   const [dummyDataCat, setDummyDataCat] = useState('');
@@ -48,66 +48,189 @@ export default function PassengerHomeScreen({navigation, route}) {
   const [minutes, setMinutes] = useState('');
   const [pickupAddress, setPickUpAddress] = useState('');
   const [dropOffAddress, setDropOffAddress] = useState('');
-  const [selectedDriver, setSelectedDriver] = useState([]);
+  const [selectedDriver, setSelectedDriver] = useState('');
   const [bookingData, setBookingData] = useState([]);
   const [result, setResult] = useState();
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
   const [bidFare, setBidFare] = useState(null);
+  const [driverArrive, setDriverArrive] = useState({
+    pickupLocation: false,
+    dropoffLocation: false,
+  });
+  const [selectedDriverLocation, setSelectedLocation] = useState({
+    pickupCords: '',
+    dropLocationCords: '',
+  });
+  const [routeData, setRouteData] = useState([]);
+  const [driverArriveAtPickUpLocation,setDriverArriveAtPickUpLocation] = useState(false)
+  const [driverArriveAtdropoffLocation,setDriverArriveAtdropoffLocation] = useState(false)
+  const [location, setLocation] = useState({
+    pickupCords: null,
+    dropLocationCords: {},
+  });
+  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
+  useState({
+    minutes: '',
+    distance: '',
+    details: '',
+  });
 
   useEffect(() => {
-    getLiveLocation();
-    fetchDrivers();
+    if (!selectedDriver) {
+      getLiveLocation();
+      fetchDrivers();
+      getCurrentUserUid();
+    }
   }, []);
 
-  const [routeData, setRouteData] = useState([]);
-  
+  const getDriverLocationUpdates = () => {
+    if (data) {
+      firestore()
+        .collection('Request')
+        .doc(data.passengerData.id)
+        .onSnapshot(querySnapshot => {
+          let data = querySnapshot.data();
+
+          
+             let myDriversData = data.myDriversData ? data.myDriversData : data.driverData
+
+
+
+          if (!driverArrive.pickupLocation && !driverArriveAtPickUpLocation && data && data.driverArriveAtPickupLocation) {
+            setDriverArrive({
+              ...driverArrive,
+              pickupLocation: true,
+            });
+          }
+
+          if (data && !Array.isArray(myDriversData)) {
+            setSelectedLocation(myDriversData.currentLocation);
+          } else if (data && Array.isArray(myDriversData)) {
+            let selectedDriver = myDriversData.filter(
+              (e, i) => (e.requestStatus = 'accepted'),
+            );
+
+            selectedDriver = selectedDriver[0];
+
+            setSelectedLocation(selectedDriver.currentLocation);
+          }
+        });
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      getDriverLocationUpdates();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  });
+
+  const getCurrentUserUid = () => {
+    const currentUser = auth().currentUser;
+    setCurrentUserUid(currentUser.uid);
+  };
 
   let data = route.params;
 
+
   useEffect(() => {
-    if (data && Object.keys(data).length > 0) {
-      setRouteData(data);
+    
+      console.log(pickupCords,"pickupCords")
+      console.log(dropLocationCords,"dropLcation")
 
-      if(data && data.driverData){
-        setSelectedDriver(data.driverData)
+      if (pickupCords && Object.keys(pickupCords).length > 0 && dropLocationCords && Object.keys(dropLocationCords).length > 0) {
+        getPickUpAndDropOffAddress();
       }
+      
+    
+  }, [location,pickupCords,dropLocationCords]);
 
-      if (data && data.selectedDriver && Array.isArray(data.selectedDriver)) {
-        data.selectedDriver.map((e, i) => {
-          if (e.selected) {
-            setSelectedDriver(e);
-          }
-        });
-      } else if (
-        data &&
-        data.selectedDriver &&
-        !Array.isArray(data.selectedDriver) &&
-        data.selectedDriver.selected
-      ) {
-        setSelectedDriver(data.selectedDriver);
+  console.log(location,"location")
+
+
+  useEffect(() => {
+    if (data) {
+      const backAction = () => {
+        Alert.alert('Hold on!', 'You can not go back from here', [
+          {
+            text: 'Cancel',
+            onPress: () => null,
+            style: 'cancel',
+          },
+        ]);
+        return true;
+      };
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
+
+      return () => backHandler.remove();
+    }
+  }, []);
+
+  
+console.log(pickupCords,"myPick")
+console.log(dropLocationCords,"drop")
+
+  useEffect(() => {
+    if (!selectedDriver) {
+      if (data && Object.keys(data).length > 0) {
+        setRouteData(data);
+        if (data && data.passengerData) {
+          setLocation({
+            ...location,
+            pickupCords: data.passengerData.pickupCords,
+            dropLocationCords: data.passengerData.dropLocationCords,
+          });
+        }
+
+        if (data && data.driverData) {
+          setSelectedDriver(data.driverData);
+          setSelectedLocation(data.driverData.currentLocation);
+        }
+
+        if (data && data.driverData && Array.isArray(data.driverData)) {
+          data.driverData.map((e, i) => {
+            if (e.selected) {
+              setSelectedDriver(e);
+              setSelectedLocation(e.currentLocation);
+            }
+          });
+        } else if (
+          data &&
+          data.driverData &&
+          !Array.isArray(data.driverData) &&
+          data.driverData.selected
+        ) {
+          setSelectedDriver(data.driverData);
+          setSelectedLocation(data.driverData.currentLocation);
+        }
       }
     }
   }, [data]);
 
-  console.log(selectedDriver, 'Seleted DRIVER');
-  console.log(routeData,"routeData")
+  useEffect(() => {
+    if (!selectedDriver) {
+      checkFare(result);
+    }
+  }, [category, pickupCords, dropLocationCords]);
+
+  const checkFare = result => {
+    if (fare && pickupCords && dropLocationCords) {
+      calculateDistance(result);
+    }
+  };
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
   const LATITUDE_DELTA = 0.06;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-  const [location, setLocation] = useState({
-    pickupCords: null,
-    dropLocationCords: {},
-  });
+  
   const {pickupCords, dropLocationCords} = location;
 
   const [CurrentUserUid, setCurrentUserUid] = useState('');
-
-  useEffect(() => {
-    const currentUser = auth().currentUser;
-    setCurrentUserUid(currentUser.uid);
-  }, []);
 
   const getLiveLocation = async () => {
     const locPermissionDenied = await locationPermission();
@@ -130,42 +253,13 @@ export default function PassengerHomeScreen({navigation, route}) {
     }
   };
 
-
-
-
-
-  // const getRouteDataLocation = () => {
-  //   // setLocation({
-  //   //   ...location,
-  //   //   pickupCords : routeData.passenger.pickupCords,
-  //   //   dropLocationCords : routeData.passenger.dropLocationCords
-  //   // })
-
-  //   setSelectedDriver(routeData.selectedDriver[0]);
-  // };
-
-  // console.log(selectedDriver,"selected")
-
-  // console.log(location, 'location');
-
-  // useEffect(() => {
-  //   if (
-  //     routeData &&
-  //     Object.keys(routeData).length > 0 &&
-  //     routeData.passenger.pickupCords &&
-  //     Object.keys(routeData.passenger.pickupCords).length > 0
-  //   ) {
-  //     getRouteDataLocation();
-  //   }
-  // }, [routeData]);
-
   const fetchData = async () => {
     firestore()
       .collection('Categories')
       .doc('8w6hVPveXKR6kTvYVWwy')
       .onSnapshot(documentSnapshot => {
         const GetUserData = documentSnapshot.data();
-        console.log(GetUserData, 'getUser');
+
         setDummyDataCat(GetUserData.categories);
       });
   };
@@ -208,6 +302,7 @@ export default function PassengerHomeScreen({navigation, route}) {
   };
 
   const getPickUpAndDropOffAddress = () => {
+    console.log("hellow")
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
     Geocoder.from(pickupCords.latitude, pickupCords.longitude)
       .then(json => {
@@ -215,6 +310,7 @@ export default function PassengerHomeScreen({navigation, route}) {
         setPickUpAddress(addressPickup);
       })
       .catch(error => console.warn(error));
+    
     Geocoder.from(dropLocationCords.latitude, dropLocationCords.longitude)
       .then(json => {
         var addressDropOff = json.results[0].formatted_address;
@@ -222,17 +318,6 @@ export default function PassengerHomeScreen({navigation, route}) {
       })
       .catch(error => console.warn(error));
   };
-
-  useEffect(() => {
-    if (
-      pickupCords &&
-      dropLocationCords &&
-      Object.keys(pickupCords).length > 0 &&
-      Object.keys(dropLocationCords).length > 0
-    ) {
-      getPickUpAndDropOffAddress();
-    }
-  }, [pickupCords, dropLocationCords]);
 
   const checkValidation = () => {
     if (Object.keys(pickupCords).length === 0) {
@@ -247,16 +332,14 @@ export default function PassengerHomeScreen({navigation, route}) {
       return false;
     }
 
-
     let flag = dummyDataCat.some((e, i) => e.selected);
 
     if (!flag) {
       ToastAndroid.show('Kindly select Car type', ToastAndroid.SHORT);
       return;
-    } 
+    }
 
-    if(!bidFare && !data){
-
+    if (!bidFare && !data) {
       let data = {
         pickupCords: pickupCords,
         dropLocationCords: dropLocationCords,
@@ -264,7 +347,7 @@ export default function PassengerHomeScreen({navigation, route}) {
         distance: distance,
         minutes: minutes,
         fare: fare,
-        bidFare : bidFare,
+        bidFare: bidFare,
         pickupAddress: pickupAddress,
         dropOffAddress: dropOffAddress,
         additionalDetails: additionalDetails,
@@ -272,11 +355,9 @@ export default function PassengerHomeScreen({navigation, route}) {
       };
 
       navigation.navigate('PassengerFindRide', data);
-
     }
 
-    if(bidFare){
-
+    if (bidFare) {
       let data = {
         pickupCords: pickupCords,
         dropLocationCords: dropLocationCords,
@@ -284,7 +365,7 @@ export default function PassengerHomeScreen({navigation, route}) {
         distance: distance,
         minutes: minutes,
         fare: fare,
-        bidFare : bidFare,
+        bidFare: bidFare,
         pickupAddress: pickupAddress,
         dropOffAddress: dropOffAddress,
         additionalDetails: additionalDetails,
@@ -397,12 +478,9 @@ export default function PassengerHomeScreen({navigation, route}) {
   //       });
   //   }
 
-
-
   // };
 
   // useEffect(() => {
-    
 
   //   if (bookingData && bookingData.length > 0 && Array.isArray(bookingData)) {
   //     sendBookingDataInFb();
@@ -462,7 +540,7 @@ export default function PassengerHomeScreen({navigation, route}) {
   };
   const Categories = ({item, index}) => {
     return (
-      <View style={styles.catList}>
+     <View style={styles.catList}>
         <TouchableOpacity
           style={
             item.selected
@@ -481,8 +559,6 @@ export default function PassengerHomeScreen({navigation, route}) {
     );
   };
   const calculateDistance = result => {
-    console.log(result.distance, 'dis');
-
     let myDistance = (result.distance * 0.62137119).toFixed(2);
     let myDuration = Math.ceil(result.duration);
     setDistance(myDistance);
@@ -492,7 +568,6 @@ export default function PassengerHomeScreen({navigation, route}) {
     let Tfare = '';
     let distanceMinus = '';
     dummyDataCat.map(cat => {
-      console.log(cat.carName, 'carname');
       if (cat.carName == category) {
         cat.carMiles.map(miles => {
           let baseCharge = cat.carMiles[0].mileCharge;
@@ -513,25 +588,12 @@ export default function PassengerHomeScreen({navigation, route}) {
                 (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
               Tfare = Math.round(myfare + serviceCharges);
             }
-           
-           
-          Tfare &&  setFare(Tfare.toString());
+
+            Tfare && setFare(Tfare.toString());
           }
         });
       }
     });
-  };
-
-  useEffect(
-    () => checkFare(result),
-
-    [category, pickupCords, dropLocationCords],
-  );
-
-  const checkFare = result => {
-    if (fare && pickupCords && dropLocationCords) {
-      calculateDistance(result);
-    }
   };
 
   const changeDropLocation = location => {
@@ -549,8 +611,6 @@ export default function PassengerHomeScreen({navigation, route}) {
   };
 
   const confirmBidFare = selectedBid => {
-    console.log(selectedBid, 'selectedFare');
-
     let myFare = '';
 
     if (selectedBid.bidWithMinimumDeduction) {
@@ -566,13 +626,100 @@ export default function PassengerHomeScreen({navigation, route}) {
       Alert.alert('Error Alert', 'Kindly selected Bid Fare');
       return;
     }
-
     setBidFare(myFare);
-
   };
 
+  const hideModal = () => {
+
+    setDriverArrive({
+      ...driverArrive,
+      pickupLocation : false
+    })
+    setDriverArriveAtPickUpLocation(true)
+  }
+  const showBidFareModal = () => {
+    let flag =
+      dummyDataCat &&
+      dummyDataCat.length > 0 &&
+      dummyDataCat.some((e, i) => e.selected);
+
+    if (flag) {
+      setAppearBiddingOption(true);
+    } else {
+      ToastAndroid.show('Kindly Select car first', ToastAndroid.SHORT);
+    }
+  };
+
+  const ArriveModal = useCallback(() => {
+    return (
+      <View style={styles.centeredView}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={driverArrive.pickupLocation}
+          onRequestClose={() => {
+            setDriverArrive({
+              ...driverArrive,
+              pickupLocation: false,
+            });
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <View>
+                <Ionicons size={80} color="white" name="car-outline" />
+              </View>
+              <Text style={styles.modalText}>
+                Your driver has arrived at your pickup location!
+              </Text>
+              <TouchableOpacity
+                style={[styles.button, {marginBottom: 10}]}
+                onPress={() =>
+                    hideModal()
+                }>
+                <Text style={styles.textStyle}>confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }, [driverArrive]);
 
 
+  const getMinutesAndDistance = result => {
+    setMinutesAndDistanceDifference({
+      ...minutesAndDistanceDifference,
+      minutes: result.duration,
+      distance: result.distance,
+      details: result.legs[0],
+    });
+  };
+
+  const getViewLocation = useCallback(() => {
+    
+    return (
+      <MapViewDirections
+        origin={selectedDriverLocation}
+        destination={data.passengerData.pickupCords}
+        apikey={GoogleMapKey.GOOGLE_MAP_KEY}
+        strokeColor={Colors.black}
+        strokeWidth={3}
+        optimizeWayPoints={true}
+        onReady={result => {
+          getMinutesAndDistance(result);
+          mapRef.current.fitToCoordinates(result.coordinates, {
+            edgePadding: {
+              right: 30,
+              bottom: 100,
+              left: 30,
+              top: 100,
+            },
+          });
+        }}
+      />
+    );
+  }, [selectedDriver]);
+  
   return (
     <View style={styles.container}>
       {loading ? (
@@ -601,14 +748,12 @@ export default function PassengerHomeScreen({navigation, route}) {
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA,
                 }}>
-                <Marker coordinate={pickupCords} title="pickup location" />
-                
-                {  
-                
-                onlineDriversLocation &&
+                <Marker coordinate={pickupCords} title="pickup location"  />
+
+                {!selectedDriver &&
+                  onlineDriversLocation &&
                   onlineDriversLocation.length > 0 &&
                   onlineDriversLocation.map((b, i) => {
-                  
                     if (b && b.currentLocation) {
                       const x = geolib.isPointWithinRadius(
                         {
@@ -626,7 +771,6 @@ export default function PassengerHomeScreen({navigation, route}) {
                         /* WHEN CONDITIONS GET TRUE VALUES ITS SHOW DRIVERS */
                       }
                       if (x) {
-                        console.log(x,"xxx")
                         return (
                           <Marker
                             key={i}
@@ -645,6 +789,30 @@ export default function PassengerHomeScreen({navigation, route}) {
                       }
                     }
                   })}
+
+                {selectedDriver &&
+                  Object.keys(selectedDriver).length > 0 &&
+                  selectedDriverLocation.latitude &&
+                  selectedDriverLocation.longitude && (
+                    <Marker
+                      coordinate={{
+                        latitude: selectedDriverLocation.latitude,
+                        longitude: selectedDriverLocation.longitude,
+                      }}
+                      pinColor="black"
+                      title="Driver Location"
+                      //   onDrag={() => console.log('onDrag', arguments)}
+                      //   onDragStart={(e) => console.log('onDragStart', e)}
+                      //   onDragEnd={(e)=>changeDropLocation(e.nativeEvent)}
+                    >
+                      <Image
+                        source={require('../../Assets/Images/mapCar.png')}
+                        style={{width: 40, height: 40}}
+                        resizeMode="contain"
+                      />
+                    </Marker>
+                  )}
+
                 {Object.keys(dropLocationCords).length > 0 && (
                   <Marker
                     coordinate={{
@@ -659,7 +827,10 @@ export default function PassengerHomeScreen({navigation, route}) {
                     draggable={true}
                   />
                 )}
-                {Object.keys(dropLocationCords).length > 0 && (
+                {selectedDriverLocation && selectedDriverLocation.latitude && selectedDriverLocation.longitude &&
+                  getViewLocation()
+                }
+                {dropLocationCords && Object.keys(dropLocationCords).length > 0 && (
                   <MapViewDirections
                     origin={location.pickupCords}
                     destination={location.dropLocationCords}
@@ -669,7 +840,6 @@ export default function PassengerHomeScreen({navigation, route}) {
                     optimizeWayPoints={true}
                     mode="DRIVING"
                     onReady={result => {
-                      
                       setResult(result);
                       calculateDistance(result);
                       mapRef.current.fitToCoordinates(result.coordinates, {
@@ -685,19 +855,45 @@ export default function PassengerHomeScreen({navigation, route}) {
                 )}
               </MapView>
             )}
+                {data &&  <View style={{position: 'absolute', right: 10, top: 10}}>
+          <Text
+            style={{
+              color: 'black',
+              fontSize: 18,
+              fontWeight: '900',
+              marginTop: 10,
+            }}>
+            Duration: {driverArriveAtPickUpLocation || driverArrive.pickupLocation ? data.passengerData.minutes : Math.ceil(minutesAndDistanceDifference.minutes)} Minutes
+          </Text>
+          <Text
+            style={{
+              color: 'black',
+              fontSize: 18,
+              fontWeight: '900',
+              marginTop: 5,
+            }}>
+            Distance:{' '}
+            {driverArriveAtPickUpLocation || driverArrive.pickUpLocation ? data.passengerData.distance :  (minutesAndDistanceDifference.distance * 0.621371).toFixed(2)} Miles{' '}
+          </Text>
+        </View>}
+
+
           </View>
+                  
           <View style={styles.bottomCard}>
             <KeyboardAvoidingView>
               <ScrollView
                 nestedScrollEnabled={true}
                 keyboardShouldPersistTaps="handled">
+                
                 <FlatList
-                  data={dummyDataCat}
+                  data={data && data.passengerData.selectedCar? data.passengerData.selectedCar : dummyDataCat}
                   renderItem={Categories}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={item => item.id}
                 />
+                 
 
                 <KeyboardAvoidingView>
                   <AddressPickup
@@ -713,8 +909,13 @@ export default function PassengerHomeScreen({navigation, route}) {
                     placeholder="Fare"
                     placeholderTextColor={Colors.gray}
                     value={
-                      selectedDriver && Object.keys(selectedDriver).length > 0 && !selectedDriver.bidFare
-                        ? `${selectedDriver.fare}$ `: selectedDriver && Object.keys(selectedDriver).length > 0 && selectedDriver.bidFare
+                      selectedDriver &&
+                      Object.keys(selectedDriver).length > 0 &&
+                      !selectedDriver.bidFare
+                        ? `${selectedDriver.fare}$ `
+                        : selectedDriver &&
+                          Object.keys(selectedDriver).length > 0 &&
+                          selectedDriver.bidFare
                         ? `${selectedDriver.bidFare}$`
                         : bidFare
                         ? bidFare
@@ -731,16 +932,23 @@ export default function PassengerHomeScreen({navigation, route}) {
                     <View style={styles.recommendedText}>
                       <Text style={styles.headingStyle}>
                         {selectedDriver &&
-                        Object.keys(selectedDriver).length > 0 && !selectedDriver.bidFare
-                          ? 'Recommended Fare' : selectedDriver &&
-                          Object.keys(selectedDriver).length > 0 && selectedDriver.bidFare ? "Bid Fare"
+                        Object.keys(selectedDriver).length > 0 &&
+                        !selectedDriver.bidFare
+                          ? 'Recommended Fare'
+                          : selectedDriver &&
+                            Object.keys(selectedDriver).length > 0 &&
+                            selectedDriver.bidFare
+                          ? 'Bid Fare'
                           : bidFare
                           ? 'Bid Fare'
                           : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
                           {selectedDriver &&
-                          Object.keys(selectedDriver).length > 0 && !selectedDriver.bidFare
-                            ? selectedDriver.fare : Object.keys(selectedDriver).length > 0 && selectedDriver.bidFare
+                          Object.keys(selectedDriver).length > 0 &&
+                          !selectedDriver.bidFare
+                            ? selectedDriver.fare
+                            : Object.keys(selectedDriver).length > 0 &&
+                              selectedDriver.bidFare
                             ? selectedDriver.bidFare
                             : bidFare
                             ? bidFare
@@ -759,7 +967,7 @@ export default function PassengerHomeScreen({navigation, route}) {
 
                   {fare && !data && (
                     <TouchableOpacity
-                      onPress={() => setAppearBiddingOption(true)}
+                      onPress={() => showBidFareModal()}
                       style={{
                         marginTop: 10,
                         marginHorizontal: 5,
@@ -786,6 +994,10 @@ export default function PassengerHomeScreen({navigation, route}) {
                       confirm={confirmBidFare}
                     />
                   )}
+                  {
+                    driverArrive.pickupLocation && ArriveModal()
+                  }
+                 
                   <TextInput
                     placeholder="Additional Details"
                     placeholderTextColor={Colors.gray}
@@ -903,4 +1115,56 @@ const styles = StyleSheet.create({
     color: Colors.black,
     fontSize: 11,
   },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'black',
+    height : "40%",
+    width:"80%",
+    borderRadius: 20,
+    padding: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 10,
+    padding: 10,
+    elevation: 2,
+    width:"90%",
+    color:"white",
+    borderWidth:1,
+    borderColor:"white",
+    position:"absolute",
+    bottom:20
+  },
+  buttonOpen: {
+    backgroundColor: '#white',
+  },
+  
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize:18,
+    marginTop:20,
+    fontWeight:"800"
+  },
+  
 });

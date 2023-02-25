@@ -24,7 +24,7 @@ import CustomButton from '../../Components/CustomButton';
 import auth from '@react-native-firebase/auth';
 import AppModal from '../../Components/modal';
 import {BackHandler} from 'react-native';
-import Icon from "react-native-vector-icons/FontAwesome"
+import Icon from 'react-native-vector-icons/FontAwesome';
 import {
   locationPermission,
   getCurrentLocation,
@@ -33,8 +33,8 @@ import Geocoder from 'react-native-geocoding';
 import firestore from '@react-native-firebase/firestore';
 import {ToastAndroid} from 'react-native';
 import {ActivityIndicator} from 'react-native-paper';
-import { getPreciseDistance } from 'geolib';
-import { Modal } from 'react-native';
+import {getPreciseDistance} from 'geolib';
+import {Modal} from 'react-native';
 
 import {USES_DEFAULT_IMPLEMENTATION} from 'react-native-maps/lib/decorateMapComponent';
 import {useCallback} from 'react';
@@ -46,8 +46,7 @@ export default function DriverBiddingScreen({navigation, route}) {
 
   const {passengerState} = route.params;
 
-  console.log(pickupCords)
-  console.log(dropLocationCords)
+  
 
   let myData = route.params;
 
@@ -63,6 +62,8 @@ export default function DriverBiddingScreen({navigation, route}) {
   }
 
   const {data} = route.params;
+  
+  
 
   const [pickUpLocation, setpickUpLocation] = useState('');
   const [dropOffLocation, setdropOffLocation] = useState('');
@@ -83,8 +84,15 @@ export default function DriverBiddingScreen({navigation, route}) {
   const [driverBidFare, setDriverBidFare] = useState(false);
   const [driverPersonalData, setDriverPersonalData] = useState({});
   const [myDriverData, setMyDriverData] = useState([]);
-  const [arrivePickUpLocation,setArrivePickupLocation] = useState(false)
+  const [arrivePickUpLocation, setArrivePickupLocation] = useState(false);
+  const [arriveDropOffLocation, setArriveDropOffLocation] = useState(false);
+  const [arrive, setArrive] = useState({
+    pickUpLocation: false,
+    dropOffLocation: false,
+  });
 
+
+  
   const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
     useState({
       minutes: '',
@@ -94,36 +102,68 @@ export default function DriverBiddingScreen({navigation, route}) {
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
 
   useEffect(() => {
-    if(!selectedDriver){
-    gettingFormattedAddress();
-    getDriverUid();
-    checkRequestStatus();
-    getDriverData();
-  }
+    if (!selectedDriver) {
+      gettingFormattedAddress();
+      getDriverUid();
+      checkRequestStatus();
+      getDriverData();
+    }
     getLocationUpdates();
     // }
   }, []);
 
-  console.log(selectedDriver,"selected")
+  
 
   const getLocationUpdates = () => {
+    if (
+      !arrive.pickUpLocation &&
+      selectedDriver &&
+      driverCurrentLocation &&
+      driverCurrentLocation.latitude &&
+      driverCurrentLocation.longitude &&
+      pickupCords.latitude &&
+      pickupCords.longitude
+    ) {
+      const dis = getPreciseDistance(
+        {
+          latitude: driverCurrentLocation.latitude,
+          longitude: driverCurrentLocation.longitude,
+        },
+        {latitude: pickupCords.latitude, longitude: pickupCords.longitude},
+      );
 
-    if(driverCurrentLocation && driverCurrentLocation.latitude && driverCurrentLocation.longitude && pickupCords.latitude && pickupCords.longitude){
+      if (dis < 50) {
+        setArrivePickupLocation(true);
+      }
+    }
 
-    const dis = getPreciseDistance(
-      { latitude:  driverCurrentLocation.latitude, longitude: driverCurrentLocation.longitude },
-      { latitude:  pickupCords.latitude, longitude: pickupCords.longitude }
-    );
+    if (
+      !arrive.dropOffLocation &&
+      driverCurrentLocation &&
+      selectedDriver &&
+      driverCurrentLocation.latitude &&
+      driverCurrentLocation.longitude &&
+      pickupCords.latitude &&
+      pickupCords.longitude
+    ) {
+      const dis = getPreciseDistance(
+        {
+          latitude: driverCurrentLocation.latitude,
+          longitude: driverCurrentLocation.longitude,
+        },
+        {
+          latitude: dropLocationCords.latitude,
+          longitude: dropLocationCords.longitude,
+        },
+      );
 
-    if(dis<50){
-          setArrivePickupLocation(true)
-    }  
-  }
+      if (dis < 50) {
+        setArriveDropOffLocation(true);
+      }
+    }
     getCurrentLocation()
       .then(res => {
         let {latitude, longitude} = res;
-        latitude = pickupCords.latitude
-        longitude = pickupCords.longitude
         setDriverCurrentLocation({
           ...driverCurrentLocation,
           latitude: latitude,
@@ -134,9 +174,6 @@ export default function DriverBiddingScreen({navigation, route}) {
         console.log(error, 'error');
       });
   };
-
-  console.log(driverCurrentLocation,"currentLoation")
-
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -153,7 +190,7 @@ export default function DriverBiddingScreen({navigation, route}) {
   useEffect(() => {
     if (selectedDriver || loading) {
       const backAction = () => {
-        Alert.alert('Hold on!', 'You can not go back from here?', [
+        Alert.alert('Hold on!', 'You can not go back from here', [
           {
             text: 'Cancel',
             onPress: () => null,
@@ -172,7 +209,7 @@ export default function DriverBiddingScreen({navigation, route}) {
     }
   }, []);
 
-  const sendDriverLocationToPassenger =  () => {
+  const sendDriverLocationToPassenger = () => {
     if (
       selectedDriver &&
       Object.keys(selectedDriver).length > 0 &&
@@ -181,6 +218,9 @@ export default function DriverBiddingScreen({navigation, route}) {
       driverCurrentLocation.longitude
     ) {
       myDriverData.currentLocation = driverCurrentLocation;
+        
+
+      if(passengerData.bidFare){
 
       firestore()
         .collection('Request')
@@ -190,14 +230,29 @@ export default function DriverBiddingScreen({navigation, route}) {
         })
         .then(() => {
           setLoading(false);
-          console.log("location send in firebase")
+          console.log('location send in firebase');
         })
         .catch(error => {
           console.log(error, 'error');
         });
     }
+    else{
+      firestore()
+      .collection('Request')
+      .doc(passengerData.id)
+      .update({
+        driverData: myDriverData,
+      })
+      .then(() => {
+        setLoading(false);
+        console.log('location send in firebase');
+      })
+      .catch(error => {
+        console.log(error, 'error');
+      });
+    }
+  }
   };
-
 
   const getDriverData = () => {
     if (!selectedDriver) {
@@ -208,11 +263,14 @@ export default function DriverBiddingScreen({navigation, route}) {
         .doc(driverId)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
-          data.id = driverId
+          data.id = driverId;
           setMyDriverData(data);
         });
     }
   };
+
+
+  console.log(selectedDriver,"selected")
 
   const checkRequestStatus = () => {
     if (!selectedDriver) {
@@ -270,6 +328,20 @@ export default function DriverBiddingScreen({navigation, route}) {
                   'Your request has been accepted',
                   ToastAndroid.SHORT,
                 );
+
+                firestore()
+                  .collection('Drivers')
+                  .doc(driverUid)
+                  .update({
+                    inlined: true,
+                  })
+                  .then(() => {
+                    console.log('Driver has been inlined');
+                  })
+                  .catch(error => {
+                    console.log(error);
+                  });
+
                 setSelectedDriver(data.myDriversData);
                 setLoading(false);
               } else if (
@@ -302,6 +374,20 @@ export default function DriverBiddingScreen({navigation, route}) {
                   'Your request has been accepted',
                   ToastAndroid.SHORT,
                 );
+
+                firestore()
+                  .collection('Drivers')
+                  .doc(driverUid)
+                  .update({
+                    inlined: true,
+                  })
+                  .then(() => {
+                    console.log('Driver has been inlined');
+                  })
+                  .catch(error => {
+                    console.log(error);
+                  });
+
                 setSelectedDriver(myDriverData);
                 setLoading(false);
               } else if (!flag && flag1) {
@@ -318,38 +404,53 @@ export default function DriverBiddingScreen({navigation, route}) {
     }
   };
 
-const ArriveModal = useCallback(()=>{
+  const sendArriveMessageToPassenger = () => {
+    setArrive({...arrive, pickUpLocation: true});
+    setArrivePickupLocation(false);
 
-  return (
-    <View style={styles.centeredView}>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={arrivePickUpLocation}
-        onRequestClose={() => {
-            setArrivePickupLocation(false)
-        }}>
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <View>
-              <Icon  size={80} color="white" name = "hand-stop-o" />
+    firestore()
+      .collection('Request')
+      .doc(passengerData.id)
+      .update({
+        driverArriveAtPickupLocation: true,
+      })
+      .then(res => {
+        console.log('You have arrived at pickup Location');
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  };
+
+  const ArriveModal = useCallback(() => {
+    return (
+      <View style={styles.centeredView}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={arrivePickUpLocation}
+          onRequestClose={() => {
+            setArrivePickupLocation(false);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <View>
+                <Icon size={80} color="white" name="hand-stop-o" />
+              </View>
+              <Text style={styles.modalText}>
+                You have arrived at customer location!
+              </Text>
+              <TouchableOpacity
+                style={[styles.button, {marginBottom: 10}]}
+                onPress={() => sendArriveMessageToPassenger()}>
+                <Text style={styles.textStyle}>confirm</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.modalText}>You have arrived at customer location!</Text>
-      <TouchableOpacity
-        style={[styles.button,{marginBottom:10}]}
-        onPress={() => setArrivePickupLocation(false)}>
-        <Text style={styles.textStyle}>confirm</Text>
-      </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </View>
-  );        
-
-
-},[arrivePickUpLocation])
-
-
+        </Modal>
+      </View>
+    );
+  }, [arrivePickUpLocation]);
 
   const getDriverUid = () => {
     if (!selectedDriver) {
@@ -392,10 +493,11 @@ const ArriveModal = useCallback(()=>{
       ) {
         ToastAndroid.show(
           'You have already accepted this request',
-
           ToastAndroid.SHORT,
         );
-        return
+        console.log(driverData,"driverData")
+
+        return;
       }
 
       if (
@@ -415,25 +517,40 @@ const ArriveModal = useCallback(()=>{
               'You have accepted customer Request',
               ToastAndroid.SHORT,
             );
+            setSelectedDriver(driverData)
+            firestore()
+              .collection('Drivers')
+              .doc(driverUid)
+              .update({
+                inlined: true,
+              })
+              .then(() => {
+                console.log('Driver has been inlined');
+              })
+              .catch(error => {
+                console.log(error);
+              })
+              
+              
+
+
+              
           })
           .catch(error => {
             console.log(error);
           });
-      }
-
-
-      else if (
+      } else if (
         passengerData &&
-        passengerData.bidFare &&  selectedDriver && driverPersonalData &&
+        passengerData.bidFare &&
+        selectedDriver &&
+        driverPersonalData &&
         selectedDriver.id == driverPersonalData.id
       ) {
         ToastAndroid.show(
           'You have already accepted this request',
           ToastAndroid.SHORT,
         );
-      } 
-      
-      else if (passengerData && passengerData.bidFare && !selectedDriver) {
+      } else if (passengerData && passengerData.bidFare && !selectedDriver) {
         const uid = auth().currentUser.uid;
         firestore()
           .collection('Drivers')
@@ -446,15 +563,13 @@ const ArriveModal = useCallback(()=>{
               : passengerData.bidFare;
             setDriverPersonalData(driver);
           });
-      } 
+      }
     }
   };
   const sendDriverRequestInFirebase = () => {
-    console.log(selectedDriver, 'selectedDriver');
 
-    console.log(typeof selectedDriver,"typeof")
 
-    if (!selectedDriver && typeof selectedDriver !== "object" ) {
+    if (!selectedDriver && typeof selectedDriver !== 'object') {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
@@ -498,7 +613,7 @@ const ArriveModal = useCallback(()=>{
                 })
                 .then(() => {
                   ToastAndroid.show(
-                    'Your request has been send',
+                    'Your request has been send to passenger',
                     ToastAndroid.SHORT,
                   );
                   setLoading(true);
@@ -511,7 +626,7 @@ const ArriveModal = useCallback(()=>{
             data &&
             data.myDriversData &&
             !Array.isArray(data.myDriversData) &&
-            driverPersonalData.id !== data.myDriversData.id 
+            driverPersonalData.id !== data.myDriversData.id
           ) {
             let myData = [data.myDriversData];
             let driverDataArray = [...myData, driverPersonalData];
@@ -523,7 +638,7 @@ const ArriveModal = useCallback(()=>{
               })
               .then(() => {
                 ToastAndroid.show(
-                  'Your request has been send',
+                  'Your request has been send to passenger',
                   ToastAndroid.SHORT,
                 );
                 setLoading(true);
@@ -585,16 +700,10 @@ const ArriveModal = useCallback(()=>{
   };
 
   const getViewLocation = useCallback(() => {
-    
     return (
       <MapViewDirections
         origin={myDriverData.currentLocation}
-        destination={
-          myDriverData.currentLocation.latitude == pickupCords.latitude &&
-          myDriverData.currentLocation.longitude == pickupCords.longitude
-            ? dropLocationCords
-            : pickupCords
-        }
+        destination={pickupCords}
         apikey={GoogleMapKey.GOOGLE_MAP_KEY}
         strokeColor={Colors.black}
         strokeWidth={3}
@@ -613,8 +722,9 @@ const ArriveModal = useCallback(()=>{
         }}
       />
     );
-  }, [myDriverData, selectedDriver,]);
+  }, [myDriverData,selectedDriver]);
 
+  
   const mapRef = useRef();
 
   return loading ? (
@@ -638,7 +748,6 @@ const ArriveModal = useCallback(()=>{
         />
       </View>
       <View style={styles.mapContainer}>
-      
         {state.pickupCords && (
           <MapView
             ref={mapRef}
@@ -686,7 +795,7 @@ const ArriveModal = useCallback(()=>{
               )}
             {myDriverData &&
               myDriverData.currentLocation &&
-              myDriverData.currentLocation.longitude &&
+              myDriverData.currentLocation.longitude && 
               getViewLocation()}
             {Object.keys(dropLocationCords).length > 0 && (
               <MapViewDirections
@@ -719,7 +828,11 @@ const ArriveModal = useCallback(()=>{
               fontWeight: '900',
               marginTop: 10,
             }}>
-            Duration: {Math.ceil(minutesAndDistanceDifference.minutes)} Minutes
+            Duration:{' '}
+            {arrivePickUpLocation || arrive.pickUpLocation
+              ? passengerData.minutes
+              : Math.ceil(minutesAndDistanceDifference.minutes)}{' '}
+            Minutes
           </Text>
           <Text
             style={{
@@ -729,7 +842,12 @@ const ArriveModal = useCallback(()=>{
               marginTop: 5,
             }}>
             Distance:{' '}
-            {Math.ceil(minutesAndDistanceDifference.distance * 0.621371)} Miles{' '}
+            {arrivePickUpLocation || arrive.pickUpLocation
+              ? passengerData.distance
+              : (minutesAndDistanceDifference.distance * 0.621371).toFixed(
+                  2,
+                )}{' '}
+            Miles{' '}
           </Text>
         </View>
       </View>
@@ -816,9 +934,7 @@ const ArriveModal = useCallback(()=>{
                 />
               )}
               {arrivePickUpLocation && (
-                <ArriveModal
-                  modalVisible={arrivePickUpLocation}
-                />
+                <ArriveModal modalVisible={arrivePickUpLocation} />
               )}
 
               {/* </ScrollView> */}
@@ -878,8 +994,8 @@ const styles = StyleSheet.create({
   modalView: {
     margin: 20,
     backgroundColor: 'black',
-    height : "40%",
-    width:"80%",
+    height: '40%',
+    width: '80%',
     borderRadius: 20,
     padding: 15,
     alignItems: 'center',
@@ -896,29 +1012,27 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     elevation: 2,
-    width:"90%",
-    color:"white",
-    borderWidth:1,
-    borderColor:"white",
-    position:"absolute",
-    bottom:20
+    width: '90%',
+    color: 'white',
+    borderWidth: 1,
+    borderColor: 'white',
+    position: 'absolute',
+    bottom: 20,
   },
   buttonOpen: {
     backgroundColor: '#white',
   },
-  
+
   textStyle: {
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
-    
   },
   modalText: {
     marginBottom: 15,
     textAlign: 'center',
-    fontSize:18,
-    marginTop:30,
-    fontWeight:"800"
+    fontSize: 18,
+    marginTop: 30,
+    fontWeight: '800',
   },
 });
-

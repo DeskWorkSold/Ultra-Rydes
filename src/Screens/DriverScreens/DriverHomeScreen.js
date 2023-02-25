@@ -142,108 +142,120 @@ export default function DriverHomeScreen({navigation, route}) {
     );
   };
 
+  
+
   const getRequestFromPassengers = () => {
-    let requestData = [];
+    // if (driverData && driverData.status == 'offline') {
+    //   setLoading(true);
+    // }
+    
+    if (!driverData.inlined) {
+      if (driverStatus == 'online' && driverData.currentLocation) {
+        firestore()
+          .collection('Request')
+          .onSnapshot(querySnapshot => {
+            querySnapshot.forEach(documentSnapshot => {
+              let data = documentSnapshot.data();
+              
+              let dis = getPreciseDistance(
+                {
+                  latitude:
+                    data && data.passengerData
+                      ? data.passengerData.pickupCords.latitude
+                      : data && data.pickupCords.latitude,
+                  longitude:
+                    data && data.passengerData
+                      ? data.passengerData.pickupCords.longitude
+                      : data.pickupCords.longitude,
+                },
+                {
+                  latitude:
+                    data && data.driverData
+                      ? data.driverData.currentLocation.latitude
+                      : driverData && driverData.currentLocation.latitude,
+                  longitude:
+                    data && data.driverData
+                      ? data.driverData.currentLocation.longitude
+                      : driverData && driverData.currentLocation.longitude,
+                },
+              );
 
-    if (driverData && driverData.status == 'offline') {
-      setLoading(true);
-    }
+              mileDistance = (dis / 1609.34).toFixed(2);
 
-    if (driverStatus == 'online' && driverData.currentLocation)
-      firestore()
-        .collection('Request')
-        .onSnapshot(querySnapshot => {
-          querySnapshot.forEach(documentSnapshot => {
-            let data = documentSnapshot.data();
+         
 
-            let dis = getPreciseDistance(
-              {
-                latitude:
-                  data && data.passengerData
-                    ? data.passengerData.pickupCords.latitude
-                    : data && data.pickupCords.latitude,
-                longitude:
-                  data && data.passengerData
-                    ? data.passengerData.pickupCords.longitude
-                    : data.pickupCords.longitude,
-              },
-              {
-                latitude:
-                  data && data.driverData
-                    ? data.driverData.currentLocation.latitude
-                    : driverData && driverData.currentLocation.latitude,
-                longitude:
-                  data && data.driverData
-                    ? data.driverData.currentLocation.longitude
-                    : driverData && driverData.currentLocation.longitude,
-              },
-            );
-
-            mileDistance = (dis / 1609.34).toFixed(2);
-            if (data && !data.requestStatus) {
-              let matchUid = false;
-              let uid = auth().currentUser.uid;
-
-              if (
-                data &&
-                data.myDriversData &&
-                !Array.isArray(data.myDriversData)
-              ) {
-                matchUid =
-                  data.myDriversData.id == uid &&
-                  data.myDriversData.requestStatus;
-              } else if (
-                data &&
-                data.myDriversData &&
-                Array.isArray(data.myDriversData)
-              ) {
-                matchUid = data.myDriversData.some(
-                  (e, i) => e.id == uid && e.requestStatus,
-                );
-              }
-
-              let flag = '';
-              if (
-                data &&
-                !data.passengerData &&
-                data.selectedCar &&
-                driverData &&
-                driverData.vehicleDetails
-              ) {
-                let selectedVehicle = data.selectedCar.map((e, i) => e.carName);
-
-                flag =
-                  selectedVehicle == driverData.vehicleDetails.vehicleCategory;
-              }
-
-              if (
-                data &&
-                data.passengerData &&
-                driverData.cnic == data.driverData.cnic &&
-                !data.requestStatus
-              ) {
-                requestData.push(data);
-              } else {
+              if (data && !data.requestStatus) {
+                let matchUid = false;
+                let uid = auth().currentUser.uid;
+                let requestData = [];
                 if (
                   data &&
-                  data.bidFare &&
-                  !data.requestStatus &&
-                  mileDistance < 25 &&
-                  flag &&
-                  !matchUid
+                  data.myDriversData &&
+                  !Array.isArray(data.myDriversData)
                 ) {
-                  requestData.push(data);
+                  matchUid =
+                    data.myDriversData.id == uid &&
+                    data.myDriversData.requestStatus;
+                } else if (
+                  data &&
+                  data.myDriversData &&
+                  Array.isArray(data.myDriversData)
+                ) {
+                  matchUid = data.myDriversData.some(
+                    (e, i) => e.id == uid && e.requestStatus,
+                  );
                 }
 
+                let flag = '';
+                if (
+                  data &&
+                  !data.passengerData &&
+                  data.selectedCar &&
+                  driverData &&
+                  driverData.vehicleDetails
+                ) {
+                  let selectedVehicle = data.selectedCar.map(
+                    (e, i) => e.carName,
+                  );
+
+                  flag =
+                    selectedVehicle ==
+                    driverData.vehicleDetails.vehicleCategory;
+                }
+
+                if (
+                  data &&
+                  data.passengerData &&
+                  driverData.cnic == data.driverData.cnic &&
+                  !data.requestStatus
+                ) {
+         
+
+                  requestData.push(data);
+                } else {
+                  if (
+                    data &&
+                    data.bidFare &&
+                    !data.requestStatus &&
+                    mileDistance < 25 &&
+                    flag &&
+                    !matchUid
+                  ) {
+                    requestData.push(data);
+                  }
+                }
                 requestData &&
                   requestData.length > 0 &&
                   setPassengerBookingData(requestData);
               }
-            }
+              setLoading(false);
+            });
           });
-        });
-    setLoading(false);
+      }
+    }
   };
+
+
 
   useEffect(() => {
     getRequestFromPassengers();
@@ -364,6 +376,8 @@ export default function DriverHomeScreen({navigation, route}) {
       </TouchableOpacity>
     );
   };
+
+
 
   return (
     <>

@@ -20,12 +20,11 @@ import GoogleMapKey from '../../Constants/GoogleMapKey';
 
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
-
   const [driverData, setDriverData] = useState([]);
-  const [availableDriver, setAvailableDriver] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [request, setRequest] = useState(false);
   const [minutes, setMinutes] = useState([]);
+  const [distance,setDistance] = useState([])
 
   // const [data, setData] = useState([
   //   {
@@ -86,7 +85,6 @@ export default function PassengerFindRide({navigation, route}) {
             data.myDriversData &&
             !Array.isArray(data.myDriversData)
           ) {
-            
             setDriverData([data.myDriversData]);
           } else if (
             data &&
@@ -102,49 +100,17 @@ export default function PassengerFindRide({navigation, route}) {
   useEffect(() => {
     if (passengerData.id && passengerData.bidFare) {
       setRequest(true);
-
-      // firestore()
-      //   .collection('booking')
-      //   .onSnapshot(querySnapshot => {
-      //     let bookingData = [];
-      //     querySnapshot.forEach(documentSnapshot => {
-      //       let data = documentSnapshot.data();
-      //       if (
-      //         data &&
-      //         data.bookingStatus !== 'done' &&
-      //         data.id == passengerData.id
-      //       ) {
-      //         bookingData.push(data);
-      //       }
-
-      //       if (
-      //         bookingData &&
-      //         bookingData.length > 0 &&
-      //         bookingData[0].driverDetail
-      //       ) {
-      //         setAvailableDriverId(bookingData[0].driverDetail);
-      //       }
-      //     });
-      //   });
     }
-
-    
-
     checkAvailableDriverStatus();
   }, []);
 
-
-
-  useEffect(()=>{
-
+  useEffect(() => {
     if (passengerData && !passengerData.bidFare) {
       getDriverData();
-    }else{
-      setDriverData([])
+    } else {
+      setDriverData([]);
     }
-
-  },[passengerData,passengerData.minutes,passengerData.selectedCar.carName])
-
+  }, [passengerData, passengerData.minutes, passengerData.selectedCar.carName]);
 
   const checkRequestStatus = () => {
     if (request && !passengerData.bidFare) {
@@ -292,7 +258,6 @@ export default function PassengerFindRide({navigation, route}) {
       });
   };
 
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
@@ -311,11 +276,14 @@ export default function PassengerFindRide({navigation, route}) {
 
   const AccecptOffer = acceptDriver => {
     if (passengerData && passengerData.bidFare && acceptDriver.bidFare) {
-      
-      if (driverData && !Array.isArray(driverData) && Object.keys(driverData).length>0 ) {
-        console.log("HELLO1")
+      if (
+        driverData &&
+        !Array.isArray(driverData) &&
+        Object.keys(driverData).length > 0
+      ) {
+        console.log('HELLO1');
         acceptDriver.selected = true;
-        acceptDriver.requestStatus = "accepted"
+        acceptDriver.requestStatus = 'accepted';
 
         firestore()
           .collection('Request')
@@ -325,17 +293,16 @@ export default function PassengerFindRide({navigation, route}) {
             requestStatus: 'accepted',
           })
           .then(() => {
-            navigation
-              .navigate('PassengerHomeScreen', {
-                passengerData: passengerData,
-                driverData: acceptDriver,
-              })
-              .catch(error => {
-                console.log(error, 'error');
-              });
+            navigation.navigate('PassengerHomeScreen', {
+              passengerData: passengerData,
+              driverData: acceptDriver,
+            })
+            .catch(error => {
+              console.log(error, 'error');
+            });
           });
       } else {
-        console.log("HELLO2")
+        console.log('HELLO2');
         mySelectedDriver =
           driverData &&
           driverData.map((e, i) => {
@@ -354,25 +321,24 @@ export default function PassengerFindRide({navigation, route}) {
             }
           });
 
+
         let selectedDriverData = mySelectedDriver.filter((e, i) => e.selected);
 
         firestore()
           .collection('Request')
           .doc(passengerData.id)
           .update({
-            
             myDriversData: mySelectedDriver,
             requestStatus: 'accepted',
           })
-          .then(() => {
-            navigation
-              .navigate('PassengerHomeScreen', {
-                passengerData: passengerData,
-                driverData: selectedDriverData,
-              })
-              .catch(() => {
-                console.log(error, 'error');
-              });
+          .then(res => {
+            navigation.navigate('PassengerHomeScreen', {
+              passengerData: passengerData,
+              driverData: selectedDriverData,
+            });
+          })
+          .catch(error => {
+            console.log(error, 'error');
           });
       }
     }
@@ -459,7 +425,7 @@ export default function PassengerFindRide({navigation, route}) {
                 return {
                   ...e,
                   selected: false,
-                  requestStatus: e.requestStatus = 'rejected',
+                  requestStatus: (e.requestStatus = 'rejected'),
                 };
               } else {
                 return e;
@@ -524,12 +490,27 @@ export default function PassengerFindRide({navigation, route}) {
   // }, [selectedDriver]);
 
   const calculateMinutes = (result, item) => {
+
+    console.log(result,"result")
+
     let duration = Math.ceil(result.duration);
     setMinutes([...minutes, duration]);
     item.minutes = Math.ceil(result.duration);
+
+    let myDistance = result.distance
+    myDistance =  Math.ceil (myDistance * 0.621371)
+    setDistance([...distance,myDistance])
+    item.distance = myDistance
+
   };
 
+  console.log(minutes,"minutes")
+  console.log(distance,"distance")
+
   const rideRequests = ({item, index}) => {
+
+
+
     let distanceMinutes =
       minutes &&
       minutes.length > 0 &&
@@ -538,6 +519,13 @@ export default function PassengerFindRide({navigation, route}) {
           return e;
         }
       });
+
+      let distanceDifference = distance && distance.length>0 && distance.map((e,i)=>{
+        if(i == index){
+          return e;
+        }
+      })
+      
 
     return (
       <View style={styles.card}>
@@ -570,6 +558,9 @@ export default function PassengerFindRide({navigation, route}) {
               <Text style={styles.priceText}>{item.bidFare ?? item.fare}$</Text>
               <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
                 {item.minutes ?? distanceMinutes} minutes away
+              </Text>
+              <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                {item.distance?? distanceDifference} miles away
               </Text>
             </View>
           </View>

@@ -7,15 +7,13 @@ import Colors from '../Constants/Colors';
 
 import GoogleMapKey from '../Constants/GoogleMapKey';
 
-export default function AddressPickup({placeholderText, fetchAddress}) {
+export default function AddressPickup({placeholderText, fetchAddress, type}) {
   const onPressAddress = (data, details) => {
     const lat = details.geometry.location.lat;
     const lng = details.geometry.location.lng;
     console.log(details.formatted_address);
-
     fetchAddress(lat, lng);
-  };
-
+  };  
   return (
     <GooglePlacesAutocomplete
       placeholder={placeholderText}
@@ -32,7 +30,8 @@ export default function AddressPickup({placeholderText, fetchAddress}) {
         description: {color: 'black'},
       }}
       textInputProps={{
-        placeholderTextColor: Colors.gray,
+        placeholderTextColor:
+          type && type == 'pickup' ? Colors.black : Colors.gray,
       }}
     />
   );
