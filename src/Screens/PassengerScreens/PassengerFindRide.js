@@ -24,52 +24,7 @@ export default function PassengerFindRide({navigation, route}) {
   const [selectedDriver, setSelectedDriver] = useState('');
   const [request, setRequest] = useState(false);
   const [minutes, setMinutes] = useState([]);
-  const [distance,setDistance] = useState([])
-
-  // const [data, setData] = useState([
-  //   {
-  //     id: '1',
-  //     src: require('../../Assets/Images/dummyPic.png'),
-  //     vehicleName: 'Civic',
-  //     price: 900,
-  //     driverName: 'Sameed',
-  //   },
-  //   {
-  //     id: '2',
-  //     src: require('../../Assets/Images/dummyPic.png'),
-  //     vehicleName: 'Honda City',
-  //     price: 800,
-  //     driverName: 'Aziz',
-  //   },
-  //   {
-  //     id: '3',
-  //     src: require('../../Assets/Images/dummyPic.png'),
-  //     vehicleName: 'Corolla',
-  //     price: 700,
-  //     driverName: 'Ali',
-  //   },
-  //   {
-  //     id: '4',
-  //     src: require('../../Assets/Images/dummyPic.png'),
-  //     vehicleName: 'City',
-  //     price: 600,
-  //     driverName: 'Rayan',
-  //   },
-  //   {
-  //     id: '5',
-  //     src: require('../../Assets/Images/dummyPic.png'),
-  //     vehicleName: 'Liana',
-  //     price: 750,
-  //     driverName: 'Hassan',
-  //   },
-  //   {
-  //     id: '6',
-  //     src: require('../../Assets/Images/dummyPic.png'),
-  //     vehicleName: 'Changan',
-  //     price: 850,
-  //     driverName: 'Hamza',
-  //   },
-  // ]);
+  const [distance, setDistance] = useState([]);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -78,7 +33,6 @@ export default function PassengerFindRide({navigation, route}) {
         .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
-
           if (
             data &&
             data.bidFare &&
@@ -109,6 +63,7 @@ export default function PassengerFindRide({navigation, route}) {
       getDriverData();
     } else {
       setDriverData([]);
+      setRequest(true);
     }
   }, [passengerData, passengerData.minutes, passengerData.selectedCar.carName]);
 
@@ -123,20 +78,19 @@ export default function PassengerFindRide({navigation, route}) {
             data &&
             Object.keys(data).length > 0 &&
             data.driverData &&
-            !data.bidFare
+            !data.bidFare &&
+            request
           ) {
             if (data.requestStatus == 'accepted') {
+              setRequest(false);
               ToastAndroid.show(
                 'Your request has been accepted',
                 ToastAndroid.SHORT,
               );
-              setTimeout(() => {
-                navigation.navigate('PassengerHomeScreen', {
-                  passengerData: passengerData,
-                  driverData: selectedDriver,
-                });
-                setRequest(false);
-              }, 1000);
+              navigation.navigate('PassengerHomeScreen', {
+                passengerData: passengerData,
+                driverData: selectedDriver,
+              });
             } else if (
               data &&
               data.requestStatus == 'rejected' &&
@@ -205,7 +159,12 @@ export default function PassengerFindRide({navigation, route}) {
             mileDistance = (dis / 1609.34).toFixed(2);
           }
 
-          if (driverData.status == 'online' && mileDistance <= 3 && flag) {
+          if (
+            driverData.status == 'online' &&
+            mileDistance <= 3 &&
+            flag &&
+            !driverData.inlined
+          ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
           } else if (
@@ -213,7 +172,8 @@ export default function PassengerFindRide({navigation, route}) {
             driverData.status == 'online' &&
             mileDistance > 3 &&
             mileDistance < 5 &&
-            flag
+            flag &&
+            !driverData.inlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -222,7 +182,8 @@ export default function PassengerFindRide({navigation, route}) {
             driverData.status == 'online' &&
             mileDistance < 10 &&
             mileDistance > 5 &&
-            flag
+            flag &&
+            !driverData.inlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -231,7 +192,8 @@ export default function PassengerFindRide({navigation, route}) {
             driverData.status == 'online' &&
             mileDistance < 15 &&
             mileDistance > 10 &&
-            flag
+            flag &&
+            !driverData.inlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -240,7 +202,8 @@ export default function PassengerFindRide({navigation, route}) {
             driverData.status == 'online' &&
             mileDistance < 20 &&
             mileDistance > 15 &&
-            flag
+            flag &&
+            !driverData.inlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -248,7 +211,8 @@ export default function PassengerFindRide({navigation, route}) {
             myDriversTemp.length < 5 &&
             driverData.status == 'online' &&
             mileDistance < 25 &&
-            mileDistance > 20
+            mileDistance > 20 &&
+            !driverData.inlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -257,7 +221,6 @@ export default function PassengerFindRide({navigation, route}) {
         setDriverData(myDriversTemp);
       });
   };
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
@@ -266,14 +229,14 @@ export default function PassengerFindRide({navigation, route}) {
             style={styles.cancelTextContainer}
             onPress={() => {
               navigation.navigate('PassengerHomeScreen');
-            }}>
+            }}
+          >
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
       },
     });
   }, []);
-
   const AccecptOffer = acceptDriver => {
     if (passengerData && passengerData.bidFare && acceptDriver.bidFare) {
       if (
@@ -281,7 +244,6 @@ export default function PassengerFindRide({navigation, route}) {
         !Array.isArray(driverData) &&
         Object.keys(driverData).length > 0
       ) {
-        console.log('HELLO1');
         acceptDriver.selected = true;
         acceptDriver.requestStatus = 'accepted';
 
@@ -293,13 +255,14 @@ export default function PassengerFindRide({navigation, route}) {
             requestStatus: 'accepted',
           })
           .then(() => {
-            navigation.navigate('PassengerHomeScreen', {
-              passengerData: passengerData,
-              driverData: acceptDriver,
-            })
-            .catch(error => {
-              console.log(error, 'error');
-            });
+            navigation
+              .navigate('PassengerHomeScreen', {
+                passengerData: passengerData,
+                driverData: acceptDriver,
+              })
+              .catch(error => {
+                console.log(error, 'error');
+              });
           });
       } else {
         console.log('HELLO2');
@@ -320,7 +283,6 @@ export default function PassengerFindRide({navigation, route}) {
               };
             }
           });
-
 
         let selectedDriverData = mySelectedDriver.filter((e, i) => e.selected);
 
@@ -361,21 +323,24 @@ export default function PassengerFindRide({navigation, route}) {
     }
   };
 
-  // useEffect(() => {
+  useEffect(() => {
+    if (request && !passengerData.bidFare) {
+      const interval = setInterval(() => {
+        setDriverData(
+          driverData.filter((e, i) => {
+            return e.cnic !== selectedDriver.cnic;
+          }),
+        );
+        setRequest(false);
+        ToastAndroid.show(
+          'This driver is not available right now',
+          ToastAndroid.SHORT,
+        );
+      }, 30000);
 
-  //   if (request) {
-  //     setTimeout(() => {
-  //       setDriverData(
-  //         driverData.filter((e, i) => {
-  //           return e.cnic !== selectedDriver.cnic;
-  //         }),
-  //       );
-  //       setRequest(false);
-
-  //       Alert.alert('Error Alert', 'This Driver is not available Yet');
-  //     }, 20000);
-  //   }
-  // }, [request]);
+      return () => clearInterval(interval);
+    }
+  }, [request]);
 
   const rejectOffer = rejectedDriver => {
     if (rejectedDriver && !passengerData.bidFare) {
@@ -431,7 +396,6 @@ export default function PassengerFindRide({navigation, route}) {
                 return e;
               }
             });
-
             firestore()
               .collection('Request')
               .doc(passengerData.id)
@@ -453,64 +417,20 @@ export default function PassengerFindRide({navigation, route}) {
     }
   };
 
-  // const sendAcceptedDriverInFb = () => {
-  //   firestore()
-  //     .collection('booking')
-  //     .doc(`${passengerData.id}booking${passengerData.bookingCount}`)
-  //     .update({
-  //       driverDetail: selectedDriver,
-  //       bookingStatus: 'done',
-  //       destination: 'start',
-  //     })
-  //     .then(() => {
-  //       navigation.navigate('PassengerHomeScreen', {
-  //         selectedDriver: selectedDriver,
-  //         passenger: passengerData,
-  //       });
-  //     })
-  //     .catch(error => {
-  //       console.log(error);
-  //     });
-  // };
-
-  // useEffect(() => {
-  //   if (
-  //     selectedDriver &&
-  //     Array.isArray(selectedDriver) &&
-  //     selectedDriver.length > 0
-  //   ) {
-  //     sendAcceptedDriverInFb();
-  //   } else if (
-  //     selectedDriver &&
-  //     !Array.isArray(selectedDriver) &&
-  //     Object.keys(selectedDriver).length > 0
-  //   ) {
-  //     sendAcceptedDriverInFb();
-  //   }
-  // }, [selectedDriver]);
-
   const calculateMinutes = (result, item) => {
-
-    console.log(result,"result")
+    console.log(result, 'result');
 
     let duration = Math.ceil(result.duration);
     setMinutes([...minutes, duration]);
     item.minutes = Math.ceil(result.duration);
 
-    let myDistance = result.distance
-    myDistance =  Math.ceil (myDistance * 0.621371)
-    setDistance([...distance,myDistance])
-    item.distance = myDistance
-
+    let myDistance = result.distance;
+    myDistance = Math.ceil(myDistance * 0.621371);
+    setDistance([...distance, myDistance]);
+    item.distance = myDistance;
   };
 
-  console.log(minutes,"minutes")
-  console.log(distance,"distance")
-
   const rideRequests = ({item, index}) => {
-
-
-
     let distanceMinutes =
       minutes &&
       minutes.length > 0 &&
@@ -520,13 +440,14 @@ export default function PassengerFindRide({navigation, route}) {
         }
       });
 
-      let distanceDifference = distance && distance.length>0 && distance.map((e,i)=>{
-        if(i == index){
+    let distanceDifference =
+      distance &&
+      distance.length > 0 &&
+      distance.map((e, i) => {
+        if (i == index) {
           return e;
         }
-      })
-      
-
+      });
     return (
       <View style={styles.card}>
         <MapViewDirections
@@ -560,7 +481,7 @@ export default function PassengerFindRide({navigation, route}) {
                 {item.minutes ?? distanceMinutes} minutes away
               </Text>
               <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
-                {item.distance?? distanceDifference} miles away
+                {item.distance ?? distanceDifference} miles away
               </Text>
             </View>
           </View>
@@ -605,7 +526,8 @@ export default function PassengerFindRide({navigation, route}) {
             alignItems: 'center',
             justifyContent: 'center',
             height: '90%',
-          }}>
+          }}
+        >
           <ActivityIndicator color="black" size={100} />
           <Text style={{color: 'black', marginTop: 10}}>
             {' '}

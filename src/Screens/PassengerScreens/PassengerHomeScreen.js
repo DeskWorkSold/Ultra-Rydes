@@ -23,7 +23,8 @@ import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
-import Icon from "react-native-vector-icons/AntDesign"
+import Icon from 'react-native-vector-icons/AntDesign';
+import {LogBox} from 'react-native';
 import {
   locationPermission,
   getCurrentLocation,
@@ -32,10 +33,10 @@ import auth from '@react-native-firebase/auth';
 import * as geolib from 'geolib';
 import firestore from '@react-native-firebase/firestore';
 import Geocoder from 'react-native-geocoding';
-import { Modal } from 'react-native';
+import {Modal} from 'react-native';
 import AppModal from '../../Components/modal';
 import {BackHandler} from 'react-native';
-import { useCallback } from 'react';
+import {useCallback} from 'react';
 
 export default function PassengerHomeScreen({navigation, route}) {
   const [dummyDataCat, setDummyDataCat] = useState('');
@@ -62,14 +63,22 @@ export default function PassengerHomeScreen({navigation, route}) {
     dropLocationCords: '',
   });
   const [routeData, setRouteData] = useState([]);
-  const [driverArriveAtPickUpLocation,setDriverArriveAtPickUpLocation] = useState(false)
-  const [driverArriveAtdropoffLocation,setDriverArriveAtdropoffLocation] = useState(false)
+  const [
+    driverArriveAtPickUpLocation,
+    setDriverArriveAtPickUpLocation,
+  ] = useState(false);
+  const [
+    driverArriveAtdropoffLocation,
+    setDriverArriveAtdropoffLocation,
+  ] = useState(false);
   const [location, setLocation] = useState({
     pickupCords: null,
     dropLocationCords: {},
   });
-  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
-  useState({
+  const [
+    minutesAndDistanceDifference,
+    setMinutesAndDistanceDifference,
+  ] = useState({
     minutes: '',
     distance: '',
     details: '',
@@ -91,12 +100,17 @@ export default function PassengerHomeScreen({navigation, route}) {
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
 
-          
-             let myDriversData = data.myDriversData ? data.myDriversData : data.driverData
+          let myDriversData = data.myDriversData
+            ? data.myDriversData
+            : data.driverData;
+          console.log(myDriversData, 'data');
 
-
-
-          if (!driverArrive.pickupLocation && !driverArriveAtPickUpLocation && data && data.driverArriveAtPickupLocation) {
+          if (
+            !driverArrive.pickupLocation &&
+            !driverArriveAtPickUpLocation &&
+            data &&
+            data.driverArriveAtPickupLocation
+          ) {
             setDriverArrive({
               ...driverArrive,
               pickupLocation: true,
@@ -118,6 +132,9 @@ export default function PassengerHomeScreen({navigation, route}) {
     }
   };
 
+  console.log(driverArrive, 'pickuplocation');
+  console.log(selectedDriverLocation, 'location');
+
   useEffect(() => {
     const interval = setInterval(() => {
       getDriverLocationUpdates();
@@ -133,21 +150,25 @@ export default function PassengerHomeScreen({navigation, route}) {
 
   let data = route.params;
 
+  useEffect(() => {
+    LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
+  }, []);
 
   useEffect(() => {
-    
-      console.log(pickupCords,"pickupCords")
-      console.log(dropLocationCords,"dropLcation")
+    console.log(pickupCords, 'pickupCords');
+    console.log(dropLocationCords, 'dropLcation');
 
-      if (pickupCords && Object.keys(pickupCords).length > 0 && dropLocationCords && Object.keys(dropLocationCords).length > 0) {
-        getPickUpAndDropOffAddress();
-      }
-      
-    
-  }, [location,pickupCords,dropLocationCords]);
+    if (
+      pickupCords &&
+      Object.keys(pickupCords).length > 0 &&
+      dropLocationCords &&
+      Object.keys(dropLocationCords).length > 0
+    ) {
+      getPickUpAndDropOffAddress();
+    }
+  }, [location, pickupCords, dropLocationCords]);
 
-  console.log(location,"location")
-
+  console.log(location, 'location');
 
   useEffect(() => {
     if (data) {
@@ -169,10 +190,6 @@ export default function PassengerHomeScreen({navigation, route}) {
       return () => backHandler.remove();
     }
   }, []);
-
-  
-console.log(pickupCords,"myPick")
-console.log(dropLocationCords,"drop")
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -227,7 +244,7 @@ console.log(dropLocationCords,"drop")
   const ASPECT_RATIO = screen.width / screen.height;
   const LATITUDE_DELTA = 0.06;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-  
+
   const {pickupCords, dropLocationCords} = location;
 
   const [CurrentUserUid, setCurrentUserUid] = useState('');
@@ -259,7 +276,6 @@ console.log(dropLocationCords,"drop")
       .doc('8w6hVPveXKR6kTvYVWwy')
       .onSnapshot(documentSnapshot => {
         const GetUserData = documentSnapshot.data();
-
         setDummyDataCat(GetUserData.categories);
       });
   };
@@ -302,7 +318,7 @@ console.log(dropLocationCords,"drop")
   };
 
   const getPickUpAndDropOffAddress = () => {
-    console.log("hellow")
+    console.log('hellow');
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
     Geocoder.from(pickupCords.latitude, pickupCords.longitude)
       .then(json => {
@@ -310,7 +326,7 @@ console.log(dropLocationCords,"drop")
         setPickUpAddress(addressPickup);
       })
       .catch(error => console.warn(error));
-    
+
     Geocoder.from(dropLocationCords.latitude, dropLocationCords.longitude)
       .then(json => {
         var addressDropOff = json.results[0].formatted_address;
@@ -372,14 +388,17 @@ console.log(dropLocationCords,"drop")
         id: CurrentUserUid,
       };
 
-      firestore().collection("Request").doc(CurrentUserUid).set(data).then(()=>{
+      firestore()
+        .collection('Request')
+        .doc(CurrentUserUid)
+        .set(data)
+        .then(() => {
+          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
 
-          ToastAndroid.show("Your request has been sent",ToastAndroid.SHORT)
-
-          setTimeout(()=>{
+          setTimeout(() => {
             navigation.navigate('PassengerFindRide', data);
-          },1000)
-      })
+          }, 1000);
+        });
     }
     // else {
     //   firestore()
@@ -540,14 +559,15 @@ console.log(dropLocationCords,"drop")
   };
   const Categories = ({item, index}) => {
     return (
-     <View style={styles.catList}>
+      <View style={styles.catList}>
         <TouchableOpacity
           style={
             item.selected
               ? [styles.cards, {borderColor: Colors.primary, borderWidth: 2}]
               : [styles.cards]
           }
-          onPress={() => onClickItem(item, index)}>
+          onPress={() => !bidFare && onClickItem(item, index)}
+        >
           <Image
             style={styles.catImg}
             source={{uri: item.carImage}}
@@ -605,7 +625,6 @@ console.log(dropLocationCords,"drop")
       },
     });
   };
-
   const closeModal = () => {
     setAppearBiddingOption(false);
   };
@@ -630,13 +649,12 @@ console.log(dropLocationCords,"drop")
   };
 
   const hideModal = () => {
-
     setDriverArrive({
       ...driverArrive,
-      pickupLocation : false
-    })
-    setDriverArriveAtPickUpLocation(true)
-  }
+      pickupLocation: false,
+    });
+    setDriverArriveAtPickUpLocation(true);
+  };
   const showBidFareModal = () => {
     let flag =
       dummyDataCat &&
@@ -662,7 +680,8 @@ console.log(dropLocationCords,"drop")
               ...driverArrive,
               pickupLocation: false,
             });
-          }}>
+          }}
+        >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View>
@@ -673,9 +692,8 @@ console.log(dropLocationCords,"drop")
               </Text>
               <TouchableOpacity
                 style={[styles.button, {marginBottom: 10}]}
-                onPress={() =>
-                    hideModal()
-                }>
+                onPress={() => hideModal()}
+              >
                 <Text style={styles.textStyle}>confirm</Text>
               </TouchableOpacity>
             </View>
@@ -684,7 +702,6 @@ console.log(dropLocationCords,"drop")
       </View>
     );
   }, [driverArrive]);
-
 
   const getMinutesAndDistance = result => {
     setMinutesAndDistanceDifference({
@@ -696,7 +713,6 @@ console.log(dropLocationCords,"drop")
   };
 
   const getViewLocation = useCallback(() => {
-    
     return (
       <MapViewDirections
         origin={selectedDriverLocation}
@@ -719,7 +735,7 @@ console.log(dropLocationCords,"drop")
       />
     );
   }, [selectedDriver]);
-  
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -747,8 +763,9 @@ console.log(dropLocationCords,"drop")
                   ...pickupCords,
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA,
-                }}>
-                <Marker coordinate={pickupCords} title="pickup location"  />
+                }}
+              >
+                <Marker coordinate={pickupCords} title="pickup location" />
 
                 {!selectedDriver &&
                   onlineDriversLocation &&
@@ -778,7 +795,8 @@ console.log(dropLocationCords,"drop")
                               latitude: b.currentLocation.latitude,
                               longitude: b.currentLocation.longitude,
                             }}
-                            pinColor="blue">
+                            pinColor="blue"
+                          >
                             <Image
                               source={require('../../Assets/Images/mapCar.png')}
                               style={{width: 40, height: 40}}
@@ -827,73 +845,89 @@ console.log(dropLocationCords,"drop")
                     draggable={true}
                   />
                 )}
-                {selectedDriverLocation && selectedDriverLocation.latitude && selectedDriverLocation.longitude &&
-                  getViewLocation()
-                }
-                {dropLocationCords && Object.keys(dropLocationCords).length > 0 && (
-                  <MapViewDirections
-                    origin={location.pickupCords}
-                    destination={location.dropLocationCords}
-                    apikey={GoogleMapKey.GOOGLE_MAP_KEY}
-                    strokeColor={Colors.black}
-                    strokeWidth={3}
-                    optimizeWayPoints={true}
-                    mode="DRIVING"
-                    onReady={result => {
-                      setResult(result);
-                      calculateDistance(result);
-                      mapRef.current.fitToCoordinates(result.coordinates, {
-                        edgePadding: {
-                          right: 30,
-                          bottom: 50,
-                          left: 30,
-                          top: 50,
-                        },
-                      });
-                    }}
-                  />
-                )}
+                {selectedDriverLocation &&
+                  selectedDriverLocation.latitude &&
+                  selectedDriverLocation.longitude &&
+                  getViewLocation()}
+                {dropLocationCords &&
+                  Object.keys(dropLocationCords).length > 0 && (
+                    <MapViewDirections
+                      origin={location.pickupCords}
+                      destination={location.dropLocationCords}
+                      apikey={GoogleMapKey.GOOGLE_MAP_KEY}
+                      strokeColor={Colors.black}
+                      strokeWidth={3}
+                      optimizeWayPoints={true}
+                      mode="DRIVING"
+                      onReady={result => {
+                        setResult(result);
+                        calculateDistance(result);
+                        mapRef.current.fitToCoordinates(result.coordinates, {
+                          edgePadding: {
+                            right: 30,
+                            bottom: 50,
+                            left: 30,
+                            top: 50,
+                          },
+                        });
+                      }}
+                    />
+                  )}
               </MapView>
             )}
-                {data &&  <View style={{position: 'absolute', right: 10, top: 10}}>
-          <Text
-            style={{
-              color: 'black',
-              fontSize: 18,
-              fontWeight: '900',
-              marginTop: 10,
-            }}>
-            Duration: {driverArriveAtPickUpLocation || driverArrive.pickupLocation ? data.passengerData.minutes : Math.ceil(minutesAndDistanceDifference.minutes)} Minutes
-          </Text>
-          <Text
-            style={{
-              color: 'black',
-              fontSize: 18,
-              fontWeight: '900',
-              marginTop: 5,
-            }}>
-            Distance:{' '}
-            {driverArriveAtPickUpLocation || driverArrive.pickUpLocation ? data.passengerData.distance :  (minutesAndDistanceDifference.distance * 0.621371).toFixed(2)} Miles{' '}
-          </Text>
-        </View>}
-
-
+            {data && (
+              <View style={{position: 'absolute', right: 10, top: 10}}>
+                <Text
+                  style={{
+                    color: 'black',
+                    fontSize: 18,
+                    fontWeight: '900',
+                    marginTop: 10,
+                  }}
+                >
+                  Duration:{' '}
+                  {driverArriveAtPickUpLocation || driverArrive.pickupLocation
+                    ? data.passengerData.minutes
+                    : Math.ceil(minutesAndDistanceDifference.minutes)}{' '}
+                  Minutes
+                </Text>
+                <Text
+                  style={{
+                    color: 'black',
+                    fontSize: 18,
+                    fontWeight: '900',
+                    marginTop: 5,
+                  }}
+                >
+                  Distance:{' '}
+                  {driverArriveAtPickUpLocation || driverArrive.pickUpLocation
+                    ? data.passengerData.distance
+                    : (
+                        minutesAndDistanceDifference.distance * 0.621371
+                      ).toFixed(2)}{' '}
+                  Miles{' '}
+                </Text>
+              </View>
+            )}
           </View>
-                  
+
           <View style={styles.bottomCard}>
             <KeyboardAvoidingView>
               <ScrollView
                 nestedScrollEnabled={true}
-                keyboardShouldPersistTaps="handled">
-                
+                keyboardShouldPersistTaps="handled"
+              >
                 <FlatList
-                  data={data && data.passengerData.selectedCar? data.passengerData.selectedCar : dummyDataCat}
+                  data={
+                    data && data.passengerData.selectedCar
+                      ? data.passengerData.selectedCar
+                      : dummyDataCat
+                  }
                   renderItem={Categories}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={item => item.id}
                 />
-                 
 
                 <KeyboardAvoidingView>
                   <AddressPickup
@@ -975,13 +1009,15 @@ console.log(dropLocationCords,"drop")
                         padding: 8,
                         width: '30%',
                         borderRadius: 10,
-                      }}>
+                      }}
+                    >
                       <Text
                         style={{
                           color: 'black',
                           fontSize: 20,
                           fontWeight: '700',
-                        }}>
+                        }}
+                      >
                         Bid Fare
                       </Text>
                     </TouchableOpacity>
@@ -994,10 +1030,8 @@ console.log(dropLocationCords,"drop")
                       confirm={confirmBidFare}
                     />
                   )}
-                  {
-                    driverArrive.pickupLocation && ArriveModal()
-                  }
-                 
+                  {driverArrive && driverArrive.pickupLocation && ArriveModal()}
+
                   <TextInput
                     placeholder="Additional Details"
                     placeholderTextColor={Colors.gray}
@@ -1124,8 +1158,8 @@ const styles = StyleSheet.create({
   modalView: {
     margin: 20,
     backgroundColor: 'black',
-    height : "40%",
-    width:"80%",
+    height: '40%',
+    width: '80%',
     borderRadius: 20,
     padding: 15,
     alignItems: 'center',
@@ -1142,29 +1176,28 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     elevation: 2,
-    width:"90%",
-    color:"white",
-    borderWidth:1,
-    borderColor:"white",
-    position:"absolute",
-    bottom:20
+    width: '90%',
+    color: 'white',
+    borderWidth: 1,
+    borderColor: 'white',
+    position: 'absolute',
+    bottom: 20,
   },
   buttonOpen: {
     backgroundColor: '#white',
   },
-  
+
   textStyle: {
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
-    
   },
   modalText: {
     marginBottom: 15,
     textAlign: 'center',
-    fontSize:18,
-    marginTop:20,
-    fontWeight:"800"
+    fontSize: 18,
+    marginTop: 20,
+    fontWeight: '800',
+    color: 'white',
   },
-  
 });

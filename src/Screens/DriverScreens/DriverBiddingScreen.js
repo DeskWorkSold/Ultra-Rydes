@@ -35,10 +35,8 @@ import {ToastAndroid} from 'react-native';
 import {ActivityIndicator} from 'react-native-paper';
 import {getPreciseDistance} from 'geolib';
 import {Modal} from 'react-native';
-
-import {USES_DEFAULT_IMPLEMENTATION} from 'react-native-maps/lib/decorateMapComponent';
 import {useCallback} from 'react';
-// import { TextInput } from 'react-native-paper';
+
 
 export default function DriverBiddingScreen({navigation, route}) {
   let passengerData = '';
@@ -62,8 +60,6 @@ export default function DriverBiddingScreen({navigation, route}) {
   }
 
   const {data} = route.params;
-  
-  
 
   const [pickUpLocation, setpickUpLocation] = useState('');
   const [dropOffLocation, setdropOffLocation] = useState('');
@@ -90,7 +86,7 @@ export default function DriverBiddingScreen({navigation, route}) {
     pickUpLocation: false,
     dropOffLocation: false,
   });
-
+  const [reload,setReload] = useState(false)
 
   
   const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
@@ -281,6 +277,8 @@ export default function DriverBiddingScreen({navigation, route}) {
           .onSnapshot(querySnapshot => {
             let data = querySnapshot.data();
 
+        
+
             if (
               data &&
               data.myDriversData &&
@@ -292,7 +290,7 @@ export default function DriverBiddingScreen({navigation, route}) {
                 'Your Request has been rejected',
                 ToastAndroid.SHORT,
               );
-              navigation.navigate('DriverHomeScreen');
+              navigation.navigate('DriverHomeScreen',!reload);
               return;
             }
             if (
@@ -310,9 +308,9 @@ export default function DriverBiddingScreen({navigation, route}) {
                   'Your Request has been rejected',
                   ToastAndroid.SHORT,
                 );
-                navigation.navigate('DriverHomeScreen');
+                navigation.navigate('DriverHomeScreen',!reload);
+                return
               }
-              return;
             }
             if (
               data &&
@@ -353,7 +351,7 @@ export default function DriverBiddingScreen({navigation, route}) {
                   ToastAndroid.SHORT,
                 );
                 setLoading(false);
-                navigation.navigate('DriverHomeScreen');
+                navigation.navigate('DriverHomeScreen',!reload);
               }
             }
             if (
@@ -368,6 +366,9 @@ export default function DriverBiddingScreen({navigation, route}) {
               let flag1 = data.myDriversData.some(
                 (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
               );
+
+              console.log(flag,"flag")
+              console.log(flag1,"flag1")
 
               if (flag && !flag1) {
                 ToastAndroid.show(
@@ -390,13 +391,14 @@ export default function DriverBiddingScreen({navigation, route}) {
 
                 setSelectedDriver(myDriverData);
                 setLoading(false);
-              } else if (!flag && flag1) {
+              }
+               else if (!flag && flag1) {
                 ToastAndroid.show(
                   'Your request has been rejected',
                   ToastAndroid.SHORT,
                 );
                 setLoading(false);
-                navigation.navigate('DriverHomeScreen');
+                navigation.navigate('DriverHomeScreen',!reload);
               }
             }
           });
@@ -531,10 +533,6 @@ export default function DriverBiddingScreen({navigation, route}) {
                 console.log(error);
               })
               
-              
-
-
-              
           })
           .catch(error => {
             console.log(error);
@@ -593,7 +591,7 @@ export default function DriverBiddingScreen({navigation, route}) {
               .catch(error => {
                 console.log(error);
               });
-          } else if (data && Array.isArray(data.myDriversData)) {
+          } else if (data && Array.isArray(data.myDriversData) && !data.requestStatus ) {
             let flag = data.myDriversData.some(
               (e, i) => e.id == driverPersonalData.id,
             );
@@ -722,7 +720,7 @@ export default function DriverBiddingScreen({navigation, route}) {
         }}
       />
     );
-  }, [myDriverData,selectedDriver]);
+  }, []);
 
   
   const mapRef = useRef();

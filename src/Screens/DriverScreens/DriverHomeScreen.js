@@ -25,6 +25,9 @@ import {getPreciseDistance} from 'geolib';
 import EmailSignInScreen from '../EmailSignInScreen';
 
 export default function DriverHomeScreen({navigation, route}) {
+
+  let reload = route.params
+
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
       latitude: 24.863,
@@ -150,7 +153,10 @@ export default function DriverHomeScreen({navigation, route}) {
     // }
     
     if (!driverData.inlined) {
+
+
       if (driverStatus == 'online' && driverData.currentLocation) {
+        let requestData = [];
         firestore()
           .collection('Request')
           .onSnapshot(querySnapshot => {
@@ -184,10 +190,13 @@ export default function DriverHomeScreen({navigation, route}) {
 
          
 
-              if (data && !data.requestStatus) {
+              if (data) {
+
+                
+
                 let matchUid = false;
                 let uid = auth().currentUser.uid;
-                let requestData = [];
+
                 if (
                   data &&
                   data.myDriversData &&
@@ -206,6 +215,18 @@ export default function DriverHomeScreen({navigation, route}) {
                   );
                 }
 
+                  let checkRejectStatus = false
+                if(data && data.myDriversData && Array.isArray(data.myDriversData)){
+                   checkRejectStatus = data.myDriversData.some((e,i)=> e.id == uid && e.requestStatus == "rejected")
+                  
+                }
+                if(data && data.myDriversData && !Array.isArray(data.myDriversData) && data.myDriversData.requestStatus){
+                  checkRejectStatus = data.myDriversData.id == uid && data.myDriversData.requestStatus == "rejected"
+                  
+                }
+
+                
+                
                 let flag = '';
                 if (
                   data &&
@@ -227,7 +248,7 @@ export default function DriverHomeScreen({navigation, route}) {
                   data &&
                   data.passengerData &&
                   driverData.cnic == data.driverData.cnic &&
-                  !data.requestStatus
+                  !data.requestStatus && !checkRejectStatus
                 ) {
          
 
@@ -239,19 +260,23 @@ export default function DriverHomeScreen({navigation, route}) {
                     !data.requestStatus &&
                     mileDistance < 25 &&
                     flag &&
-                    !matchUid
+                    !matchUid && !checkRejectStatus
                   ) {
                     requestData.push(data);
                   }
-                }
-                requestData &&
-                  requestData.length > 0 &&
-                  setPassengerBookingData(requestData);
+                  console.log(requestData,"request")
+                }                
               }
-              setLoading(false);
             });
-          });
-      }
+            setPassengerBookingData(requestData);
+            setLoading(false);
+          }
+          );
+        }
+    }
+
+    else{
+      setPassengerBookingData([]);
     }
   };
 
@@ -259,7 +284,7 @@ export default function DriverHomeScreen({navigation, route}) {
 
   useEffect(() => {
     getRequestFromPassengers();
-  }, [driverStatus, driverData]);
+  }, [driverStatus, driverData,reload]);
 
   useEffect(() => {
     if (driverStatus == 'online') {
@@ -376,9 +401,7 @@ export default function DriverHomeScreen({navigation, route}) {
       </TouchableOpacity>
     );
   };
-
-
-
+  
   return (
     <>
       {loading ? (
