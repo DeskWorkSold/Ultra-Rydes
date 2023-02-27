@@ -97,6 +97,9 @@ export default function DriverBiddingScreen({navigation, route}) {
     });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
 
+
+console.log(selectedDriver,"selected")
+
   useEffect(() => {
     if (!selectedDriver) {
       gettingFormattedAddress();
@@ -203,7 +206,7 @@ export default function DriverBiddingScreen({navigation, route}) {
 
       return () => backHandler.remove();
     }
-  }, []);
+  }, [selectedDriver]);
 
   const sendDriverLocationToPassenger = () => {
     if (
@@ -215,7 +218,6 @@ export default function DriverBiddingScreen({navigation, route}) {
     ) {
       myDriverData.currentLocation = driverCurrentLocation;
         
-
       if(passengerData.bidFare){
 
       firestore()
@@ -265,9 +267,6 @@ export default function DriverBiddingScreen({navigation, route}) {
     }
   };
 
-
-  console.log(selectedDriver,"selected")
-
   const checkRequestStatus = () => {
     if (!selectedDriver) {
       if (passengerData && passengerData.bidFare) {
@@ -276,8 +275,6 @@ export default function DriverBiddingScreen({navigation, route}) {
           .doc(passengerData.id)
           .onSnapshot(querySnapshot => {
             let data = querySnapshot.data();
-
-        
 
             if (
               data &&
@@ -290,7 +287,7 @@ export default function DriverBiddingScreen({navigation, route}) {
                 'Your Request has been rejected',
                 ToastAndroid.SHORT,
               );
-              navigation.navigate('DriverHomeScreen',!reload);
+              // navigation.navigate('DriverHomeScreen',!reload);
               return;
             }
             if (
@@ -308,7 +305,7 @@ export default function DriverBiddingScreen({navigation, route}) {
                   'Your Request has been rejected',
                   ToastAndroid.SHORT,
                 );
-                navigation.navigate('DriverHomeScreen',!reload);
+                // navigation.navigate('DriverHomeScreen',!reload);
                 return
               }
             }
@@ -351,7 +348,7 @@ export default function DriverBiddingScreen({navigation, route}) {
                   ToastAndroid.SHORT,
                 );
                 setLoading(false);
-                navigation.navigate('DriverHomeScreen',!reload);
+                // navigation.navigate('DriverHomeScreen',!reload);
               }
             }
             if (
@@ -367,8 +364,6 @@ export default function DriverBiddingScreen({navigation, route}) {
                 (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
               );
 
-              console.log(flag,"flag")
-              console.log(flag1,"flag1")
 
               if (flag && !flag1) {
                 ToastAndroid.show(
@@ -398,7 +393,7 @@ export default function DriverBiddingScreen({navigation, route}) {
                   ToastAndroid.SHORT,
                 );
                 setLoading(false);
-                navigation.navigate('DriverHomeScreen',!reload);
+                // navigation.navigate('DriverHomeScreen',!reload);
               }
             }
           });
@@ -491,7 +486,7 @@ export default function DriverBiddingScreen({navigation, route}) {
       if (
         passengerData &&
         !passengerData.bidFare &&
-        passengerData.requestStatus
+        passengerData.requestStatus && !selectedDriver
       ) {
         ToastAndroid.show(
           'You have already accepted this request',
@@ -515,11 +510,11 @@ export default function DriverBiddingScreen({navigation, route}) {
             requestStatus: 'accepted',
           })
           .then(() => {
+            setSelectedDriver(driverData)
             ToastAndroid.show(
               'You have accepted customer Request',
               ToastAndroid.SHORT,
             );
-            setSelectedDriver(driverData)
             firestore()
               .collection('Drivers')
               .doc(driverUid)
@@ -532,7 +527,7 @@ export default function DriverBiddingScreen({navigation, route}) {
               .catch(error => {
                 console.log(error);
               })
-              
+                
           })
           .catch(error => {
             console.log(error);
@@ -563,9 +558,8 @@ export default function DriverBiddingScreen({navigation, route}) {
           });
       }
     }
-  };
+  }; 
   const sendDriverRequestInFirebase = () => {
-
 
     if (!selectedDriver && typeof selectedDriver !== 'object') {
       firestore()
@@ -720,9 +714,8 @@ export default function DriverBiddingScreen({navigation, route}) {
         }}
       />
     );
-  }, []);
+  }, [selectedDriver]);
 
-  
   const mapRef = useRef();
 
   return loading ? (

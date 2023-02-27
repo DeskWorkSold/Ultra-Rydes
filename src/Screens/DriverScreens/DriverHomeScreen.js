@@ -20,13 +20,17 @@ import firestore from '@react-native-firebase/firestore';
 import Geolocation from 'react-native-geolocation-service';
 import Geocoder from 'react-native-geocoding';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
-import {add} from 'react-native-reanimated';
 import {getPreciseDistance} from 'geolib';
-import EmailSignInScreen from '../EmailSignInScreen';
+import DriverBiddingScreen from './DriverBiddingScreen';
 
 export default function DriverHomeScreen({navigation, route}) {
 
   let reload = route.params
+
+  console.log(reload,"reload")
+
+
+
 
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
@@ -162,7 +166,13 @@ export default function DriverHomeScreen({navigation, route}) {
           .onSnapshot(querySnapshot => {
             querySnapshot.forEach(documentSnapshot => {
               let data = documentSnapshot.data();
-              
+            
+              if(data.requestStatus == "accepted"){
+                setPassengerBookingData([])
+              }
+
+              if(!data.requestStatus){
+
               let dis = getPreciseDistance(
                 {
                   latitude:
@@ -223,12 +233,9 @@ export default function DriverHomeScreen({navigation, route}) {
                 if(data && data.myDriversData && !Array.isArray(data.myDriversData) && data.myDriversData.requestStatus){
                   checkRejectStatus = data.myDriversData.id == uid && data.myDriversData.requestStatus == "rejected"
                   
-                }
-
-                
-                
+                }      
                 let flag = '';
-                if (
+                if (    
                   data &&
                   !data.passengerData &&
                   data.selectedCar &&
@@ -267,6 +274,7 @@ export default function DriverHomeScreen({navigation, route}) {
                   console.log(requestData,"request")
                 }                
               }
+            }
             });
             setPassengerBookingData(requestData);
             setLoading(false);
@@ -280,17 +288,11 @@ export default function DriverHomeScreen({navigation, route}) {
     }
   };
 
-
-
   useEffect(() => {
+    setPassengerBookingData([])
     getRequestFromPassengers();
-  }, [driverStatus, driverData,reload]);
+  }, [driverStatus,driverData]);
 
-  useEffect(() => {
-    if (driverStatus == 'online') {
-      getRequestFromPassengers();
-    }
-  }, []);
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
