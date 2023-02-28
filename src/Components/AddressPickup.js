@@ -1,10 +1,11 @@
 import {computeDestinationPoint} from 'geolib';
 import React from 'react';
 import {StyleSheet} from 'react-native';
+import { TextInput } from 'react-native';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
 import {ColorSpace} from 'react-native-reanimated';
 import Colors from '../Constants/Colors';
-
+import { View } from 'react-native';
 import GoogleMapKey from '../Constants/GoogleMapKey';
 
 export default function AddressPickup({placeholderText, fetchAddress, type}) {
@@ -14,10 +15,15 @@ export default function AddressPickup({placeholderText, fetchAddress, type}) {
     console.log(details.formatted_address);
     fetchAddress(lat, lng);
   };  
+
+  
+
+
   return (
+    !type ?  
     <GooglePlacesAutocomplete
       placeholder={placeholderText}
-      onPress={onPressAddress}
+       onPress={onPressAddress}
       fetchDetails={true}
       query={{
         key: GoogleMapKey.GOOGLE_MAP_KEY,
@@ -31,9 +37,16 @@ export default function AddressPickup({placeholderText, fetchAddress, type}) {
       }}
       textInputProps={{
         placeholderTextColor:
-          type && type == 'pickup' ? Colors.black : Colors.gray,
+          type && type == 'route' ? Colors.black : Colors.gray,
       }}
     />
+    :
+    <View style={styles.containerStyle} >
+      <TextInput editable={false} placeholder = {placeholderText} placeholderTextColor="black"  
+      style={styles.textInputStyle} 
+      numberOfLines = {1}
+      />
+    </View>
   );
 }
 const styles = StyleSheet.create({
@@ -52,6 +65,7 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
     borderBottomWidth: 1.2,
     marginVertical: 5,
+    numberOfLines : 1
     // paddingHorizontal: 20,
   },
 });

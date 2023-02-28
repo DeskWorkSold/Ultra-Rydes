@@ -121,6 +121,11 @@ function DriverRoutes() {
 export default function Navigation() {
     const [isAppFirstLaunched, setIsAppFirstLaunched] = useState(null);
 
+
+
+    
+
+
     useEffect(() => {
         async function setData() {
             const appData = await AsyncStorage.getItem("isAppFirstLaunched");
@@ -132,6 +137,7 @@ export default function Navigation() {
             }
         }
         setData();
+
     }, []);
     return (
         <NavigationContainer>

@@ -87,9 +87,12 @@ export default function PassengerFindRide({navigation, route}) {
                 'Your request has been accepted',
                 ToastAndroid.SHORT,
               );
-              navigation.navigate('PassengerHomeScreen', {
-                passengerData: passengerData,
-                driverData: selectedDriver,
+              navigation.navigate('PassengerRoutes', {
+                screen: 'PassengerHomeScreen',
+                params: {
+                  passengerData: passengerData,
+                  driverData: selectedDriver,
+                },
               });
             } else if (
               data &&
@@ -229,8 +232,7 @@ export default function PassengerFindRide({navigation, route}) {
             style={styles.cancelTextContainer}
             onPress={() => {
               navigation.navigate('PassengerHomeScreen');
-            }}
-          >
+            }}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
@@ -285,6 +287,8 @@ export default function PassengerFindRide({navigation, route}) {
           });
 
         let selectedDriverData = mySelectedDriver.filter((e, i) => e.selected);
+
+        console.log(selectedDriverData, 'selected');
 
         firestore()
           .collection('Request')
@@ -526,8 +530,7 @@ export default function PassengerFindRide({navigation, route}) {
             alignItems: 'center',
             justifyContent: 'center',
             height: '90%',
-          }}
-        >
+          }}>
           <ActivityIndicator color="black" size={100} />
           <Text style={{color: 'black', marginTop: 10}}>
             {' '}

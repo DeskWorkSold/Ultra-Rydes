@@ -24,14 +24,6 @@ import {getPreciseDistance} from 'geolib';
 import DriverBiddingScreen from './DriverBiddingScreen';
 
 export default function DriverHomeScreen({navigation, route}) {
-
-  let reload = route.params
-
-  console.log(reload,"reload")
-
-
-
-
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
       latitude: 24.863,
@@ -42,6 +34,44 @@ export default function DriverHomeScreen({navigation, route}) {
       longitude: 67.1344,
     },
   });
+
+  const [routeToOtherPage,setRouteToOtherPage] = useState(false)
+
+  const getDriverBookingData = async () => {
+    try {
+      let data = await AsyncStorage.getItem('driverBooking');
+
+      data = JSON.parse(data);
+
+      if (data && Object.keys(data).length > 0) {
+        navigation.navigate('DriverRoutes', {
+          screen: 'DriverBiddingScreen',
+          params: {
+            data: data,
+            passengerState: {
+              pickupCords: data.passengerData
+                ? data.passengerData.pickupCords
+                : data.pickupCords,
+              dropLocationCords: data.passengerData
+                ? data.passengerData.dropLocationCords
+                : data.dropLocationCords,
+            },
+            selectedDriver: data.myDriversData
+              ? data.myDriversData
+              : data.driverData,
+          },
+        });
+      }
+    } catch (error) {
+      console.log(error, 'error');
+    }
+  };
+
+ 
+
+  useEffect(() => {
+    getDriverBookingData();
+  },[]);
 
   //   useEffect(()=>{
   //         setPassengerState({
@@ -149,16 +179,12 @@ export default function DriverHomeScreen({navigation, route}) {
     );
   };
 
-  
-
   const getRequestFromPassengers = () => {
     // if (driverData && driverData.status == 'offline') {
     //   setLoading(true);
     // }
-    
-    if (!driverData.inlined) {
 
-
+    if (!routeToOtherPage) {
       if (driverStatus == 'online' && driverData.currentLocation) {
         let requestData = [];
         firestore()
@@ -166,133 +192,135 @@ export default function DriverHomeScreen({navigation, route}) {
           .onSnapshot(querySnapshot => {
             querySnapshot.forEach(documentSnapshot => {
               let data = documentSnapshot.data();
-            
-              if(data.requestStatus == "accepted"){
-                setPassengerBookingData([])
+
+              if (data.requestStatus == 'accepted') {
+                setPassengerBookingData([]);
               }
 
-              if(!data.requestStatus){
+              if (!data.requestStatus) {
+                let dis = getPreciseDistance(
+                  {
+                    latitude:
+                      data && data.passengerData
+                        ? data.passengerData.pickupCords.latitude
+                        : data && data.pickupCords.latitude,
+                    longitude:
+                      data && data.passengerData
+                        ? data.passengerData.pickupCords.longitude
+                        : data.pickupCords.longitude,
+                  },
+                  {
+                    latitude:
+                      data && data.driverData
+                        ? data.driverData.currentLocation.latitude
+                        : driverData && driverData.currentLocation.latitude,
+                    longitude:
+                      data && data.driverData
+                        ? data.driverData.currentLocation.longitude
+                        : driverData && driverData.currentLocation.longitude,
+                  },
+                );
 
-              let dis = getPreciseDistance(
-                {
-                  latitude:
-                    data && data.passengerData
-                      ? data.passengerData.pickupCords.latitude
-                      : data && data.pickupCords.latitude,
-                  longitude:
-                    data && data.passengerData
-                      ? data.passengerData.pickupCords.longitude
-                      : data.pickupCords.longitude,
-                },
-                {
-                  latitude:
-                    data && data.driverData
-                      ? data.driverData.currentLocation.latitude
-                      : driverData && driverData.currentLocation.latitude,
-                  longitude:
-                    data && data.driverData
-                      ? data.driverData.currentLocation.longitude
-                      : driverData && driverData.currentLocation.longitude,
-                },
-              );
+                mileDistance = (dis / 1609.34).toFixed(2);
 
-              mileDistance = (dis / 1609.34).toFixed(2);
+                if (data) {
+                  let matchUid = false;
+                  let uid = auth().currentUser.uid;
 
-         
-
-              if (data) {
-
-                
-
-                let matchUid = false;
-                let uid = auth().currentUser.uid;
-
-                if (
-                  data &&
-                  data.myDriversData &&
-                  !Array.isArray(data.myDriversData)
-                ) {
-                  matchUid =
-                    data.myDriversData.id == uid &&
-                    data.myDriversData.requestStatus;
-                } else if (
-                  data &&
-                  data.myDriversData &&
-                  Array.isArray(data.myDriversData)
-                ) {
-                  matchUid = data.myDriversData.some(
-                    (e, i) => e.id == uid && e.requestStatus,
-                  );
-                }
-
-                  let checkRejectStatus = false
-                if(data && data.myDriversData && Array.isArray(data.myDriversData)){
-                   checkRejectStatus = data.myDriversData.some((e,i)=> e.id == uid && e.requestStatus == "rejected")
-                  
-                }
-                if(data && data.myDriversData && !Array.isArray(data.myDriversData) && data.myDriversData.requestStatus){
-                  checkRejectStatus = data.myDriversData.id == uid && data.myDriversData.requestStatus == "rejected"
-                  
-                }      
-                let flag = '';
-                if (    
-                  data &&
-                  !data.passengerData &&
-                  data.selectedCar &&
-                  driverData &&
-                  driverData.vehicleDetails
-                ) {
-                  let selectedVehicle = data.selectedCar.map(
-                    (e, i) => e.carName,
-                  );
-
-                  flag =
-                    selectedVehicle ==
-                    driverData.vehicleDetails.vehicleCategory;
-                }
-
-                if (
-                  data &&
-                  data.passengerData &&
-                  driverData.cnic == data.driverData.cnic &&
-                  !data.requestStatus && !checkRejectStatus
-                ) {
-         
-
-                  requestData.push(data);
-                } else {
                   if (
                     data &&
-                    data.bidFare &&
+                    data.myDriversData &&
+                    !Array.isArray(data.myDriversData)
+                  ) {
+                    matchUid =
+                      data.myDriversData.id == uid &&
+                      data.myDriversData.requestStatus;
+                  } else if (
+                    data &&
+                    data.myDriversData &&
+                    Array.isArray(data.myDriversData)
+                  ) {
+                    matchUid = data.myDriversData.some(
+                      (e, i) => e.id == uid && e.requestStatus,
+                    );
+                  }
+
+                  let checkRejectStatus = false;
+                  if (
+                    data &&
+                    data.myDriversData &&
+                    Array.isArray(data.myDriversData)
+                  ) {
+                    checkRejectStatus = data.myDriversData.some(
+                      (e, i) => e.id == uid && e.requestStatus == 'rejected',
+                    );
+                  }
+                  if (
+                    data &&
+                    data.myDriversData &&
+                    !Array.isArray(data.myDriversData) &&
+                    data.myDriversData.requestStatus
+                  ) {
+                    checkRejectStatus =
+                      data.myDriversData.id == uid &&
+                      data.myDriversData.requestStatus == 'rejected';
+                  }
+                  let flag = '';
+                  if (
+                    data &&
+                    !data.passengerData &&
+                    data.selectedCar &&
+                    driverData &&
+                    driverData.vehicleDetails
+                  ) {
+                    let selectedVehicle = data.selectedCar.map(
+                      (e, i) => e.carName,
+                    );
+
+                    flag =
+                      selectedVehicle ==
+                      driverData.vehicleDetails.vehicleCategory;
+                  }
+
+                  if (
+                    data &&
+                    data.passengerData &&
+                    driverData.cnic == data.driverData.cnic &&
                     !data.requestStatus &&
-                    mileDistance < 25 &&
-                    flag &&
-                    !matchUid && !checkRejectStatus
+                    !checkRejectStatus
                   ) {
                     requestData.push(data);
+                  } else {
+                    if (
+                      data &&
+                      data.bidFare &&
+                      !data.requestStatus &&
+                      mileDistance < 25 &&
+                      flag &&
+                      !matchUid &&
+                      !checkRejectStatus
+                    ) {
+                      requestData.push(data);
+                    }
+                    
                   }
-                  console.log(requestData,"request")
-                }                
+                }
               }
-            }
             });
-            setPassengerBookingData(requestData);
-            setLoading(false);
-          }
-          );
-        }
-    }
 
-    else{
-      setPassengerBookingData([]);
-    }
+
+
+           !routeToOtherPage && setPassengerBookingData(requestData);
+            setLoading(false);
+          });
+      }
+    } 
   };
 
   useEffect(() => {
-    setPassengerBookingData([])
+    setPassengerBookingData([]);
     getRequestFromPassengers();
-  }, [driverStatus,driverData]);
-
+  }, [driverStatus, driverData]);
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -306,7 +334,9 @@ export default function DriverHomeScreen({navigation, route}) {
   };
 
   useEffect(() => {
+    if(!routeToOtherPage){
     getDriverData();
+  }
   }, [driverStatus]);
 
   const updateOnlineOnFirebase = () => {
@@ -348,9 +378,9 @@ export default function DriverHomeScreen({navigation, route}) {
     }
   };
   useEffect(() => {
-    if (driverStatus == 'online') {
+    if (driverStatus == 'online' && !routeToOtherPage ) {
       updateOnlineOnFirebase();
-    } else {
+    } else if(!routeToOtherPage) {
       removeLocationUpdates();
     }
   }, [driverStatus, state]);
@@ -359,19 +389,34 @@ export default function DriverHomeScreen({navigation, route}) {
     return (
       <TouchableOpacity
         style={styles.listItemContainer}
-        key={item.passengerData ? item.passengerData.id : item.id}
+        key={item && item.passengerData ? item.passengerData.id : item.id}
         onPress={() => {
-          navigation.navigate('DriverBiddingScreen', {
-            data: item,
-            passengerState: {
-              pickupCords: item.passengerData
-                ? item.passengerData.pickupCords
-                : item.pickupCords,
-              dropLocationCords: item.passengerData
-                ? item.passengerData.dropLocationCords
-                : item.dropLocationCords,
+          setRouteToOtherPage(true)
+          navigation.push('DriverRoutes', {
+            screen: 'DriverBiddingScreen',
+            params: {
+              data: item,
+              passengerState: {
+                pickupCords: item.passengerData
+                  ? item.passengerData.pickupCords
+                  : item.pickupCords,
+                dropLocationCords: item.passengerData
+                  ? item.passengerData.dropLocationCords
+                  : item.dropLocationCords,
+              },
             },
           });
+          // navigation.navigate('DriverBiddingScreen', {
+          //   data: item,
+          //   passengerState: {
+          //     pickupCords: item.passengerData
+          //       ? item.passengerData.pickupCords
+          //       : item.pickupCords,
+          //     dropLocationCords: item.passengerData
+          //       ? item.passengerData.dropLocationCords
+          //       : item.dropLocationCords,
+          //   },
+          // });
         }}>
         <Text style={styles.itemTextStyle}>
           Pickup Cords:
@@ -403,7 +448,7 @@ export default function DriverHomeScreen({navigation, route}) {
       </TouchableOpacity>
     );
   };
-  
+
   return (
     <>
       {loading ? (
@@ -449,7 +494,7 @@ export default function DriverHomeScreen({navigation, route}) {
           passengerBookingData.length > 0 ? (
             <View style={styles.listContainer}>
               <FlatList
-                data={passengerBookingData}
+                data={!routeToOtherPage && passengerBookingData}
                 renderItem={rideList}
                 keyExtractor={item => item.id}
               />
