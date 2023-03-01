@@ -330,6 +330,8 @@ export default function DriverBiddingScreen({navigation}) {
                   .set({
                     inlined: true,
                     id: driverUid,
+
+                    
                   })
                   .then(() => {
                     console.log('Driver has been inlined');

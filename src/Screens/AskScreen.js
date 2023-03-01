@@ -52,6 +52,10 @@ export default function AskScreen({navigation}) {
       let data = await AsyncStorage.getItem('passengerBooking');
       data = JSON.parse(data);
       console.log(data, 'datasss');
+      let checkDriverArrive = await AsyncStorage.getItem('driverArrive');
+      
+
+
 
       if (data && Object.keys(data).length > 0) {
         navigation.navigate('PassengerRoutes', {
@@ -59,6 +63,7 @@ export default function AskScreen({navigation}) {
           params: {
             passengerData: data.passengerData ? data.passengerData : data,
             driverData: data.driverData ? data.driverData : data.myDriversData,
+            driverArriveAtPickupLocation : checkDriverArrive ? true : false
           },
         });
       }

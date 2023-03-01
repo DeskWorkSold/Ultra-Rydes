@@ -39,6 +39,9 @@ import {BackHandler} from 'react-native';
 import {useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
+import AskScreen from '../AskScreen';
+
+let height = Dimensions.get('window').height;
 
 export default function PassengerHomeScreen({navigation}) {
   let route = useRoute();
@@ -71,14 +74,67 @@ export default function PassengerHomeScreen({navigation}) {
   const [routeData, setRouteData] = useState([]);
   const [driverArriveAtPickUpLocation, setDriverArriveAtPickUpLocation] =
     useState(false);
+
+  console.log(driverArriveAtPickUpLocation, 'driverARRIVE');
+
   const [driverArriveAtdropoffLocation, setDriverArriveAtdropoffLocation] =
     useState(false);
+  const [driverRatingStar, setDriverRatingStar] = useState(0);
+  const [carRatingStar, setCarRatingStar] = useState(0);
+  const [paymentByPassenger, setPaymentByPassenger] = useState(0);
   const [location, setLocation] = useState({
     pickupCords: route.params ? route.params.passengerData.pickupCords : null,
     dropLocationCords: route.params
       ? route.params.passengerData.dropLocationCords
       : {},
   });
+
+  const [driverRating, setDriverRating] = useState([
+    {
+      star: 1,
+      selected: false,
+    },
+    {
+      star: 2,
+      selected: false,
+    },
+    {
+      star: 3,
+      selected: false,
+    },
+    {
+      star: 4,
+      selected: false,
+    },
+    {
+      star: 5,
+      selected: false,
+    },
+  ]);
+
+  const [carRating, setCarRating] = useState([
+    {
+      star: 1,
+      selected: false,
+    },
+    {
+      star: 2,
+      selected: false,
+    },
+    {
+      star: 3,
+      selected: false,
+    },
+    {
+      star: 4,
+      selected: false,
+    },
+    {
+      star: 5,
+      selected: false,
+    },
+  ]);
+
   const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
     useState({
       minutes: '',
@@ -99,19 +155,18 @@ export default function PassengerHomeScreen({navigation}) {
       firestore()
         .collection('Request')
         .doc(data.passengerData.id)
-
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
-          console.log(data, 'dataaaa');
-
           let myDriversData = data.myDriversData
             ? data.myDriversData
             : data.driverData;
-          console.log(myDriversData, 'myDriverData');
+
+          console.log(data, 'dtaaaa');
 
           if (
             !driverArrive.pickupLocation &&
             !driverArriveAtPickUpLocation &&
+            !route.params.driverArriveAtPickupLocation &&
             data &&
             data.driverArriveAtPickupLocation
           ) {
@@ -121,7 +176,23 @@ export default function PassengerHomeScreen({navigation}) {
             });
           }
 
+          if (
+            !driverArrive.dropoffLocation &&
+            !driverArriveAtdropoffLocation &&
+            data &&
+            data.driverArriveAtDropoffLocation
+          ) {
+            setPaymentByPassenger(data.payment);
+
+            setDriverArrive({
+              ...driverArrive,
+              dropoffLocation: true,
+            });
+          }
+
           if (data && !Array.isArray(myDriversData)) {
+            myDriversData.currentLocation.latitude = 24.9180271;
+            myDriversData.currentLocation.longitude = 67.0970916;
             setSelectedLocation(myDriversData.currentLocation);
           } else if (data && Array.isArray(myDriversData)) {
             let selectedDriver = myDriversData.filter(
@@ -133,6 +204,8 @@ export default function PassengerHomeScreen({navigation}) {
         });
     }
   };
+
+  console.log(driverArrive, 'DRIVER');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -413,18 +486,18 @@ export default function PassengerHomeScreen({navigation}) {
         id: CurrentUserUid,
       };
 
-      // firestore()
-      //   .collection('Request')
-      //   .doc(CurrentUserUid)
-      //   .set(data)
-      //   .then(() => {
-      //     ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+      firestore()
+        .collection('Request')
+        .doc(CurrentUserUid)
+        .set(data)
+        .then(() => {
+          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
 
-      //     setTimeout(() => {
-      //       navigation.navigate('PassengerFindRide', data);
-      //     }, 1000);
-      //   });
-      navigation.navigate('PassengerFindRide', data);
+          setTimeout(() => {
+            navigation.navigate('PassengerFindRide', data);
+          }, 1000);
+        });
+      // navigation.navigate('PassengerFindRide', data);
     }
     // else {
     //   firestore()
@@ -673,12 +746,21 @@ export default function PassengerHomeScreen({navigation}) {
     setBidFare(myFare);
   };
 
-  const hideModal = () => {
+  const hideModal = async () => {
     setDriverArrive({
       ...driverArrive,
       pickupLocation: false,
     });
     setDriverArriveAtPickUpLocation(true);
+
+    try {
+      await AsyncStorage.setItem(
+        'driverArrive',
+        'driverArrivedAtPickupLocation',
+      );
+    } catch (error) {
+      console.log(error);
+    }
   };
   const showBidFareModal = () => {
     let flag =
@@ -715,9 +797,15 @@ export default function PassengerHomeScreen({navigation}) {
                 Your driver has arrived at your pickup location!
               </Text>
               <TouchableOpacity
-                style={[styles.button, {marginBottom: 10}]}
+                style={[
+                  styles.button,
+                  {marginBottom: 10, backgroundColor: Colors.primary},
+                ]}
                 onPress={() => hideModal()}>
-                <Text style={styles.textStyle}>confirm</Text>
+                <Text
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  confirm
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -725,6 +813,224 @@ export default function PassengerHomeScreen({navigation}) {
       </View>
     );
   }, [driverArrive]);
+
+  const getDriverRating = ind => {
+    setDriverRatingStar(ind + 1);
+  };
+  const getCarRating = ind => {
+    setCarRatingStar(ind + 1);
+  };
+
+  console.log()
+
+  console.log(driverRating, 'driver');
+
+  const confirmationByPassenger = () => {
+    if (!driverRatingStar) {
+      ToastAndroid.show('kindly give driver rating', ToastAndroid.SHORT);
+      return;
+    }
+    if (!carRatingStar) {
+      ToastAndroid.show('kindly give car rating', ToastAndroid.SHORT);
+      return;
+    } else {
+      let myData = route.params
+      const uid = auth().currentUser.uid
+
+      firestore()
+        .collection('Booking').onSnapshot(querySnapshot => {
+          console.log(querySnapshot,"query")
+          if (querySnapshot && querySnapshot._docs.length > 0) {
+            querySnapshot.forEach(documentSnapshot => {
+              
+              let data = documentSnapshot.data();
+
+                let bookingCount = []
+                let passengerId = data && data.passengerData && data.passengerData.id ? data.passengerData.id :  data && data.data.passengerData ? data.data.passengerData.id : ""
+              if(data && passengerId == route.params.passengerData.id){
+                        bookingCount.push(data.bookingCount)
+              }
+                let maxValue = 0
+                bookingCount && bookingCount.length>0 && bookingCount.map((e,i)=>{
+                        
+                    if(e > maxValue){
+                      maxValue = e
+                    }
+
+                })
+                
+                myData.bookingCount =  Number(maxValue) + 1
+
+                });
+                myData.driverRating = driverRatingStar
+                myData.carRating = carRatingStar
+                myData.payment = paymentByPassenger
+
+
+
+                firestore().collection("Booking").doc(uid + myData.bookingCount).set(myData).then(()=>{
+                  ToastAndroid.show("Thanks for the booking",ToastAndroid.SHORT)
+                      navigation.navigate("AskScreen")
+                }).catch((error)=>{
+                  console.log(error)
+                })
+              } 
+          // else {
+          //       let data = route.params
+          //       console.log(data.passengerData,"data")
+          //     firestore().collection("Booking").doc(data.passengerData.id).set({
+          //       data,
+          //       driverRating : driverRatingStar,
+          //       carRating  : carRatingStar,
+          //        payment : paymentByPassenger
+          //       bookingCount : 1
+          //     }).then(()=>{
+          //           ToastAndroid.show("Thanks for the booking",ToastAndroid.SHORT)
+          //           AsyncStorage.removeItem("passengerBooking")
+          //           AsyncStorage.removeItem("driverArrive")
+          //           navigation.navigate("AskScreen")
+          //     }).catch((error)=>{
+          //           console.log(error,"error")
+          //     })
+
+          // }
+        });
+    }
+  };
+
+  const dropOffModal = useCallback(() => {
+    return (
+      <View style={styles.centeredView}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={driverArrive.dropoffLocation}>
+          <View style={[styles.centeredView]}>
+            <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
+              <Text style={[styles.modalText, {fontSize: 26}]}>
+                Congratulations!
+              </Text>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 0,
+                    fontWeight: '500',
+                  },
+                ]}>
+                You have arrived at your destination
+              </Text>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 5,
+                    fontWeight: '500',
+                    fontSize: 14,
+                    alignSelf: 'flex-start',
+                  },
+                ]}>
+                Your Bill Amount:{' '}
+                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  {route.params.passengerData.bidFare ??
+                    route.params.passengerData.fare}
+                  $
+                </Text>
+              </Text>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 5,
+                    fontWeight: '500',
+                    fontSize: 14,
+                    alignSelf: 'flex-start',
+                  },
+                ]}>
+                Your Payment Amount:{' '}
+                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  {paymentByPassenger}$
+                </Text>
+              </Text>
+
+              <Text
+                style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}>
+                Kindly give rating to driver
+              </Text>
+              <View
+                style={{
+                  width: '100%',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                }}>
+                {driverRating &&
+                  driverRating.length > 0 &&
+                  driverRating.map((e, i) => {
+                    return (
+                      <TouchableOpacity
+                        key={i}
+                        onPress={() => getDriverRating(i)}>
+                        <Icon
+                          size={30}
+                          name="star"
+                          color={
+                            e.star <= driverRatingStar ? 'yellow' : 'white'
+                          }
+                        />
+                      </TouchableOpacity>
+                    );
+                  })}
+              </View>
+              <Text style={[styles.modalText, {fontWeight: '600'}]}>
+                Kindly give rating to Car
+              </Text>
+              <View
+                style={{
+                  width: '100%',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                }}>
+                {carRating &&
+                  carRating.length > 0 &&
+                  carRating.map((e, i) => {
+                    return (
+                      <TouchableOpacity key={i} onPress={() => getCarRating(i)}>
+                        <Icon
+                          size={30}
+                          name="star"
+                          color={e.star <= carRatingStar ? 'yellow' : 'white'}
+                        />
+                      </TouchableOpacity>
+                    );
+                  })}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  {marginBottom: 5, backgroundColor: Colors.primary},
+                ]}
+                onPress={() => confirmationByPassenger()}>
+                <Text
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  Confirm
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }, [driverArrive, driverRatingStar, carRatingStar]);
+
+  console.log(driverRatingStar, 'rating');
+  console.log(carRatingStar, 'carRating');
 
   const getMinutesAndDistance = result => {
     setMinutesAndDistanceDifference({
@@ -1053,6 +1359,9 @@ export default function PassengerHomeScreen({navigation}) {
                     />
                   )}
                   {driverArrive && driverArrive.pickupLocation && ArriveModal()}
+                  {driverArrive &&
+                    driverArrive.dropoffLocation &&
+                    dropOffModal()}
 
                   <TextInput
                     placeholder="Additional Details"
@@ -1179,7 +1488,7 @@ const styles = StyleSheet.create({
   },
   modalView: {
     margin: 20,
-    backgroundColor: 'black',
+    backgroundColor: Colors.secondary,
     height: '40%',
     width: '80%',
     borderRadius: 20,

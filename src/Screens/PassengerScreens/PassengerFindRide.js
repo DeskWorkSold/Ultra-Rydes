@@ -25,6 +25,7 @@ export default function PassengerFindRide({navigation, route}) {
   const [request, setRequest] = useState(false);
   const [minutes, setMinutes] = useState([]);
   const [distance, setDistance] = useState([]);
+  const [inlineDriver,setInlineDriver] = useState([])
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -65,7 +66,7 @@ export default function PassengerFindRide({navigation, route}) {
       setDriverData([]);
       setRequest(true);
     }
-  }, [passengerData, passengerData.minutes, passengerData.selectedCar.carName]);
+  }, [passengerData, passengerData.minutes, passengerData.selectedCar.carName,inlineDriver]);
 
   const checkRequestStatus = () => {
     if (request && !passengerData.bidFare) {
@@ -118,9 +119,32 @@ export default function PassengerFindRide({navigation, route}) {
     }
   };
 
+
+  const getInlineDriver = () => {
+
+    firestore().collection("inlinedDriver").onSnapshot(querySnapshot=>{
+           
+      let inlineDriver = []
+      querySnapshot.forEach(documentSnapshot=>{
+        let data = documentSnapshot.data()
+        if(data && Object.keys(data).length>0 && data.inlined){
+                inlineDriver.push(data.id)
+          }
+          
+           })
+          setInlineDriver(inlineDriver)
+     })
+
+  }
+
   useEffect(() => {
     checkRequestStatus();
+    getInlineDriver()
   }, []);
+
+
+  
+
 
   const getDriverData = async () => {
     /// GET ALL DRIVERS
@@ -162,11 +186,19 @@ export default function PassengerFindRide({navigation, route}) {
             mileDistance = (dis / 1609.34).toFixed(2);
           }
 
+          let isInlined = inlineDriver && inlineDriver.map((e,i)=>{
+                  if(e == driverData.id){
+                    return "true"
+                  }
+          })
+
+          isInlined = isInlined[0]
+
           if (
             driverData.status == 'online' &&
             mileDistance <= 3 &&
             flag &&
-            !driverData.inlined
+            !isInlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -176,7 +208,7 @@ export default function PassengerFindRide({navigation, route}) {
             mileDistance > 3 &&
             mileDistance < 5 &&
             flag &&
-            !driverData.inlined
+            !isInlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -186,7 +218,7 @@ export default function PassengerFindRide({navigation, route}) {
             mileDistance < 10 &&
             mileDistance > 5 &&
             flag &&
-            !driverData.inlined
+            !isInlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -196,7 +228,7 @@ export default function PassengerFindRide({navigation, route}) {
             mileDistance < 15 &&
             mileDistance > 10 &&
             flag &&
-            !driverData.inlined
+            !isInlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -206,7 +238,7 @@ export default function PassengerFindRide({navigation, route}) {
             mileDistance < 20 &&
             mileDistance > 15 &&
             flag &&
-            !driverData.inlined
+            !isInlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);
@@ -215,7 +247,7 @@ export default function PassengerFindRide({navigation, route}) {
             driverData.status == 'online' &&
             mileDistance < 25 &&
             mileDistance > 20 &&
-            !driverData.inlined
+            !isInlined
           ) {
             driverData.fare = passengerData.fare;
             myDriversTemp.push(driverData);

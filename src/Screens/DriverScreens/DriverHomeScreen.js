@@ -70,7 +70,7 @@ export default function DriverHomeScreen({navigation, route}) {
  
 
   useEffect(() => {
-    getDriverBookingData();
+    // getDriverBookingData();
   },[]);
 
   //   useEffect(()=>{
@@ -173,17 +173,14 @@ export default function DriverHomeScreen({navigation, route}) {
       {
         enableHighAccuracy: true,
         distanceFilter: 50,
-        interval: 5000,
-        fastestInterval: 2000,
+        // interval: 30000,
+        // fastestInterval: 20000,
       },
     );
   };
 
   const getRequestFromPassengers = () => {
-    // if (driverData && driverData.status == 'offline') {
-    //   setLoading(true);
-    // }
-
+    
     if (!routeToOtherPage) {
       if (driverStatus == 'online' && driverData.currentLocation) {
         let requestData = [];
@@ -318,9 +315,8 @@ export default function DriverHomeScreen({navigation, route}) {
   };
 
   useEffect(() => {
-    setPassengerBookingData([]);
     getRequestFromPassengers();
-  }, [driverStatus, driverData]);
+  }, [driverStatus,driverData]);
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -365,7 +361,7 @@ export default function DriverHomeScreen({navigation, route}) {
   const removeLocationUpdates = () => {
     if (watchId !== null) {
       Geolocation.clearWatch(watchId);
-      Geolocation.stopObserving();
+      // Geolocation.stopObserving();
       updateOfflineOnFirebase();
     }
   };
