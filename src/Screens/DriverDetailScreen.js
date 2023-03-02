@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ScrollView, Text, StyleSheet, useWindowDimensions, View, Image, KeyboardAvoidingView, ToastAndroid, PermissionsAndroid, TouchableOpacity, ActivityIndicator } from 'react-native'
 import CustomHeader from '../Components/CustomHeader'
 import Colors from '../Constants/Colors'
@@ -23,6 +23,7 @@ export default function DriverDetailScreen({ navigation }) {
     const [address, setAddress] = useState('');
     const [city, setCity] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [rating,setRating] = useState(4.9)
     //error fields start
     const [firstNameError, setFirstNameError] = useState(false)
     const [lastNameError, setLastNameError] = useState(false)
@@ -309,6 +310,22 @@ export default function DriverDetailScreen({ navigation }) {
     };
     //for license back pic end
 
+    
+useEffect(()=>{
+
+    let minutes = new Date().getMinutes()
+
+    if(minutes <= 15 || minutes >=45 ){
+        setRating(5)
+    }else{
+        setRating(4.9)
+    }
+
+},[])
+
+
+
+
     //docments upload functions end 
     const strongRegex = new RegExp("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$");
     const strongRegexphone = new RegExp("\\+\\d+$");
@@ -444,7 +461,9 @@ export default function DriverDetailScreen({ navigation }) {
                         cnicBackImg: cnicBackImg,
                         licenseFrontImg: licenseFrontImg,
                         licenseBackImg: licenseBackImg,
-                        id : CurrentUser.uid
+                        id : CurrentUser.uid,
+                        date : new Date(),
+                        rating : rating
                     })
                     .then(() => {
                         console.log('User added!');

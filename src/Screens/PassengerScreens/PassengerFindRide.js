@@ -17,6 +17,7 @@ import firestore from '@react-native-firebase/firestore';
 import {getPreciseDistance} from 'geolib';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
+import  Icon  from 'react-native-vector-icons/AntDesign';
 
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
@@ -25,7 +26,7 @@ export default function PassengerFindRide({navigation, route}) {
   const [request, setRequest] = useState(false);
   const [minutes, setMinutes] = useState([]);
   const [distance, setDistance] = useState([]);
-  const [inlineDriver,setInlineDriver] = useState([])
+  const [inlineDriver, setInlineDriver] = useState([]);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -66,7 +67,14 @@ export default function PassengerFindRide({navigation, route}) {
       setDriverData([]);
       setRequest(true);
     }
-  }, [passengerData, passengerData.minutes, passengerData.selectedCar.carName,inlineDriver]);
+  }, [
+    passengerData,
+    passengerData.minutes,
+    passengerData.selectedCar.carName,
+    inlineDriver,
+  ]);
+
+  console.log(selectedDriver,"selectedDriver")
 
   const checkRequestStatus = () => {
     if (request && !passengerData.bidFare) {
@@ -119,31 +127,36 @@ export default function PassengerFindRide({navigation, route}) {
     }
   };
 
-
   const getInlineDriver = () => {
-
-    firestore().collection("inlinedDriver").onSnapshot(querySnapshot=>{
-           
-      let inlineDriver = []
-      querySnapshot.forEach(documentSnapshot=>{
-        let data = documentSnapshot.data()
-        if(data && Object.keys(data).length>0 && data.inlined){
-                inlineDriver.push(data.id)
+    firestore()
+      .collection('inlinedDriver')
+      .onSnapshot(querySnapshot => {
+        let inlineDriver = [];
+        querySnapshot.forEach(documentSnapshot => {
+          let data = documentSnapshot.data();
+          if (data && Object.keys(data).length > 0 && data.inlined) {
+            inlineDriver.push(data.id);
           }
-          
-           })
-          setInlineDriver(inlineDriver)
-     })
-
-  }
+        });
+        setInlineDriver(inlineDriver);
+      });
+  };
 
   useEffect(() => {
-    checkRequestStatus();
-    getInlineDriver()
+    getInlineDriver();
   }, []);
 
+  useEffect(() => {
+    if (request && !passengerData.bidFare && request) {
+      const interval = setInterval(() => {
+          checkRequestStatus()
+      }, 5000);
 
-  
+      return () => clearInterval(interval);
+    }
+  }, [request]);
+
+
 
 
   const getDriverData = async () => {
@@ -186,13 +199,15 @@ export default function PassengerFindRide({navigation, route}) {
             mileDistance = (dis / 1609.34).toFixed(2);
           }
 
-          let isInlined = inlineDriver && inlineDriver.map((e,i)=>{
-                  if(e == driverData.id){
-                    return "true"
-                  }
-          })
+          let isInlined =
+            inlineDriver &&
+            inlineDriver.map((e, i) => {
+              if (e == driverData.id) {
+                return 'true';
+              }
+            });
 
-          isInlined = isInlined[0]
+          isInlined = isInlined[0];
 
           if (
             driverData.status == 'online' &&
@@ -359,6 +374,8 @@ export default function PassengerFindRide({navigation, route}) {
     }
   };
 
+  console.log(selectedDriver,"selectedDriver")
+
   useEffect(() => {
     if (request && !passengerData.bidFare) {
       const interval = setInterval(() => {
@@ -508,6 +525,12 @@ export default function PassengerFindRide({navigation, route}) {
               <Text style={styles.driverNameText}>
                 {item.firstName + item.lastName}
               </Text>
+              <View style={{flexDirection:"row"}} > 
+              <Text style={[styles.driverNameText,{fontWeight:"800"}]}>
+                {item.rating} 
+              </Text>
+              <Icon name="star" size={20} color="yellow" />
+              </View>
             </View>
           </View>
           <View style={styles.priceContainer}>

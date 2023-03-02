@@ -78,7 +78,7 @@ export default function DriverBiddingScreen({navigation}) {
   const [selectedDriver, setSelectedDriver] = useState(
     route.params.selectedDriver ?? '',
   );
-  const [pressInInput,setPressInInput] = useState(false)
+  const [pressInInput, setPressInInput] = useState(false);
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
   const LATITUDE_DELTA = 0.04;
@@ -91,7 +91,7 @@ export default function DriverBiddingScreen({navigation}) {
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
   const [driverBidFare, setDriverBidFare] = useState(false);
   const [driverPersonalData, setDriverPersonalData] = useState({});
-  
+
   const [myDriverData, setMyDriverData] = useState(
     data && route.params.selectedDriver ? route.params.selectedDriver : [],
   );
@@ -101,7 +101,7 @@ export default function DriverBiddingScreen({navigation}) {
     pickUpLocation: false,
     dropOffLocation: false,
   });
-  const [startRide,setStartRide] = useState(false)
+  const [startRide, setStartRide] = useState(false);
   const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
     useState({
       minutes: '',
@@ -109,7 +109,7 @@ export default function DriverBiddingScreen({navigation}) {
       details: '',
     });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
-  const [endRide,setEndRide] = useState(false)
+  const [endRide, setEndRide] = useState(false);
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -470,7 +470,10 @@ export default function DriverBiddingScreen({navigation}) {
                 You have arrived at customer location!
               </Text>
               <TouchableOpacity
-                style={[styles.button, {marginBottom: 10,backgroundColor:Colors.primary}]}
+                style={[
+                  styles.button,
+                  {marginBottom: 10, backgroundColor: Colors.primary},
+                ]}
                 onPress={() => sendArriveMessageToPassenger()}>
                 <Text style={styles.textStyle}>confirm</Text>
               </TouchableOpacity>
@@ -481,34 +484,104 @@ export default function DriverBiddingScreen({navigation}) {
     );
   }, [arrivePickUpLocation]);
 
-  const bookingComplete = () => {
+  const bookingComplete = (payment) => {
+
+    let uid = auth().currentUser.uid;
+    
+    firestore().collection("Drivers").doc(uid).get().then((doc)=>{
+        if(doc.exists){
+          let data = doc.data()
+          console.log(data,'data')
+          if(data.wallet){
+                    
+            let wallet = Number(data.wallet) + Number(payment)
+            firestore().collection("Drivers").doc(uid).update({
+              wallet : wallet
+            }).then(()=>{
+              ToastAndroid.show("Amount has been successfully add in your wallet",ToastAndroid.SHORT)
+            }).catch((error)=>{
+              console.log(error)
+            })
 
 
+          }else{
+            let wallet = Number(payment)
+            firestore().collection("Drivers").doc(uid).update({
+              wallet : wallet
+            }).then(()=>{
+              ToastAndroid.show("Amount has been successfully add in your wallet")
+            }).catch((error)=>{
+              console.log(error)
+            })
+          }
+        }
+    })
 
-  }
+    firestore()
+      .collection('inlinedDriver')
+      .doc(uid)
+      .update({
+        inlined: false,
+      })
+      .then(() => {
+        console.log('driver has been successfully lined');
+      })
+      .catch(error => {
+        console.log(error);
+      });
+
+    firestore()
+      .collection('Request')
+      .doc(data.id)
+      .update({
+        payment: payment,
+        driverArriveAtDropoffLocation: true,
+      })
+      .then(() => {
+         AsyncStorage.removeItem('driverBooking');
+         AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+         AsyncStorage.removeItem("startRide")
+         AsyncStorage.removeItem("EndRide")
+        navigation.navigate('AskScreen');
+        })
+      .catch(error => {
+        console.log(error);
+      });
+  };
 
   const DropOffModal = useCallback(() => {
+    const [input, setInput] = useState(false);
+    const [payment,setPayment] = useState(null)
 
-    
-    const [input,setInput] = useState(false)
-
-    console.log(input)
+    console.log(input);
     return (
       <View style={styles.centeredView}>
         <Modal
           animationType="slide"
           transparent={true}
-          visible={endRide || route.params && route.params.endRide}
+          visible={endRide || (route.params && route.params.endRide)}
           onRequestClose={() => {
-            setInput(false)
+            setInput(false);
           }}>
           <View style={styles.centeredView}>
-            <View style={[styles.modalView,{height: input ? "70%" : "50%"}]}>
-              
-              <Text style={[styles.modalText,{fontSize:26,fontWeight:"600",color:"white"}]}>
+            <View style={[styles.modalView, {height: input ? '70%' : '50%'}]}>
+              <Text
+                style={[
+                  styles.modalText,
+                  {fontSize: 26, fontWeight: '600', color: 'white'},
+                ]}>
                 Congratulations!
               </Text>
-              <Text style={[styles.modalText,{fontSize:18,fontWeight:"500",color:"white",marginTop:0}]}>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    fontSize: 18,
+                    fontWeight: '500',
+                    color: 'white',
+                    marginTop: 0,
+                  },
+                ]}>
                 You have arrived at destination
               </Text>
               <Text
@@ -525,17 +598,32 @@ export default function DriverBiddingScreen({navigation}) {
                 ]}>
                 Bill Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  {data.bidFare ??
-                    data.fare}
-                  $
+                  {data.bidFare ?? data.fare}$
                 </Text>
               </Text>
-              <TextInput style={{width:"50%",padding:10,backgroundColor:"white",textAlign:"center",color:"black"}} keyboardType={'numeric'} placeholder="Enter Amount" placeholderTextColor={"black"} onPressIn={()=>setInput(true)}    />
-                    
+              <TextInput
+                onChangeText={e => setPayment(e)}
+                style={{
+                  width: '50%',
+                  padding: 10,
+                  backgroundColor: 'white',
+                  textAlign: 'center',
+                  color: 'black',
+                  marginTop: 20,
+                  borderRadius: 10,
+                }}
+                keyboardType={'numeric'}
+                placeholder="Payment Amount"
+                placeholderTextColor={'black'}
+                onPressIn={() => setInput(true)}
+              />
+
               <TouchableOpacity
-                style={[styles.button, {marginBottom: 10,backgroundColor:Colors.primary}]}
-                  onPress={()=>bookingComplete()}
-                >
+                style={[
+                  styles.button,
+                  {marginBottom: 10, backgroundColor: Colors.primary},
+                ]}
+                onPress={() => bookingComplete(payment)}>
                 <Text style={styles.textStyle}>confirm</Text>
               </TouchableOpacity>
             </View>
@@ -544,7 +632,6 @@ export default function DriverBiddingScreen({navigation}) {
       </View>
     );
   }, [endRide]);
-
 
   const getDriverUid = () => {
     if (!selectedDriver) {
@@ -801,15 +888,14 @@ export default function DriverBiddingScreen({navigation}) {
   };
 
   const rideStartByDriver = async () => {
-    setStartRide(true)
+    setStartRide(true);
 
-    try{
-        await AsyncStorage.setItem("startRide","Ride has been started")
-    }catch(error){
-        console.log(error)
+    try {
+      await AsyncStorage.setItem('startRide', 'Ride has been started');
+    } catch (error) {
+      console.log(error);
     }
-
-  }
+  };
 
   const getViewLocation = useCallback(() => {
     return (
@@ -840,14 +926,12 @@ export default function DriverBiddingScreen({navigation}) {
   console.log(driverCurrentLocation, 'current');
   console.log(myDriverData, 'myDriver');
 
-
   const rideEndByDriver = async () => {
-        setEndRide(true)
-        setArriveDropOffLocation(false)
+    setEndRide(true);
+    setArriveDropOffLocation(false);
 
-        await AsyncStorage.setItem("EndRide","Ride End by Driver")
-
-  }
+    await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
+  };
 
   const mapRef = useRef();
 
@@ -958,14 +1042,13 @@ export default function DriverBiddingScreen({navigation}) {
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress= {()=>rideStartByDriver()}
-              >
+              onPress={() => rideStartByDriver()}>
               <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
                 Start Ride
               </Text>
             </TouchableOpacity>
           ))}
-             {arrive.pickUpLocation ||
+        {arrive.pickUpLocation ||
           (route.params.driverArrive && !startRide && !route.params.startRide && (
             <TouchableOpacity
               style={{
@@ -979,14 +1062,13 @@ export default function DriverBiddingScreen({navigation}) {
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress= {()=>rideStartByDriver()}
-              >
+              onPress={() => rideStartByDriver()}>
               <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
                 Start Ride
               </Text>
             </TouchableOpacity>
           ))}
-           {arrive.pickUpLocation ||
+        {arrive.pickUpLocation ||
           (arriveDropOffLocation && !route.params.endRide && (
             <TouchableOpacity
               style={{
@@ -1000,8 +1082,7 @@ export default function DriverBiddingScreen({navigation}) {
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress= {()=>rideEndByDriver()}
-              >
+              onPress={() => rideEndByDriver()}>
               <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
                 End Ride
               </Text>
@@ -1040,11 +1121,11 @@ export default function DriverBiddingScreen({navigation}) {
         </View>
       </View>
       <View style={styles.bottomCard}>
-        <KeyboardAvoidingView  >
+        <KeyboardAvoidingView>
           <ScrollView
             nestedScrollEnabled={true}
             keyboardShouldPersistTaps="handled">
-            <KeyboardAvoidingView  >
+            <KeyboardAvoidingView>
               <TextInput
                 placeholder="PickUp Location"
                 placeholderTextColor={Colors.gray}
@@ -1121,12 +1202,9 @@ export default function DriverBiddingScreen({navigation}) {
                   state="driver"
                 />
               )}
-              {arrivePickUpLocation && (
-                <ArriveModal  />
-              )}
-              {endRide || route.params && route.params.endRide && (
-                <DropOffModal />
-              )}
+              {arrivePickUpLocation && <ArriveModal />}
+              {endRide ||
+                (route.params && route.params.endRide && <DropOffModal />)}
 
               {/* </ScrollView> */}
               {!selectedDriver && (

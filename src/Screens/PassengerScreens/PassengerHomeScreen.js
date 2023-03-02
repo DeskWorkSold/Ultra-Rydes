@@ -48,6 +48,7 @@ export default function PassengerHomeScreen({navigation}) {
   let route = useRoute();
 
   console.log(route, 'routes');
+  
 
   const [dummyDataCat, setDummyDataCat] = useState('');
   const [onlineDriversLocation, setOnlineDriversLocation] = useState([]);
@@ -221,8 +222,7 @@ export default function PassengerHomeScreen({navigation}) {
     setCurrentUserUid(currentUser.uid);
   };
 
-  let data =
-    route.params && route.params.data ? route.params.data : route.params;
+  let data = route.params && route.params.data ? route.params.data : route.params;
 
   useEffect(() => {
     data &&
@@ -872,6 +872,8 @@ export default function PassengerHomeScreen({navigation}) {
         data: new Date(),
       };
 
+
+
       firestore()
         .collection('warning')
         .doc(route.params.driverData.id)
@@ -1060,11 +1062,12 @@ export default function PassengerHomeScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [driverArriveAtdropoffLocation, driverRatingStar, carRatingStar]);
+  }, [driverArriveAtdropoffLocation, driverRatingStar, carRatingStar,paymentByPassenger]);
 
   console.log(bookingData, 'booking');
 
   const FeedBackModal = useCallback(() => {
+
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -1139,11 +1142,13 @@ export default function PassengerHomeScreen({navigation}) {
     });
   };
 
+
+
   const getViewLocation = useCallback(() => {
     return (
       <MapViewDirections
         origin={selectedDriverLocation}
-        destination={data.passengerData.pickupCords}
+        destination={data && data.passengerData ? data.passengerData.pickupCords : data.pickupCords}
         apikey={GoogleMapKey.GOOGLE_MAP_KEY}
         strokeColor={Colors.black}
         strokeWidth={3}
@@ -1161,7 +1166,7 @@ export default function PassengerHomeScreen({navigation}) {
         }}
       />
     );
-  }, [selectedDriver]);
+  }, [selectedDriver,data]);
 
   return (
     <View style={styles.container}>
