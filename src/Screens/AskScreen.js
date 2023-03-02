@@ -22,6 +22,11 @@ export default function AskScreen({navigation}) {
   const getDriverBookingData = async () => {
     try {
       let data = await AsyncStorage.getItem('driverBooking');
+      let checkDriverArrive = await AsyncStorage.getItem('ArrivedAtpickUpLocation');
+      let startRide = await AsyncStorage.getItem("startRide")
+      let endRide = await AsyncStorage.getItem("EndRide")
+
+
       data = JSON.parse(data);
       if (data && Object.keys(data).length > 0) {
         navigation.navigate('DriverRoutes', {
@@ -34,11 +39,16 @@ export default function AskScreen({navigation}) {
                 : data.pickupCords,
               dropLocationCords: data.passengerData
                 ? data.passengerData.dropLocationCords
-                : data.dropLocationCords,
+                : data.dropLocationCords, 
             },
             selectedDriver: data.myDriversData
               ? data.myDriversData
               : data.driverData,
+
+            driverArrive : checkDriverArrive ? true : false,
+
+            startRide : startRide ? true : false,
+            endRide : endRide ? true : false
           },
         });
       }
@@ -73,7 +83,7 @@ export default function AskScreen({navigation}) {
   };
 
   useEffect(() => {
-    // getDriverBookingData()
+    getDriverBookingData()
     getPassengerBookingData()
   }, []);
 

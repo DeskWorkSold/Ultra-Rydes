@@ -24,12 +24,13 @@ import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
 import Icon from 'react-native-vector-icons/AntDesign';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import {LogBox} from 'react-native';
 import {
   locationPermission,
   getCurrentLocation,
 } from '../../Helper/HelperFunction';
-import auth from '@react-native-firebase/auth';
+import auth, {firebase} from '@react-native-firebase/auth';
 import * as geolib from 'geolib';
 import firestore from '@react-native-firebase/firestore';
 import Geocoder from 'react-native-geocoding';
@@ -82,6 +83,9 @@ export default function PassengerHomeScreen({navigation}) {
   const [driverRatingStar, setDriverRatingStar] = useState(0);
   const [carRatingStar, setCarRatingStar] = useState(0);
   const [paymentByPassenger, setPaymentByPassenger] = useState(0);
+  const [feedBack, setFeedBack] = useState('');
+  const [showFeedBackModal, setShowFeedBackModal] = useState(false);
+
   const [location, setLocation] = useState({
     pickupCords: route.params ? route.params.passengerData.pickupCords : null,
     dropLocationCords: route.params
@@ -180,14 +184,11 @@ export default function PassengerHomeScreen({navigation}) {
             !driverArrive.dropoffLocation &&
             !driverArriveAtdropoffLocation &&
             data &&
-            data.driverArriveAtDropoffLocation
+            data.driverArriveAtDropoffLocation &&
+            !paymentByPassenger
           ) {
             setPaymentByPassenger(data.payment);
-
-            setDriverArrive({
-              ...driverArrive,
-              dropoffLocation: true,
-            });
+            setDriverArriveAtdropoffLocation(true);
           }
 
           if (data && !Array.isArray(myDriversData)) {
@@ -821,11 +822,28 @@ export default function PassengerHomeScreen({navigation}) {
     setCarRatingStar(ind + 1);
   };
 
-  console.log()
+  console.log(bookingData, 'bookingData');
 
   console.log(driverRating, 'driver');
 
   const confirmationByPassenger = () => {
+    if (carRatingStar && driverRatingStar) {
+      setDriverArrive({
+        ...driverArrive,
+        dropoffLocation: true,
+      });
+      setDriverArriveAtdropoffLocation(false);
+      setShowFeedBackModal(true);
+
+      firestore()
+        .collection('Request')
+        .doc(route.params.passengerData.id)
+        .onSnapshot(querySnapshot => {
+          let data = querySnapshot.data();
+          setBookingData(data);
+        });
+    }
+
     if (!driverRatingStar) {
       ToastAndroid.show('kindly give driver rating', ToastAndroid.SHORT);
       return;
@@ -833,67 +851,82 @@ export default function PassengerHomeScreen({navigation}) {
     if (!carRatingStar) {
       ToastAndroid.show('kindly give car rating', ToastAndroid.SHORT);
       return;
-    } else {
-      let myData = route.params
-      const uid = auth().currentUser.uid
+    }
+
+    if (driverRating && carRating) {
+      firestore()
+        .collection('Request')
+        .doc(route.params.passengerData.id)
+        .update({
+          driverRating: driverRatingStar,
+          carRating: carRatingStar,
+        });
+    }
+
+    if (carRatingStar == 1) {
+      const uid = auth().currentUser.uid;
+
+      let warning = {
+        message: 'Kindly fix your car urgent',
+        complaintId: uid,
+        data: new Date(),
+      };
 
       firestore()
-        .collection('Booking').onSnapshot(querySnapshot => {
-          console.log(querySnapshot,"query")
-          if (querySnapshot && querySnapshot._docs.length > 0) {
-            querySnapshot.forEach(documentSnapshot => {
-              
-              let data = documentSnapshot.data();
+        .collection('warning')
+        .doc(route.params.driverData.id)
+        .set(
+          {
+            warningToDriver: firestore.FieldValue.arrayUnion(warning),
+          },
+          {merge: true},
+        )
+        .then(() => {
+          console.log('warning has been send');
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    }
+  };
 
-                let bookingCount = []
-                let passengerId = data && data.passengerData && data.passengerData.id ? data.passengerData.id :  data && data.data.passengerData ? data.data.passengerData.id : ""
-              if(data && passengerId == route.params.passengerData.id){
-                        bookingCount.push(data.bookingCount)
-              }
-                let maxValue = 0
-                bookingCount && bookingCount.length>0 && bookingCount.map((e,i)=>{
-                        
-                    if(e > maxValue){
-                      maxValue = e
-                    }
+  console.log(driverArriveAtdropoffLocation);
+  console.log(driverArrive, 'driverA');
 
-                })
-                
-                myData.bookingCount =  Number(maxValue) + 1
+  console.log(feedBack,"feedBackkkkkkkkkkkkkk")
 
-                });
-                myData.driverRating = driverRatingStar
-                myData.carRating = carRatingStar
-                myData.payment = paymentByPassenger
+  const bookingComplete = () => {
+    console.log(feedBack,"feedback")
+    if (!feedBack) {
+      ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
+    } else {
+      let myData = {
+        booking: 'complete',
+        passengerData: route.params.passengerData,
+        driverData: route.params.driverData,
+        carRating: carRatingStar,
+        driverRating: driverRatingStar,
+        feedBack: feedBack,
+      };
 
-
-
-                firestore().collection("Booking").doc(uid + myData.bookingCount).set(myData).then(()=>{
-                  ToastAndroid.show("Thanks for the booking",ToastAndroid.SHORT)
-                      navigation.navigate("AskScreen")
-                }).catch((error)=>{
-                  console.log(error)
-                })
-              } 
-          // else {
-          //       let data = route.params
-          //       console.log(data.passengerData,"data")
-          //     firestore().collection("Booking").doc(data.passengerData.id).set({
-          //       data,
-          //       driverRating : driverRatingStar,
-          //       carRating  : carRatingStar,
-          //        payment : paymentByPassenger
-          //       bookingCount : 1
-          //     }).then(()=>{
-          //           ToastAndroid.show("Thanks for the booking",ToastAndroid.SHORT)
-          //           AsyncStorage.removeItem("passengerBooking")
-          //           AsyncStorage.removeItem("driverArrive")
-          //           navigation.navigate("AskScreen")
-          //     }).catch((error)=>{
-          //           console.log(error,"error")
-          //     })
-
-          // }
+      firestore()
+        .collection('Booking')
+        .doc(route.params.passengerData.id)
+        .set(
+          {
+            bookingData: firestore.FieldValue.arrayUnion(myData),
+          },
+          {merge: true},
+        )
+        .then(() => {
+          console.log('data successfully submit');
+          ToastAndroid.show('Thanks for your feedBack', ToastAndroid.SHORT);
+          navigation.navigate('AskScreen');
+          AsyncStorage.removeItem("passengerBooking")
+          AsyncStorage.removeItem("driverArrive")
+        })
+        .catch(error => {
+          console.log(error, 'error');
         });
     }
   };
@@ -904,7 +937,7 @@ export default function PassengerHomeScreen({navigation}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={driverArrive.dropoffLocation}>
+          visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
           <View style={[styles.centeredView]}>
             <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
               <Text style={[styles.modalText, {fontSize: 26}]}>
@@ -1027,7 +1060,72 @@ export default function PassengerHomeScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [driverArrive, driverRatingStar, carRatingStar]);
+  }, [driverArriveAtdropoffLocation, driverRatingStar, carRatingStar]);
+
+  console.log(bookingData, 'booking');
+
+  const FeedBackModal = useCallback(() => {
+    return (
+      <View style={styles.centeredView}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showFeedBackModal}>
+          <View style={[styles.centeredView]}>
+            <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
+              <MaterialIcon size={80} color="white" name="feedback" />
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 0,
+                    fontWeight: '500',
+                  },
+                ]}>
+                Kindly Give your feedback!
+              </Text>
+
+              <TextInput
+                multiline={true}
+                placeholder="Enter feedback here"
+                placeholderTextColor={'black'}
+                style={{
+                  width: '95%',
+                  borderWidth: 1,
+                  borderColor: 'white',
+                  padding: 5,
+                  textAlign: 'left',
+                  backgroundColor: 'white',
+                  color: 'black',
+                  borderRadius: 10,
+                  marginTop: 10,
+                }}
+                maxLength={100}
+                onChangeText={(e)=>setFeedBack(e)}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  {
+                    marginBottom: 5,
+                    backgroundColor: Colors.primary,
+                    marginTop: 10,
+                  },
+                ]}
+                onPress={bookingComplete}>
+                <Text
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  Confirm
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }, [showFeedBackModal,feedBack]);
 
   console.log(driverRatingStar, 'rating');
   console.log(carRatingStar, 'carRating');
@@ -1359,9 +1457,9 @@ export default function PassengerHomeScreen({navigation}) {
                     />
                   )}
                   {driverArrive && driverArrive.pickupLocation && ArriveModal()}
-                  {driverArrive &&
-                    driverArrive.dropoffLocation &&
-                    dropOffModal()}
+                  {driverArriveAtdropoffLocation && dropOffModal()}
+
+                  {showFeedBackModal && FeedBackModal()}
 
                   <TextInput
                     placeholder="Additional Details"
