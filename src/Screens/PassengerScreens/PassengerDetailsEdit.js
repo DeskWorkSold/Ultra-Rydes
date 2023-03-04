@@ -23,6 +23,8 @@ export default function PassengerDetailsEdit({ navigation, route }) {
     const [lastNameError, setLastNameError] = useState(false)
     const [dateOfBirthError, setDateOfBirthError] = useState(false)
     const [EmailError, setEmailError] = useState(false)
+    const [mobileNumber,setMobileNumber] = useState(passengerData.mobileNumber ? passengerData.mobileNumber : null)
+    const [mobileNumberError,setMobileNumberError] = useState(false)
 
     //Date picker
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -106,7 +108,7 @@ export default function PassengerDetailsEdit({ navigation, route }) {
 
     const strongRegex = new RegExp("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$");
     const askScreenHandler = async () => {
-        if (firstName == '' || lastName == '' || dateOfBirth == '' || Email == '' || !strongRegex.test(Email) || profilePicture == '') {
+        if (firstName == '' || lastName == '' || dateOfBirth == '' || Email == '' || !strongRegex.test(Email) || profilePicture == '' || !mobileNumber ) {
             if (firstName == '') {
                 setToastMsg("First Name cannot be empty");
                 setFirstNameError(true);
@@ -134,6 +136,11 @@ export default function PassengerDetailsEdit({ navigation, route }) {
             }
             if (profilePicture == '') {
                 setToastMsg("Please set Profile Picture");
+                return false;
+            }
+            if (!mobileNumber) {
+                setToastMsg("Mobile number cannot be empty");
+                setMobileNumberError(true)
                 return false;
             }
         }
@@ -169,7 +176,8 @@ export default function PassengerDetailsEdit({ navigation, route }) {
                     firstName: firstName,
                     lastName: lastName,
                     dateOfBirth: dateOfBirth,
-                    Email: Email
+                    Email: Email,
+                    mobileNumber : mobileNumber
                 })
 
                 .then(() => {
@@ -180,6 +188,8 @@ export default function PassengerDetailsEdit({ navigation, route }) {
             console.log(err)
         }
     }
+
+    console.log(mobileNumber,"mobile")
 
     return (
         <ScrollView style={styles.rootContainer}>
@@ -236,6 +246,20 @@ export default function PassengerDetailsEdit({ navigation, route }) {
                             onFocus={() => { setDateOfBirthError(false) }}
                             // editable={false}
                             onPressIn={() => showDatePicker()}
+                        />
+                         <TextInput
+                            style={styles.fieldStyles}
+                            label='Mobile Number'
+                            value={mobileNumber}
+                            error={mobileNumberError}
+                            onChangeText={setMobileNumber}
+                            selectionColor={Colors.black}
+                            underlineColor={Colors.black}
+                            activeOutlineColor={Colors.fontColor}
+                            activeUnderlineColor={Colors.fontColor}
+                            onFocus={() => { setMobileNumberError(false) }}
+                            // editable={false}
+                            
                         />
                         <TextInput
                             style={styles.fieldStyles}

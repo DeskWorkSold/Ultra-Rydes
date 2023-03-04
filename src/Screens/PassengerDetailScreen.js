@@ -22,6 +22,8 @@ export default function PassengerDetailScreen({ navigation }) {
     const [lastNameError, setLastNameError] = useState(false)
     const [dateOfBirthError, setDateOfBirthError] = useState(false)
     const [EmailError, setEmailError] = useState(false)
+    const [mobileNumber,setMobileNumber] = useState(null)
+    const [mobileNumberError,setMobileNumberError] = useState(false)
 
     //Date picker
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -105,7 +107,7 @@ export default function PassengerDetailScreen({ navigation }) {
 
     const strongRegex = new RegExp("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$");
     const askScreenHandler = async () => {
-        if (firstName == '' || lastName == '' || dateOfBirth == '' || Email == '' || !strongRegex.test(Email)) {
+        if (firstName == '' || lastName == '' || dateOfBirth == '' || Email == '' || !strongRegex.test(Email) || !mobileNumber ) {
             if (firstName == '') {
                 ToastAndroid.show("First Name cannot be empty", ToastAndroid.SHORT);
                 setFirstNameError(true);
@@ -124,6 +126,11 @@ export default function PassengerDetailScreen({ navigation }) {
             if (Email == '') {
                 ToastAndroid.show("Email cannot be empty", ToastAndroid.SHORT);
                 setEmailError(true);
+                return false;
+            }
+            if (mobileNumber == '') {
+                ToastAndroid.show("Mobile number cannot be empty", ToastAndroid.SHORT);
+                setMobileNumberError(true);
                 return false;
             }
             if (!strongRegex.test(Email)) {
@@ -218,6 +225,20 @@ export default function PassengerDetailScreen({ navigation }) {
                             onFocus={() => { setDateOfBirthError(false) }}
                             // editable={false}
                             onPressIn={() => showDatePicker()}
+                        />
+                        <TextInput
+                            style={styles.fieldStyles}
+                            label='Mobile Number'
+                            value={mobileNumber}
+                            error={mobileNumberError}
+                            onChangeText={setMobileNumber}
+                            selectionColor={Colors.black}
+                            underlineColor={Colors.black}
+                            activeOutlineColor={Colors.fontColor}
+                            activeUnderlineColor={Colors.fontColor}
+                            onFocus={() => { setMobileNumberError(false) }}
+                            // editable={false}
+                            
                         />
                         <TextInput
                             style={styles.fieldStyles}

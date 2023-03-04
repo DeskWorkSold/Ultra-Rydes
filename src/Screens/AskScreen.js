@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal} from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
 
+
 export default function AskScreen({navigation}) {
   const [loading, setLoading] = useState();
   const {height} = useWindowDimensions();
@@ -51,7 +52,6 @@ export default function AskScreen({navigation}) {
               : data.driverData,
 
             driverArrive: checkDriverArrive ? true : false,
-
             startRide: startRide ? true : false,
             endRide: endRide ? true : false,
           },
@@ -68,8 +68,11 @@ export default function AskScreen({navigation}) {
       .collection('warning')
       .doc(uid)
       .onSnapshot(querySnapshot => {
-        let data = querySnapshot.data().warningToDriver;
-
+        console.log(querySnapshot,"query")
+        let data = querySnapshot.data()
+        if(data){
+          data = data.warningToDriver
+        }
         data =
           data &&
           data.length > 0 &&
@@ -83,7 +86,7 @@ export default function AskScreen({navigation}) {
       });
   }, []);
 
-  console.log(warningData, 'warning');
+  
 
   const hideModal = () => {
     let uid = auth().currentUser.uid;
@@ -160,7 +163,7 @@ export default function AskScreen({navigation}) {
                 ]}
                 onPress={() => hideModal()}>
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  style={[styles.textStyle1, {backgroundColor: Colors.primary}]}>
                   confirm
                 </Text>
               </TouchableOpacity>
@@ -194,7 +197,7 @@ export default function AskScreen({navigation}) {
   };
 
   useEffect(() => {
-    getDriverBookingData();
+    // getDriverBookingData();
     getPassengerBookingData();
   }, []);
 
@@ -256,9 +259,8 @@ export default function AskScreen({navigation}) {
         }}
         source={require('../Assets/Images/URWhiteLogo.png')}
       />
-
       <View style={styles.topContainer}>
-        <Text style={styles.textStyle}>Are You a Driver or a Passenger</Text>
+        <Text style={[styles.textStyle]}>Are You a Driver or a Passenger</Text>
       </View>
       <View style={styles.midContainer}>
         <Image
@@ -271,7 +273,7 @@ export default function AskScreen({navigation}) {
         <Text style={styles.textStyle}>Who are You</Text>
         <CustomButton text="Driver" onPress={driverModeHandler} />
         <View style={{marginVertical: 10}}></View>
-        <CustomButton text="Passenger" onPress={passengerModeHandler} bgColor />
+        <CustomButton text="Passenger" onPress={passengerModeHandler} bgColor/>
       </View>
       {warningData && warningData.length > 0 && warningModal()}
     </View>
@@ -345,7 +347,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#white',
   },
 
-  textStyle: {
+  textStyle1: {
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',

@@ -17,7 +17,7 @@ import firestore from '@react-native-firebase/firestore';
 import {getPreciseDistance} from 'geolib';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
-import  Icon  from 'react-native-vector-icons/AntDesign';
+import Icon from 'react-native-vector-icons/AntDesign';
 
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
@@ -74,7 +74,7 @@ export default function PassengerFindRide({navigation, route}) {
     inlineDriver,
   ]);
 
-  console.log(selectedDriver,"selectedDriver")
+  console.log(selectedDriver, 'selectedDriver');
 
   const checkRequestStatus = () => {
     if (request && !passengerData.bidFare) {
@@ -144,20 +144,18 @@ export default function PassengerFindRide({navigation, route}) {
 
   useEffect(() => {
     getInlineDriver();
+    checkRequestStatus()
   }, []);
 
-  useEffect(() => {
-    if (request && !passengerData.bidFare && request) {
-      const interval = setInterval(() => {
-          checkRequestStatus()
-      }, 5000);
+  // useEffect(() => {
+  //   if (request && !passengerData.bidFare && request) {
+  //     const interval = setInterval(() => {
+  //       checkRequestStatus();
+  //     }, 5000);
 
-      return () => clearInterval(interval);
-    }
-  }, [request]);
-
-
-
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [request]);
 
   const getDriverData = async () => {
     /// GET ALL DRIVERS
@@ -347,7 +345,7 @@ export default function PassengerFindRide({navigation, route}) {
           .then(res => {
             navigation.navigate('PassengerHomeScreen', {
               passengerData: passengerData,
-              driverData: selectedDriverData,
+              driverData: acceptDriver,
             });
           })
           .catch(error => {
@@ -373,8 +371,6 @@ export default function PassengerFindRide({navigation, route}) {
         });
     }
   };
-
-  console.log(selectedDriver,"selectedDriver")
 
   useEffect(() => {
     if (request && !passengerData.bidFare) {
@@ -484,6 +480,22 @@ export default function PassengerFindRide({navigation, route}) {
   };
 
   const rideRequests = ({item, index}) => {
+    console.log(item, 'items');
+    console.log(route.params, 'params');
+
+    let data = route.params;
+
+    if (data.bidFare) {
+      data.selectedCar[0].carMiles.map((e, i) => {
+        if (data.distance >= e.rangeMin && data.distance <= e.rangeMax) {
+          let serviceCharges = e.serviceCharge;
+          let creditCardFee = (Number(data.fare) * 5) / 100;
+          let totalCharges = serviceCharges + creditCardFee;
+          item.bidFare = (Number(item.bidFare) + totalCharges).toFixed(2);
+          console.log(totalCharges, 'total');
+        }
+      });
+    }
     let distanceMinutes =
       minutes &&
       minutes.length > 0 &&
@@ -525,11 +537,11 @@ export default function PassengerFindRide({navigation, route}) {
               <Text style={styles.driverNameText}>
                 {item.firstName + item.lastName}
               </Text>
-              <View style={{flexDirection:"row"}} > 
-              <Text style={[styles.driverNameText,{fontWeight:"800"}]}>
-                {item.rating} 
-              </Text>
-              <Icon name="star" size={20} color="yellow" />
+              <View style={{flexDirection: 'row'}}>
+                <Text style={[styles.driverNameText, {fontWeight: '800'}]}>
+                  {item.rating}
+                </Text>
+                <Icon name="star" size={20} color="yellow" />
               </View>
             </View>
           </View>

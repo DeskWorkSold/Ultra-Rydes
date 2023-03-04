@@ -38,6 +38,7 @@ import {Modal} from 'react-native';
 import {useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
+import {Linking, Platform} from 'react-native';
 
 export default function DriverBiddingScreen({navigation}) {
   const route = useRoute();
@@ -62,9 +63,7 @@ export default function DriverBiddingScreen({navigation}) {
 
   const {data} = route.params;
 
-  console.log(data, 'data');
-  console.log(route.params, 'params');
-  console.log(data, 'pickupaddress');
+  passengerData.mobileNumber = '+923455437281';
 
   const [pickUpLocation, setpickUpLocation] = useState(
     data && data.pickupAddress ? data.pickupAddress : '',
@@ -174,11 +173,12 @@ export default function DriverBiddingScreen({navigation}) {
 
     getCurrentLocation()
       .then(res => {
-        let {latitude, longitude} = res;
+        let {latitude, longitude, heading} = res;
         setDriverCurrentLocation({
           ...driverCurrentLocation,
-          latitude: 24.9180271,
-          longitude: 67.0970916,
+          latitude: latitude,
+          longitude: longitude,
+          heading: heading,
         });
       })
       .catch(error => {
@@ -189,7 +189,7 @@ export default function DriverBiddingScreen({navigation}) {
   useEffect(() => {
     const interval = setInterval(() => {
       getLocationUpdates();
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   });
@@ -484,38 +484,53 @@ export default function DriverBiddingScreen({navigation}) {
     );
   }, [arrivePickUpLocation]);
 
-  const bookingComplete = (payment) => {
-
+  const bookingComplete = payment => {
     let uid = auth().currentUser.uid;
-    
-    firestore().collection("Drivers").doc(uid).get().then((doc)=>{
-        if(doc.exists){
-          let data = doc.data()
-          console.log(data,'data')
-          if(data.wallet){
-                    
-            let wallet = Number(data.wallet) + Number(payment)
-            firestore().collection("Drivers").doc(uid).update({
-              wallet : wallet
-            }).then(()=>{
-              ToastAndroid.show("Amount has been successfully add in your wallet",ToastAndroid.SHORT)
-            }).catch((error)=>{
-              console.log(error)
-            })
 
-
-          }else{
-            let wallet = Number(payment)
-            firestore().collection("Drivers").doc(uid).update({
-              wallet : wallet
-            }).then(()=>{
-              ToastAndroid.show("Amount has been successfully add in your wallet")
-            }).catch((error)=>{
-              console.log(error)
-            })
+    firestore()
+      .collection('Drivers')
+      .doc(uid)
+      .get()
+      .then(doc => {
+        if (doc.exists) {
+          let data = doc.data();
+          console.log(data, 'data');
+          if (data.wallet) {
+            let wallet = Number(data.wallet) + Number(payment);
+            firestore()
+              .collection('Drivers')
+              .doc(uid)
+              .update({
+                wallet: wallet,
+              })
+              .then(() => {
+                ToastAndroid.show(
+                  'Amount has been successfully add in your wallet',
+                  ToastAndroid.SHORT,
+                );
+              })
+              .catch(error => {
+                console.log(error);
+              });
+          } else {
+            let wallet = Number(payment);
+            firestore()
+              .collection('Drivers')
+              .doc(uid)
+              .update({
+                wallet: wallet,
+              })
+              .then(() => {
+                ToastAndroid.show(
+                  'Amount has been successfully add in your wallet',
+                );
+              })
+              .catch(error => {
+                console.log(error);
+              });
           }
         }
-    })
+      });
 
     firestore()
       .collection('inlinedDriver')
@@ -538,12 +553,12 @@ export default function DriverBiddingScreen({navigation}) {
         driverArriveAtDropoffLocation: true,
       })
       .then(() => {
-         AsyncStorage.removeItem('driverBooking');
-         AsyncStorage.removeItem('ArrivedAtpickUpLocation');
-         AsyncStorage.removeItem("startRide")
-         AsyncStorage.removeItem("EndRide")
+        AsyncStorage.removeItem('driverBooking');
+        AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+        AsyncStorage.removeItem('startRide');
+        AsyncStorage.removeItem('EndRide');
         navigation.navigate('AskScreen');
-        })
+      })
       .catch(error => {
         console.log(error);
       });
@@ -551,7 +566,7 @@ export default function DriverBiddingScreen({navigation}) {
 
   const DropOffModal = useCallback(() => {
     const [input, setInput] = useState(false);
-    const [payment,setPayment] = useState(null)
+    const [payment, setPayment] = useState(null);
 
     console.log(input);
     return (
@@ -897,10 +912,12 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
+  console.log(driverCurrentLocation, 'driver');
+
   const getViewLocation = useCallback(() => {
     return (
       <MapViewDirections
-        origin={myDriverData.currentLocation}
+        origin={driverCurrentLocation}
         destination={pickupCords}
         apikey={GoogleMapKey.GOOGLE_MAP_KEY}
         strokeColor={Colors.black}
@@ -920,11 +937,7 @@ export default function DriverBiddingScreen({navigation}) {
         }}
       />
     );
-  }, [selectedDriver, myDriverData]);
-
-  console.log(selectedDriver, 'selected');
-  console.log(driverCurrentLocation, 'current');
-  console.log(myDriverData, 'myDriver');
+  }, [selectedDriver, myDriverData, route.params, driverCurrentLocation]);
 
   const rideEndByDriver = async () => {
     setEndRide(true);
@@ -959,11 +972,12 @@ export default function DriverBiddingScreen({navigation}) {
         {state.pickupCords && (
           <MapView
             ref={mapRef}
+            zoomEnabled={true}
             style={StyleSheet.absoluteFill}
             initialRegion={{
               ...pickupCords,
-              latitudeDelta: LATITUDE_DELTA,
-              longitudeDelta: LONGITUDE_DELTA,
+              latitudeDelta: 0.005,
+              longitudeDelta: 0.001,
             }}>
             <Marker
               coordinate={pickupCords}
@@ -988,6 +1002,8 @@ export default function DriverBiddingScreen({navigation}) {
                       driverCurrentLocation && driverCurrentLocation.latitude,
                     longitude:
                       driverCurrentLocation && driverCurrentLocation.longitude,
+                    heading:
+                      driverCurrentLocation && driverCurrentLocation.heading,
                   }}
                   title="Your Location"
                   description={
@@ -996,15 +1012,18 @@ export default function DriverBiddingScreen({navigation}) {
                   pinColor="blue">
                   <Image
                     source={require('../../Assets/Images/mapCar.png')}
-                    style={{width: 40, height: 40}}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      transform: [
+                        {rotate: `${driverCurrentLocation.heading}deg`},
+                      ],
+                    }}
                     resizeMode="contain"
                   />
                 </Marker>
               )}
-            {myDriverData &&
-              myDriverData.currentLocation &&
-              myDriverData.currentLocation.longitude &&
-              getViewLocation()}
+            {myDriverData && driverCurrentLocation && getViewLocation()}
             {Object.keys(dropLocationCords).length > 0 && (
               <MapViewDirections
                 origin={pickupCords}
@@ -1029,7 +1048,8 @@ export default function DriverBiddingScreen({navigation}) {
         )}
 
         {arrive.pickUpLocation ||
-          (route.params.driverArrive && !startRide && !route.params.startRide && (
+          route.params.arrive ||
+          (!startRide && !route.params.startRide && (
             <TouchableOpacity
               style={{
                 position: 'absolute',
@@ -1048,26 +1068,7 @@ export default function DriverBiddingScreen({navigation}) {
               </Text>
             </TouchableOpacity>
           ))}
-        {arrive.pickUpLocation ||
-          (route.params.driverArrive && !startRide && !route.params.startRide && (
-            <TouchableOpacity
-              style={{
-                position: 'absolute',
-                bottom: 20,
-                right: 20,
-                borderWidth: 1,
-                borderColor: 'black',
-                padding: 10,
-                backgroundColor: Colors.secondary,
-                borderRadius: 10,
-                paddingHorizontal: 20,
-              }}
-              onPress={() => rideStartByDriver()}>
-              <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
-                Start Ride
-              </Text>
-            </TouchableOpacity>
-          ))}
+
         {arrive.pickUpLocation ||
           (arriveDropOffLocation && !route.params.endRide && (
             <TouchableOpacity
@@ -1098,7 +1099,9 @@ export default function DriverBiddingScreen({navigation}) {
               marginTop: 10,
             }}>
             Duration:{' '}
-            {arrivePickUpLocation || arrive.pickUpLocation
+            {arrivePickUpLocation ||
+            arrive.pickUpLocation ||
+            route.params.driverArrive
               ? passengerData.minutes
               : Math.ceil(minutesAndDistanceDifference.minutes)}{' '}
             Minutes
@@ -1111,7 +1114,9 @@ export default function DriverBiddingScreen({navigation}) {
               marginTop: 5,
             }}>
             Distance:{' '}
-            {arrivePickUpLocation || arrive.pickUpLocation
+            {arrivePickUpLocation ||
+            arrive.pickUpLocation ||
+            route.params.driverArrive
               ? passengerData.distance
               : (minutesAndDistanceDifference.distance * 0.621371).toFixed(
                   2,
@@ -1126,6 +1131,34 @@ export default function DriverBiddingScreen({navigation}) {
             nestedScrollEnabled={true}
             keyboardShouldPersistTaps="handled">
             <KeyboardAvoidingView>
+
+              {selectedDriver && <View> 
+                <Text style={{fontSize:18,fontWeight:"600",color:Colors.secondary}} >Contact Passenger:</Text>
+                <TouchableOpacity
+                style={{
+                  width: '100%',
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  justifyContent: 'center',
+                  flexDirection:"row",
+                  justifyContent:"space-between",
+                  
+                  
+                }}
+                onPress={() => {
+                  Linking.openURL(`tel:${passengerData.mobileNumber}`)}}
+                >
+                
+                <Text style={{fontSize:18,fontWeight:"600",color:Colors.primary}}>{passengerData.mobileNumber}</Text>
+                <View style={{marginRight:160}} >
+                <Icon name="phone" size={30} color={Colors.secondary} />
+                </View>
+                </TouchableOpacity>
+              </View>
+              
+              
+              }
+
               <TextInput
                 placeholder="PickUp Location"
                 placeholderTextColor={Colors.gray}

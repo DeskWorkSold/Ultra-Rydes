@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
-  Touchable,
   TouchableOpacity,
   Image,
   KeyboardAvoidingView,
@@ -24,13 +23,14 @@ import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
 import Icon from 'react-native-vector-icons/AntDesign';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import {LogBox} from 'react-native';
 import {
   locationPermission,
   getCurrentLocation,
 } from '../../Helper/HelperFunction';
-import auth, {firebase} from '@react-native-firebase/auth';
+import auth from '@react-native-firebase/auth';
 import * as geolib from 'geolib';
 import firestore from '@react-native-firebase/firestore';
 import Geocoder from 'react-native-geocoding';
@@ -40,15 +40,14 @@ import {BackHandler} from 'react-native';
 import {useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
-import AskScreen from '../AskScreen';
-
-let height = Dimensions.get('window').height;
+import { Linking } from 'react-native';
 
 export default function PassengerHomeScreen({navigation}) {
   let route = useRoute();
 
+  console.log(route);
+
   console.log(route, 'routes');
-  
 
   const [dummyDataCat, setDummyDataCat] = useState('');
   const [onlineDriversLocation, setOnlineDriversLocation] = useState([]);
@@ -76,8 +75,6 @@ export default function PassengerHomeScreen({navigation}) {
   const [routeData, setRouteData] = useState([]);
   const [driverArriveAtPickUpLocation, setDriverArriveAtPickUpLocation] =
     useState(false);
-
-  console.log(driverArriveAtPickUpLocation, 'driverARRIVE');
 
   const [driverArriveAtdropoffLocation, setDriverArriveAtdropoffLocation] =
     useState(false);
@@ -156,7 +153,7 @@ export default function PassengerHomeScreen({navigation}) {
   }, []);
 
   const getDriverLocationUpdates = () => {
-    if (data) {
+    if (data && route.params) {
       firestore()
         .collection('Request')
         .doc(data.passengerData.id)
@@ -193,8 +190,13 @@ export default function PassengerHomeScreen({navigation}) {
           }
 
           if (data && !Array.isArray(myDriversData)) {
-            myDriversData.currentLocation.latitude = 24.9180271;
-            myDriversData.currentLocation.longitude = 67.0970916;
+            myDriversData.currentLocation.latitude =
+              myDriversData.currentLocation.latitude;
+            myDriversData.currentLocation.longitude =
+              myDriversData.currentLocation.longitude;
+            myDriversData.currentLocation.heading =
+              myDriversData.currentLocation.heading &&
+              myDriversData.currentLocation.heading;
             setSelectedLocation(myDriversData.currentLocation);
           } else if (data && Array.isArray(myDriversData)) {
             let selectedDriver = myDriversData.filter(
@@ -207,7 +209,37 @@ export default function PassengerHomeScreen({navigation}) {
     }
   };
 
-  console.log(driverArrive, 'DRIVER');
+
+//   const callNumber = phone => {
+
+//     console.log('callNumber ----> ', phone);
+//     let phoneNumber = +923462330519
+//     if (Platform.OS !== 'android') {
+//       phoneNumber = `telprompt:${phone}`;
+//     }
+//     else  {
+//       phoneNumber = `tel:${phone}`;
+//     }
+//     Linking.canOpenURL(phoneNumber)
+//     .then(supported => {
+//       if (!supported) {
+//         Alert.alert('Phone number is not available');
+//       } else {
+//         return Linking.openURL(phoneNumber);
+//       }
+//     })
+//     .catch(err => console.log(err));
+//   };
+
+// useEffect(()=>{
+
+//   if(selectedDriver){
+//     callNumber(selectedDriver.phoneNumber)
+//   }
+
+// },[selectedDriver])
+
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -222,7 +254,8 @@ export default function PassengerHomeScreen({navigation}) {
     setCurrentUserUid(currentUser.uid);
   };
 
-  let data = route.params && route.params.data ? route.params.data : route.params;
+  let data =
+    route.params && route.params.data ? route.params.data : route.params;
 
   useEffect(() => {
     data &&
@@ -285,7 +318,7 @@ export default function PassengerHomeScreen({navigation}) {
 
       return () => backHandler.remove();
     }
-  }, []);
+  }, [route.params]);
 
   useEffect(() => {
     if (data) {
@@ -384,10 +417,8 @@ export default function PassengerHomeScreen({navigation}) {
     const Driver = await firestore()
       .collection('Drivers')
       .onSnapshot(querySnapshot => {
-        // console.log('Total users: ', querySnapshot.size);
         let myDriversTemp = [];
         querySnapshot.forEach(documentSnapshot => {
-          // console.log('User ID: ', documentSnapshot.id, documentSnapshot.data());
           const driverData = documentSnapshot.data();
           if (driverData.status == 'online') {
             myDriversTemp.push(driverData);
@@ -473,7 +504,7 @@ export default function PassengerHomeScreen({navigation}) {
     }
 
     if (bidFare) {
-      let data = {
+      let myData = {
         pickupCords: pickupCords,
         dropLocationCords: dropLocationCords,
         selectedCar: dummyDataCat.filter((e, i) => e.selected),
@@ -487,150 +518,24 @@ export default function PassengerHomeScreen({navigation}) {
         id: CurrentUserUid,
       };
 
-      firestore()
-        .collection('Request')
-        .doc(CurrentUserUid)
-        .set(data)
-        .then(() => {
-          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+      console.log(bidFare, 'fare');
+      console.log(CurrentUserUid, 'uidd');
+      console.log(myData, 'dataa');
+      // firestore()
+      //   .collection('Request')
+      //   .doc(CurrentUserUid)
+      //   .set(myData)
+      //   .then(() => {
+      //     ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
 
-          setTimeout(() => {
-            navigation.navigate('PassengerFindRide', data);
-          }, 1000);
-        });
-      // navigation.navigate('PassengerFindRide', data);
+      //     navigation.navigate('PassengerFindRide', myData);
+
+      //   }).catch((error)=>{
+      //     console.log(error)
+      //   })
+      navigation.navigate('PassengerFindRide', myData);
     }
-    // else {
-    //   firestore()
-    //     .collection('booking')
-    //     .onSnapshot(querySnapshot => {
-    //       let myBookingData = [];
-
-    //       querySnapshot.forEach(documentSnapshot => {
-    //         let data = documentSnapshot.data();
-
-    //         if (data && data.id == CurrentUserUid) {
-    //           myBookingData.push(data);
-    //         }
-    //       });
-
-    //       if (myBookingData && myBookingData.length > 0) {
-    //         setBookingData(myBookingData);
-    //       } else {
-    //         setBookingData('noData');
-    //       }
-    //     });
-    // }
   };
-
-  // const sendBookingDataInFb = () => {
-  //   let myFlag =
-  //     bookingData &&
-  //     bookingData.length > 0 &&
-  //     bookingData.every((e, i) => e.bookingStatus == 'done');
-
-  //   if (bookingData && bookingData.length > 0 && !myFlag) {
-  //     bookingData &&
-  //       bookingData.map((e, i) => {
-  //         if (
-  //           e.id == CurrentUserUid &&
-  //           e.bookingStatus !== 'done' &&
-  //           !e.driverDetail
-  //         ) {
-  //           let data = {
-  //             pickupCords: pickupCords,
-  //             dropLocationCords: dropLocationCords,
-  //             selectedCar: dummyDataCat.filter((e, i) => e.selected),
-  //             distance: distance,
-  //             minutes: minutes,
-  //             fare: fare,
-  //             pickupAddress: pickupAddress,
-  //             dropOffAddress: dropOffAddress,
-  //             additionalDetails: additionalDetails,
-  //             bookingStatus: 'inProcess',
-  //             id: CurrentUserUid,
-  //             bookingCount: e.bookingCount,
-  //           };
-
-  //           firestore()
-  //             .collection('booking')
-  //             .doc(`${CurrentUserUid}booking${data.bookingCount}`)
-  //             .set(data)
-  //             .then(() => {
-  //               console.log('Data successfully send');
-  //               navigation.navigate('PassengerFindRide', data);
-  //             })
-  //             .catch(error => {
-  //               console.log(error);
-  //             });
-  //         }
-  //       });
-  //   } else if (myFlag && bookingData && bookingData.length > 0) {
-  //     console.log(bookingData.length, 'length');
-  //     console.log(bookingData, 'bookingData');
-
-  //     let data = {
-  //       pickupCords: pickupCords,
-  //       dropLocationCords: dropLocationCords,
-  //       selectedCar: dummyDataCat.filter((e, i) => e.selected),
-  //       distance: distance,
-  //       minutes: minutes,
-  //       fare: fare,
-  //       pickupAddress: pickupAddress,
-  //       dropOffAddress: dropOffAddress,
-  //       additionalDetails: additionalDetails,
-  //       bookingStatus: 'inProcess',
-  //       id: CurrentUserUid,
-  //       bookingCount: bookingData.length + 1,
-  //     };
-
-  //     firestore()
-  //       .collection('booking')
-  //       .doc(`${CurrentUserUid}booking${data.bookingCount}`)
-  //       .set(data)
-  //       .then(res => {
-  //         console.log('data successfully send');
-  //         navigation.navigate('PassengerFindRide', data);
-  //       })
-  //       .catch(error => {
-  //         console.log(error, 'error');
-  //       });
-  //   }
-
-  // };
-
-  // useEffect(() => {
-
-  //   if (bookingData && bookingData.length > 0 && Array.isArray(bookingData)) {
-  //     sendBookingDataInFb();
-  //   } else if (bookingData == 'noData') {
-  //     let data = {
-  //       pickupCords: pickupCords,
-  //       dropLocationCords: dropLocationCords,
-  //       selectedCar: dummyDataCat.filter((e, i) => e.selected),
-  //       distance: distance,
-  //       minutes: minutes,
-  //       fare: fare,
-  //       pickupAddress: pickupAddress,
-  //       dropOffAddress: dropOffAddress,
-  //       additionalDetails: additionalDetails,
-  //       bookingStatus: 'inProcess',
-  //       id: CurrentUserUid,
-  //       bookingCount: 1,
-  //     };
-  //     firestore()
-  //       .collection('booking')
-  //       .doc(`${CurrentUserUid}booking${data.bookingCount}`)
-  //       .set(data)
-  //       .then(res => {
-  //         console.log('data successfully send');
-  //         navigation.navigate('PassengerFindRide', data);
-  //       })
-  //       .catch(error => {
-  //         console.log(error, 'error');
-  //       });
-  //   }
-  // }, [bookingData]);
 
   const mapRef = useRef();
   const [selected, setSelected] = useState(false);
@@ -872,8 +777,6 @@ export default function PassengerHomeScreen({navigation}) {
         data: new Date(),
       };
 
-
-
       firestore()
         .collection('warning')
         .doc(route.params.driverData.id)
@@ -895,13 +798,72 @@ export default function PassengerHomeScreen({navigation}) {
   console.log(driverArriveAtdropoffLocation);
   console.log(driverArrive, 'driverA');
 
-  console.log(feedBack,"feedBackkkkkkkkkkkkkk")
+  console.log(feedBack, 'feedBackkkkkkkkkkkkkk');
 
   const bookingComplete = () => {
-    console.log(feedBack,"feedback")
+    console.log(feedBack, 'feedback');
     if (!feedBack) {
       ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
     } else {
+      let id = auth().currentUser.uid;
+      firestore()
+        .collection('Passengers')
+        .doc(id)
+        .get()
+        .then(doc => {
+          if (doc.exists) {
+            let myData = doc.data();
+            let wallet = myData.wallet;
+            console.log(wallet, 'outside');
+            if (wallet) {
+              console.log(wallet, 'wallet');
+
+              let totalFare =
+                data.passengerData && data.passengerData.bidFare
+                  ? data.passengerData.bidFare
+                  : data.passengerData.fare;
+              console.log(totalFare, 'totalFare');
+              let mergePayment =
+                Number(wallet) + Number(paymentByPassenger) - Number(totalFare);
+
+              firestore()
+                .collection('Passengers')
+                .doc(id)
+                .update({
+                  wallet: mergePayment.toFixed(2),
+                })
+                .then(() => {
+                  console.log('wallet successfully updated');
+                })
+                .catch(error => {
+                  console.log(error);
+                });
+            } else {
+              let totalFare =
+                data.passengerData && data.passengerData.bidFare
+                  ? data.passengerData.bidFare
+                  : data.passengerData.fare;
+              let remainingWallet =
+                Number(paymentByPassenger) - Number(totalFare);
+              firestore()
+                .collection('Passengers')
+                .doc(id)
+                .update({
+                  wallet: remainingWallet.toFixed(2),
+                })
+                .then(() => {
+                  console.log('wallet successfully updated');
+                })
+                .catch(error => {
+                  console.log(error);
+                });
+            }
+          }
+        })
+        .catch(error => {
+          console.log(error);
+        });
+
       let myData = {
         booking: 'complete',
         passengerData: route.params.passengerData,
@@ -909,8 +871,8 @@ export default function PassengerHomeScreen({navigation}) {
         carRating: carRatingStar,
         driverRating: driverRatingStar,
         feedBack: feedBack,
+        payment: paymentByPassenger,
       };
-
       firestore()
         .collection('Booking')
         .doc(route.params.passengerData.id)
@@ -924,8 +886,8 @@ export default function PassengerHomeScreen({navigation}) {
           console.log('data successfully submit');
           ToastAndroid.show('Thanks for your feedBack', ToastAndroid.SHORT);
           navigation.navigate('AskScreen');
-          AsyncStorage.removeItem("passengerBooking")
-          AsyncStorage.removeItem("driverArrive")
+          AsyncStorage.removeItem('passengerBooking');
+          AsyncStorage.removeItem('driverArrive');
         })
         .catch(error => {
           console.log(error, 'error');
@@ -1062,12 +1024,16 @@ export default function PassengerHomeScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [driverArriveAtdropoffLocation, driverRatingStar, carRatingStar,paymentByPassenger]);
+  }, [
+    driverArriveAtdropoffLocation,
+    driverRatingStar,
+    carRatingStar,
+    paymentByPassenger,
+  ]);
 
   console.log(bookingData, 'booking');
 
   const FeedBackModal = useCallback(() => {
-
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -1106,7 +1072,7 @@ export default function PassengerHomeScreen({navigation}) {
                   marginTop: 10,
                 }}
                 maxLength={100}
-                onChangeText={(e)=>setFeedBack(e)}
+                onChangeText={e => setFeedBack(e)}
               />
               <TouchableOpacity
                 style={[
@@ -1128,7 +1094,7 @@ export default function PassengerHomeScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [showFeedBackModal,feedBack]);
+  }, [showFeedBackModal, feedBack]);
 
   console.log(driverRatingStar, 'rating');
   console.log(carRatingStar, 'carRating');
@@ -1142,13 +1108,15 @@ export default function PassengerHomeScreen({navigation}) {
     });
   };
 
-
-
   const getViewLocation = useCallback(() => {
     return (
       <MapViewDirections
         origin={selectedDriverLocation}
-        destination={data && data.passengerData ? data.passengerData.pickupCords : data.pickupCords}
+        destination={
+          data && data.passengerData
+            ? data.passengerData.pickupCords
+            : data.pickupCords
+        }
         apikey={GoogleMapKey.GOOGLE_MAP_KEY}
         strokeColor={Colors.black}
         strokeWidth={3}
@@ -1166,7 +1134,10 @@ export default function PassengerHomeScreen({navigation}) {
         }}
       />
     );
-  }, [selectedDriver,data]);
+  }, [selectedDriver, data, selectedDriverLocation]);
+
+  console.log(selectedDriver, 'selected');
+  console.log(selectedDriverLocation, 'selectedLocation');
 
   return (
     <View style={styles.container}>
@@ -1255,7 +1226,13 @@ export default function PassengerHomeScreen({navigation}) {
                     >
                       <Image
                         source={require('../../Assets/Images/mapCar.png')}
-                        style={{width: 40, height: 40}}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          // transform: selectedDriverLocation && selectedDriverLocation.heading && [
+                          //   {rotate: `${selectedDriverLocation.heading}deg`},
+                          // ],
+                        }}
                         resizeMode="contain"
                       />
                     </Marker>
@@ -1305,6 +1282,9 @@ export default function PassengerHomeScreen({navigation}) {
                   )}
               </MapView>
             )}
+
+        
+
             {data && (
               <View style={{position: 'absolute', right: 10, top: 10}}>
                 <Text
@@ -1340,10 +1320,12 @@ export default function PassengerHomeScreen({navigation}) {
           </View>
 
           <View style={styles.bottomCard}>
+        
             <KeyboardAvoidingView>
               <ScrollView
                 nestedScrollEnabled={true}
                 keyboardShouldPersistTaps="handled">
+                  <View style={{flexDirection:"row",justifyContent:"space-between",alignItems:"center"}} >
                 <FlatList
                   data={
                     data && data.passengerData.selectedCar
@@ -1355,7 +1337,12 @@ export default function PassengerHomeScreen({navigation}) {
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={item => item.id}
                 />
-
+                   {selectedDriver && <View style={{justifyContent:"center",width:"70%"}} >
+            <TouchableOpacity style={{width:"90%"}} >
+          <Text style={{color:Colors.secondary,fontWeight:"900",fontSize:22}} onPress={()=>{Linking.openURL(`tel:${selectedDriver.phoneNumber}`)}} >Contact Driver: <Text style={{color:Colors.primary,fontWeight:"700",fontSize:18}} > {selectedDriver.phoneNumber}</Text> <FontAwesome name="phone" size={25} color={Colors.secondary} /> </Text>
+          </TouchableOpacity>
+          </View>}
+                </View>
                 <KeyboardAvoidingView>
                   <AddressPickup
                     placeholderText={
