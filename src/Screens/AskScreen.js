@@ -198,7 +198,7 @@ export default function AskScreen({navigation}) {
 
   useEffect(() => {
     // getDriverBookingData();
-    getPassengerBookingData();
+    // getPassengerBookingData();
   }, []);
 
   const passengerModeHandler = async () => {

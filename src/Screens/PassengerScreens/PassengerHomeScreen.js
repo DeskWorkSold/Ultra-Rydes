@@ -40,7 +40,7 @@ import {BackHandler} from 'react-native';
 import {useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
-import { Linking } from 'react-native';
+import {Linking} from 'react-native';
 
 export default function PassengerHomeScreen({navigation}) {
   let route = useRoute();
@@ -73,11 +73,15 @@ export default function PassengerHomeScreen({navigation}) {
     dropLocationCords: '',
   });
   const [routeData, setRouteData] = useState([]);
-  const [driverArriveAtPickUpLocation, setDriverArriveAtPickUpLocation] =
-    useState(false);
+  const [
+    driverArriveAtPickUpLocation,
+    setDriverArriveAtPickUpLocation,
+  ] = useState(false);
 
-  const [driverArriveAtdropoffLocation, setDriverArriveAtdropoffLocation] =
-    useState(false);
+  const [
+    driverArriveAtdropoffLocation,
+    setDriverArriveAtdropoffLocation,
+  ] = useState(false);
   const [driverRatingStar, setDriverRatingStar] = useState(0);
   const [carRatingStar, setCarRatingStar] = useState(0);
   const [paymentByPassenger, setPaymentByPassenger] = useState(0);
@@ -137,12 +141,14 @@ export default function PassengerHomeScreen({navigation}) {
     },
   ]);
 
-  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
-    useState({
-      minutes: '',
-      distance: '',
-      details: '',
-    });
+  const [
+    minutesAndDistanceDifference,
+    setMinutesAndDistanceDifference,
+  ] = useState({
+    minutes: '',
+    distance: '',
+    details: '',
+  });
 
   useEffect(() => {
     if (!selectedDriver && !route.params) {
@@ -162,8 +168,6 @@ export default function PassengerHomeScreen({navigation}) {
           let myDriversData = data.myDriversData
             ? data.myDriversData
             : data.driverData;
-
-          console.log(data, 'dtaaaa');
 
           if (
             !driverArrive.pickupLocation &&
@@ -194,9 +198,10 @@ export default function PassengerHomeScreen({navigation}) {
               myDriversData.currentLocation.latitude;
             myDriversData.currentLocation.longitude =
               myDriversData.currentLocation.longitude;
-            myDriversData.currentLocation.heading =
-              myDriversData.currentLocation.heading &&
-              myDriversData.currentLocation.heading;
+            myDriversData.currentLocation.heading = myDriversData
+              .currentLocation.heading
+              ? myDriversData.currentLocation.heading.toString()
+              : '180';
             setSelectedLocation(myDriversData.currentLocation);
           } else if (data && Array.isArray(myDriversData)) {
             let selectedDriver = myDriversData.filter(
@@ -209,37 +214,7 @@ export default function PassengerHomeScreen({navigation}) {
     }
   };
 
-
-//   const callNumber = phone => {
-
-//     console.log('callNumber ----> ', phone);
-//     let phoneNumber = +923462330519
-//     if (Platform.OS !== 'android') {
-//       phoneNumber = `telprompt:${phone}`;
-//     }
-//     else  {
-//       phoneNumber = `tel:${phone}`;
-//     }
-//     Linking.canOpenURL(phoneNumber)
-//     .then(supported => {
-//       if (!supported) {
-//         Alert.alert('Phone number is not available');
-//       } else {
-//         return Linking.openURL(phoneNumber);
-//       }
-//     })
-//     .catch(err => console.log(err));
-//   };
-
-// useEffect(()=>{
-
-//   if(selectedDriver){
-//     callNumber(selectedDriver.phoneNumber)
-//   }
-
-// },[selectedDriver])
-
-
+  console.log(selectedDriverLocation, 'selectedDriver');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -294,10 +269,6 @@ export default function PassengerHomeScreen({navigation}) {
       getPickUpAndDropOffAddress();
     }
   }, [location, location.dropLocationCords, pickupCords, dropLocationCords]);
-
-  console.log(location, 'location');
-
-  console.log(pickupAddress, 'pickup');
 
   useEffect(() => {
     if (data) {
@@ -518,22 +489,19 @@ export default function PassengerHomeScreen({navigation}) {
         id: CurrentUserUid,
       };
 
-      console.log(bidFare, 'fare');
-      console.log(CurrentUserUid, 'uidd');
-      console.log(myData, 'dataa');
-      // firestore()
-      //   .collection('Request')
-      //   .doc(CurrentUserUid)
-      //   .set(myData)
-      //   .then(() => {
-      //     ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+      firestore()
+        .collection('Request')
+        .doc(CurrentUserUid)
+        .set(myData)
+        .then(() => {
+          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
 
-      //     navigation.navigate('PassengerFindRide', myData);
+          navigation.navigate('PassengerFindRide', myData);
 
-      //   }).catch((error)=>{
-      //     console.log(error)
-      //   })
-      navigation.navigate('PassengerFindRide', myData);
+        }).catch((error)=>{
+          console.log(error)
+        })
+
     }
   };
 
@@ -571,7 +539,8 @@ export default function PassengerHomeScreen({navigation}) {
               ? [styles.cards, {borderColor: Colors.primary, borderWidth: 2}]
               : [styles.cards]
           }
-          onPress={() => !bidFare && !route.params && onClickItem(item, index)}>
+          onPress={() => !bidFare && !route.params && onClickItem(item, index)}
+        >
           <Image
             style={styles.catImg}
             source={{uri: item.carImage}}
@@ -693,7 +662,8 @@ export default function PassengerHomeScreen({navigation}) {
               ...driverArrive,
               pickupLocation: false,
             });
-          }}>
+          }}
+        >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View>
@@ -707,9 +677,11 @@ export default function PassengerHomeScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => hideModal()}>
+                onPress={() => hideModal()}
+              >
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
+                >
                   confirm
                 </Text>
               </TouchableOpacity>
@@ -726,10 +698,6 @@ export default function PassengerHomeScreen({navigation}) {
   const getCarRating = ind => {
     setCarRatingStar(ind + 1);
   };
-
-  console.log(bookingData, 'bookingData');
-
-  console.log(driverRating, 'driver');
 
   const confirmationByPassenger = () => {
     if (carRatingStar && driverRatingStar) {
@@ -794,11 +762,6 @@ export default function PassengerHomeScreen({navigation}) {
         });
     }
   };
-
-  console.log(driverArriveAtdropoffLocation);
-  console.log(driverArrive, 'driverA');
-
-  console.log(feedBack, 'feedBackkkkkkkkkkkkkk');
 
   const bookingComplete = () => {
     console.log(feedBack, 'feedback');
@@ -901,7 +864,8 @@ export default function PassengerHomeScreen({navigation}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
+          visible={driverArriveAtdropoffLocation && !showFeedBackModal}
+        >
           <View style={[styles.centeredView]}>
             <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
               <Text style={[styles.modalText, {fontSize: 26}]}>
@@ -916,7 +880,8 @@ export default function PassengerHomeScreen({navigation}) {
                     marginHorizontal: 0,
                     fontWeight: '500',
                   },
-                ]}>
+                ]}
+              >
                 You have arrived at your destination
               </Text>
               <Text
@@ -930,7 +895,8 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}>
+                ]}
+              >
                 Your Bill Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   {route.params.passengerData.bidFare ??
@@ -949,7 +915,8 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}>
+                ]}
+              >
                 Your Payment Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   {paymentByPassenger}$
@@ -957,7 +924,8 @@ export default function PassengerHomeScreen({navigation}) {
               </Text>
 
               <Text
-                style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}>
+                style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}
+              >
                 Kindly give rating to driver
               </Text>
               <View
@@ -965,14 +933,16 @@ export default function PassengerHomeScreen({navigation}) {
                   width: '100%',
                   flexDirection: 'row',
                   justifyContent: 'center',
-                }}>
+                }}
+              >
                 {driverRating &&
                   driverRating.length > 0 &&
                   driverRating.map((e, i) => {
                     return (
                       <TouchableOpacity
                         key={i}
-                        onPress={() => getDriverRating(i)}>
+                        onPress={() => getDriverRating(i)}
+                      >
                         <Icon
                           size={30}
                           name="star"
@@ -992,7 +962,8 @@ export default function PassengerHomeScreen({navigation}) {
                   width: '100%',
                   flexDirection: 'row',
                   justifyContent: 'center',
-                }}>
+                }}
+              >
                 {carRating &&
                   carRating.length > 0 &&
                   carRating.map((e, i) => {
@@ -1013,9 +984,11 @@ export default function PassengerHomeScreen({navigation}) {
                   styles.button,
                   {marginBottom: 5, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => confirmationByPassenger()}>
+                onPress={() => confirmationByPassenger()}
+              >
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
+                >
                   Confirm
                 </Text>
               </TouchableOpacity>
@@ -1039,7 +1012,8 @@ export default function PassengerHomeScreen({navigation}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={showFeedBackModal}>
+          visible={showFeedBackModal}
+        >
           <View style={[styles.centeredView]}>
             <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
               <MaterialIcon size={80} color="white" name="feedback" />
@@ -1052,7 +1026,8 @@ export default function PassengerHomeScreen({navigation}) {
                     marginHorizontal: 0,
                     fontWeight: '500',
                   },
-                ]}>
+                ]}
+              >
                 Kindly Give your feedback!
               </Text>
 
@@ -1083,9 +1058,11 @@ export default function PassengerHomeScreen({navigation}) {
                     marginTop: 10,
                   },
                 ]}
-                onPress={bookingComplete}>
+                onPress={bookingComplete}
+              >
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
+                >
                   Confirm
                 </Text>
               </TouchableOpacity>
@@ -1136,9 +1113,6 @@ export default function PassengerHomeScreen({navigation}) {
     );
   }, [selectedDriver, data, selectedDriverLocation]);
 
-  console.log(selectedDriver, 'selected');
-  console.log(selectedDriverLocation, 'selectedLocation');
-
   return (
     <View style={styles.container}>
       {loading ? (
@@ -1166,7 +1140,8 @@ export default function PassengerHomeScreen({navigation}) {
                   ...pickupCords,
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA,
-                }}>
+                }}
+              >
                 <Marker coordinate={pickupCords} title="pickup location" />
 
                 {!selectedDriver &&
@@ -1197,7 +1172,8 @@ export default function PassengerHomeScreen({navigation}) {
                               latitude: b.currentLocation.latitude,
                               longitude: b.currentLocation.longitude,
                             }}
-                            pinColor="blue">
+                            pinColor="blue"
+                          >
                             <Image
                               source={require('../../Assets/Images/mapCar.png')}
                               style={{width: 40, height: 40}}
@@ -1229,9 +1205,15 @@ export default function PassengerHomeScreen({navigation}) {
                         style={{
                           width: 40,
                           height: 40,
-                          // transform: selectedDriverLocation && selectedDriverLocation.heading && [
-                          //   {rotate: `${selectedDriverLocation.heading}deg`},
-                          // ],
+                          transform:
+                            selectedDriverLocation &&
+                            selectedDriverLocation.heading
+                              ? [
+                                  {
+                                    rotate: `${selectedDriverLocation.heading}deg`,
+                                  },
+                                ]
+                              : [{rotate: `180deg`}],
                         }}
                         resizeMode="contain"
                       />
@@ -1246,16 +1228,13 @@ export default function PassengerHomeScreen({navigation}) {
                     }}
                     pinColor="black"
                     title="drop off location"
-                    //   onDrag={() => console.log('onDrag', arguments)}
-                    //   onDragStart={(e) => console.log('onDragStart', e)}
-                    //   onDragEnd={(e)=>changeDropLocation(e.nativeEvent)}
-                    draggable={true}
                   />
                 )}
                 {selectedDriverLocation &&
                   selectedDriverLocation.latitude &&
                   selectedDriverLocation.longitude &&
                   getViewLocation()}
+
                 {dropLocationCords &&
                   Object.keys(dropLocationCords).length > 0 && (
                     <MapViewDirections
@@ -1283,8 +1262,6 @@ export default function PassengerHomeScreen({navigation}) {
               </MapView>
             )}
 
-        
-
             {data && (
               <View style={{position: 'absolute', right: 10, top: 10}}>
                 <Text
@@ -1293,7 +1270,8 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 18,
                     fontWeight: '900',
                     marginTop: 10,
-                  }}>
+                  }}
+                >
                   Duration:{' '}
                   {driverArriveAtPickUpLocation || driverArrive.pickupLocation
                     ? data.passengerData.minutes
@@ -1306,7 +1284,8 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 18,
                     fontWeight: '900',
                     marginTop: 5,
-                  }}>
+                  }}
+                >
                   Distance:{' '}
                   {driverArriveAtPickUpLocation || driverArrive.pickUpLocation
                     ? data.passengerData.distance
@@ -1320,28 +1299,64 @@ export default function PassengerHomeScreen({navigation}) {
           </View>
 
           <View style={styles.bottomCard}>
-        
             <KeyboardAvoidingView>
               <ScrollView
                 nestedScrollEnabled={true}
-                keyboardShouldPersistTaps="handled">
-                  <View style={{flexDirection:"row",justifyContent:"space-between",alignItems:"center"}} >
-                <FlatList
-                  data={
-                    data && data.passengerData.selectedCar
-                      ? data.passengerData.selectedCar
-                      : dummyDataCat
-                  }
-                  renderItem={Categories}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={item => item.id}
-                />
-                   {selectedDriver && <View style={{justifyContent:"center",width:"70%"}} >
-            <TouchableOpacity style={{width:"90%"}} >
-          <Text style={{color:Colors.secondary,fontWeight:"900",fontSize:22}} onPress={()=>{Linking.openURL(`tel:${selectedDriver.phoneNumber}`)}} >Contact Driver: <Text style={{color:Colors.primary,fontWeight:"700",fontSize:18}} > {selectedDriver.phoneNumber}</Text> <FontAwesome name="phone" size={25} color={Colors.secondary} /> </Text>
-          </TouchableOpacity>
-          </View>}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <FlatList
+                    data={
+                      data && data.passengerData.selectedCar
+                        ? data.passengerData.selectedCar
+                        : dummyDataCat
+                    }
+                    renderItem={Categories}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={item => item.id}
+                  />
+                  {selectedDriver && (
+                    <View style={{justifyContent: 'center', width: '70%'}}>
+                      <TouchableOpacity style={{width: '90%'}}>
+                        <Text
+                          style={{
+                            color: Colors.secondary,
+                            fontWeight: '900',
+                            fontSize: 22,
+                          }}
+                          onPress={() => {
+                            Linking.openURL(
+                              `tel:${selectedDriver.phoneNumber}`,
+                            );
+                          }}
+                        >
+                          Contact Driver:{' '}
+                          <Text
+                            style={{
+                              color: Colors.primary,
+                              fontWeight: '700',
+                              fontSize: 18,
+                            }}
+                          >
+                            {' '}
+                            {selectedDriver.phoneNumber}
+                          </Text>{' '}
+                          <FontAwesome
+                            name="phone"
+                            size={25}
+                            color={Colors.secondary}
+                          />{' '}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
                 <KeyboardAvoidingView>
                   <AddressPickup
@@ -1429,13 +1444,15 @@ export default function PassengerHomeScreen({navigation}) {
                         padding: 8,
                         width: '30%',
                         borderRadius: 10,
-                      }}>
+                      }}
+                    >
                       <Text
                         style={{
                           color: 'black',
                           fontSize: 20,
                           fontWeight: '700',
-                        }}>
+                        }}
+                      >
                         Bid Fare
                       </Text>
                     </TouchableOpacity>

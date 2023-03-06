@@ -101,12 +101,14 @@ export default function DriverBiddingScreen({navigation}) {
     dropOffLocation: false,
   });
   const [startRide, setStartRide] = useState(false);
-  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
-    useState({
-      minutes: '',
-      distance: '',
-      details: '',
-    });
+  const [
+    minutesAndDistanceDifference,
+    setMinutesAndDistanceDifference,
+  ] = useState({
+    minutes: '',
+    distance: '',
+    details: '',
+  });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
   const [endRide, setEndRide] = useState(false);
 
@@ -189,7 +191,7 @@ export default function DriverBiddingScreen({navigation}) {
   useEffect(() => {
     const interval = setInterval(() => {
       getLocationUpdates();
-    }, 10000);
+    }, 15000);
 
     return () => clearInterval(interval);
   });
@@ -230,7 +232,7 @@ export default function DriverBiddingScreen({navigation}) {
     ) {
       let driverData = {...myDriverData};
       driverData.currentLocation = driverCurrentLocation;
-      if (passengerData.bidFare) {
+      if (passengerData.bidFare > 0 ) {
         firestore()
           .collection('Request')
           .doc(passengerData.id)
@@ -460,7 +462,8 @@ export default function DriverBiddingScreen({navigation}) {
           visible={arrivePickUpLocation}
           onRequestClose={() => {
             setArrivePickupLocation(false);
-          }}>
+          }}
+        >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View>
@@ -474,7 +477,8 @@ export default function DriverBiddingScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => sendArriveMessageToPassenger()}>
+                onPress={() => sendArriveMessageToPassenger()}
+              >
                 <Text style={styles.textStyle}>confirm</Text>
               </TouchableOpacity>
             </View>
@@ -494,7 +498,6 @@ export default function DriverBiddingScreen({navigation}) {
       .then(doc => {
         if (doc.exists) {
           let data = doc.data();
-          console.log(data, 'data');
           if (data.wallet) {
             let wallet = Number(data.wallet) + Number(payment);
             firestore()
@@ -577,14 +580,16 @@ export default function DriverBiddingScreen({navigation}) {
           visible={endRide || (route.params && route.params.endRide)}
           onRequestClose={() => {
             setInput(false);
-          }}>
+          }}
+        >
           <View style={styles.centeredView}>
             <View style={[styles.modalView, {height: input ? '70%' : '50%'}]}>
               <Text
                 style={[
                   styles.modalText,
                   {fontSize: 26, fontWeight: '600', color: 'white'},
-                ]}>
+                ]}
+              >
                 Congratulations!
               </Text>
               <Text
@@ -596,7 +601,8 @@ export default function DriverBiddingScreen({navigation}) {
                     color: 'white',
                     marginTop: 0,
                   },
-                ]}>
+                ]}
+              >
                 You have arrived at destination
               </Text>
               <Text
@@ -610,7 +616,8 @@ export default function DriverBiddingScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}>
+                ]}
+              >
                 Bill Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   {data.bidFare ?? data.fare}$
@@ -638,7 +645,8 @@ export default function DriverBiddingScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => bookingComplete(payment)}>
+                onPress={() => bookingComplete(payment)}
+              >
                 <Text style={styles.textStyle}>confirm</Text>
               </TouchableOpacity>
             </View>
@@ -681,10 +689,12 @@ export default function DriverBiddingScreen({navigation}) {
   const sendRequest = () => {
     if (!selectedDriver) {
       const Userid = route.params.data.id;
-
+      console.log(selectedDriver,"selectedDriver")
+      console.log(passengerData.bidFare,"bidFare")  
+      console.log(route.params,"paramsssss")
       if (
         passengerData &&
-        !passengerData.bidFare &&
+        !route.params.data.passengerData.bidFare &&
         passengerData.requestStatus &&
         !selectedDriver
       ) {
@@ -692,16 +702,15 @@ export default function DriverBiddingScreen({navigation}) {
           'You have already accepted this request',
           ToastAndroid.SHORT,
         );
-        console.log(driverData, 'driverData');
 
         return;
       }
 
       if (
         passengerData &&
-        !passengerData.bidFare &&
         !passengerData.requestStatus
       ) {
+        
         passengerData.requestStatus = 'accepted';
         firestore()
           .collection('Request')
@@ -768,7 +777,11 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
   const sendDriverRequestInFirebase = () => {
-    if (!selectedDriver && typeof selectedDriver !== 'object') {
+    if (
+      !selectedDriver &&
+      typeof selectedDriver !== 'object' &&
+      passengerData.bidFare > 0
+    ) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
@@ -792,7 +805,42 @@ export default function DriverBiddingScreen({navigation}) {
               .catch(error => {
                 console.log(error);
               });
-          } else if (
+          }
+
+          if (
+            data &&
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData)
+          ) {
+            const uid = auth().currentUser.uid;
+            if (
+              data.myDriversData.id == uid &&
+              data.myDriversData.requestStatus == 'rejected'
+            ) {
+              ToastAndroid.show(
+                'You request has been rejected',
+                ToastAndroid.SHORT,
+              );
+              return;
+            }
+          }
+
+          if (data && data.myDriversData && Array.isArray(data.myDriversData)) {
+            const uid = auth().currentUser.uid;
+
+            data.myDriversData.map((e, i) => {
+              if (e.id == uid && e.requestStatus == 'rejected') {
+                ToastAndroid.show(
+                  'You request has been rejected',
+                  ToastAndroid.SHORT,
+                );
+
+                return;
+              }
+            });
+          }
+
+          if (
             data &&
             Array.isArray(data.myDriversData) &&
             !data.requestStatus
@@ -800,7 +848,7 @@ export default function DriverBiddingScreen({navigation}) {
             let flag = data.myDriversData.some(
               (e, i) => e.id == driverPersonalData.id,
             );
-
+            console.log(flag, 'falggggg');
             if (flag) {
               ToastAndroid.show(
                 'You have already requested',
@@ -950,7 +998,8 @@ export default function DriverBiddingScreen({navigation}) {
 
   return loading ? (
     <View
-      style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}>
+      style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}
+    >
       <ActivityIndicator size={100} color="black" />
       <Text style={{color: 'black', marginTop: 20}}>
         Processing Your request Please Wait!
@@ -978,7 +1027,8 @@ export default function DriverBiddingScreen({navigation}) {
               ...pickupCords,
               latitudeDelta: 0.005,
               longitudeDelta: 0.001,
-            }}>
+            }}
+          >
             <Marker
               coordinate={pickupCords}
               title="pickup Location"
@@ -1009,7 +1059,8 @@ export default function DriverBiddingScreen({navigation}) {
                   description={
                     minutesAndDistanceDifference.details.start_address
                   }
-                  pinColor="blue">
+                  pinColor="blue"
+                >
                   <Image
                     source={require('../../Assets/Images/mapCar.png')}
                     style={{
@@ -1048,8 +1099,8 @@ export default function DriverBiddingScreen({navigation}) {
         )}
 
         {arrive.pickUpLocation ||
-          route.params.arrive ||
-          (!startRide && !route.params.startRide && (
+          route.params.driverArriveAtPickupLocation &&
+          !startRide && !route.params.startRide && selectedDriver && (
             <TouchableOpacity
               style={{
                 position: 'absolute',
@@ -1062,12 +1113,13 @@ export default function DriverBiddingScreen({navigation}) {
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress={() => rideStartByDriver()}>
+              onPress={() => rideStartByDriver()}
+            >
               <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
                 Start Ride
               </Text>
             </TouchableOpacity>
-          ))}
+          )}
 
         {arrive.pickUpLocation ||
           (arriveDropOffLocation && !route.params.endRide && (
@@ -1083,7 +1135,8 @@ export default function DriverBiddingScreen({navigation}) {
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress={() => rideEndByDriver()}>
+              onPress={() => rideEndByDriver()}
+            >
               <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
                 End Ride
               </Text>
@@ -1097,7 +1150,8 @@ export default function DriverBiddingScreen({navigation}) {
               fontSize: 18,
               fontWeight: '900',
               marginTop: 10,
-            }}>
+            }}
+          >
             Duration:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
@@ -1112,7 +1166,8 @@ export default function DriverBiddingScreen({navigation}) {
               fontSize: 18,
               fontWeight: '900',
               marginTop: 5,
-            }}>
+            }}
+          >
             Distance:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
@@ -1129,35 +1184,48 @@ export default function DriverBiddingScreen({navigation}) {
         <KeyboardAvoidingView>
           <ScrollView
             nestedScrollEnabled={true}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+          >
             <KeyboardAvoidingView>
-
-              {selectedDriver && <View> 
-                <Text style={{fontSize:18,fontWeight:"600",color:Colors.secondary}} >Contact Passenger:</Text>
-                <TouchableOpacity
-                style={{
-                  width: '100%',
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  justifyContent: 'center',
-                  flexDirection:"row",
-                  justifyContent:"space-between",
-                  
-                  
-                }}
-                onPress={() => {
-                  Linking.openURL(`tel:${passengerData.mobileNumber}`)}}
-                >
-                
-                <Text style={{fontSize:18,fontWeight:"600",color:Colors.primary}}>{passengerData.mobileNumber}</Text>
-                <View style={{marginRight:160}} >
-                <Icon name="phone" size={30} color={Colors.secondary} />
+              {selectedDriver && (
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '600',
+                      color: Colors.secondary,
+                    }}
+                  >
+                    Contact Passenger:
+                  </Text>
+                  <TouchableOpacity
+                    style={{
+                      width: '100%',
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      justifyContent: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                    }}
+                    onPress={() => {
+                      Linking.openURL(`tel:${passengerData.mobileNumber}`);
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: '600',
+                        color: Colors.primary,
+                      }}
+                    >
+                      {passengerData.mobileNumber}
+                    </Text>
+                    <View style={{marginRight: 160}}>
+                      <Icon name="phone" size={30} color={Colors.secondary} />
+                    </View>
+                  </TouchableOpacity>
                 </View>
-                </TouchableOpacity>
-              </View>
-              
-              
-              }
+              )}
 
               <TextInput
                 placeholder="PickUp Location"
@@ -1189,23 +1257,37 @@ export default function DriverBiddingScreen({navigation}) {
                 keyboardType="numeric"
                 onChangeText={setOfferFare}
                 value={`${
-                  passengerData.bidFare ? 'Customer Bid:' : 'Recomended Fare:'
-                } ${passengerData.bidFare ?? passengerData.fare}$`}
+                  passengerData.bidFare > 0
+                    ? 'Customer Bid:'
+                    : 'Recomended Fare:'
+                } ${
+                  passengerData.bidFare > 0
+                    ? passengerData.bidFare
+                    : data.bidFare
+                    ? data.bidFare
+                    : passengerData.fare
+                }$`}
               />
-              {driverBidFare && !selectedDriver && (
-                <TextInput
-                  placeholder="Your Bid"
-                  placeholderTextColor={Colors.gray}
-                  selectionColor={Colors.black}
-                  activeUnderlineColor={Colors.gray}
-                  style={styles.textInputStyle}
-                  keyboardType="numeric"
-                  editable={false}
-                  onChangeText={setDriverBidFare}
-                  value={`Your Bid ${driverBidFare}$`}
-                />
-              )}
-              {passengerData.bidFare && !selectedDriver && (
+              {driverBidFare ||
+                (route.params.selectedDriver &&
+                  route.params.selectedDriver.bidFare && (
+                    <TextInput
+                      placeholder="Your Bid"
+                      placeholderTextColor={Colors.gray}
+                      selectionColor={Colors.black}
+                      activeUnderlineColor={Colors.gray}
+                      style={styles.textInputStyle}
+                      keyboardType="numeric"
+                      editable={false}
+                      onChangeText={setDriverBidFare}
+                      value={`Your Bid ${
+                        driverBidFare
+                          ? driverBidFare
+                          : route.params.selectedDriver.bidFare
+                      }$`}
+                    />
+                  ))}
+              {passengerData.bidFare > 0 && !selectedDriver && (
                 <TouchableOpacity
                   onPress={() => setAppearBiddingOption(true)}
                   style={{
@@ -1215,13 +1297,15 @@ export default function DriverBiddingScreen({navigation}) {
                     padding: 8,
                     width: '30%',
                     borderRadius: 10,
-                  }}>
+                  }}
+                >
                   <Text
                     style={{
                       color: 'black',
                       fontSize: 20,
                       fontWeight: '700',
-                    }}>
+                    }}
+                  >
                     Bid Fare
                   </Text>
                 </TouchableOpacity>

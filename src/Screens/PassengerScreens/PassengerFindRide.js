@@ -45,9 +45,13 @@ export default function PassengerFindRide({navigation, route}) {
           } else if (
             data &&
             data.myDriversData &&
-            Array.isArray(data.myDriversData)
+            Array.isArray(data.myDriversData) 
           ) {
-            setDriverData(data.myDriversData);
+
+
+            setDriverData(data.myDriversData.filter((e,i)=>{
+              return e.requestStatus !== "rejected"
+            }));
           }
         });
     }
@@ -74,9 +78,9 @@ export default function PassengerFindRide({navigation, route}) {
     inlineDriver,
   ]);
 
-  console.log(selectedDriver, 'selectedDriver');
-
+  
   const checkRequestStatus = () => {
+    
     if (request && !passengerData.bidFare) {
       firestore()
         .collection('Request')
@@ -111,7 +115,7 @@ export default function PassengerFindRide({navigation, route}) {
               setTimeout(() => {
                 setDriverData(
                   driverData.filter((e, i) => {
-                    return e.cnic !== selectedDriver.cnic;
+                    return e.id !== selectedDriver.id;
                   }),
                 );
                 setRequest(false);
@@ -144,18 +148,20 @@ export default function PassengerFindRide({navigation, route}) {
 
   useEffect(() => {
     getInlineDriver();
-    checkRequestStatus()
   }, []);
 
-  // useEffect(() => {
-  //   if (request && !passengerData.bidFare && request) {
-  //     const interval = setInterval(() => {
-  //       checkRequestStatus();
-  //     }, 5000);
+  useEffect(() => {
+    if (request) {
+      const interval = setInterval(() => {
+        
+        checkRequestStatus();
+        checkAvailableDriverStatus()    
+      }
+      , 5000);
 
-  //     return () => clearInterval(interval);
-  //   }
-  // }, [request]);
+      return () => clearInterval(interval);
+    }
+  }, [request]);
 
   const getDriverData = async () => {
     /// GET ALL DRIVERS
@@ -199,8 +205,9 @@ export default function PassengerFindRide({navigation, route}) {
 
           let isInlined =
             inlineDriver &&
-            inlineDriver.map((e, i) => {
-              if (e == driverData.id) {
+            inlineDriver.filter((e, i) => {
+              console.log(e,"eeee")
+              if (e == driverData.id ) {
                 return 'true';
               }
             });
@@ -269,6 +276,9 @@ export default function PassengerFindRide({navigation, route}) {
         setDriverData(myDriversTemp);
       });
   };
+
+console.log(inlineDriver,"inlined")
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
@@ -385,7 +395,7 @@ export default function PassengerFindRide({navigation, route}) {
           'This driver is not available right now',
           ToastAndroid.SHORT,
         );
-      }, 30000);
+      }, 100000);
 
       return () => clearInterval(interval);
     }
@@ -422,7 +432,7 @@ export default function PassengerFindRide({navigation, route}) {
               .then(() => {
                 setDriverData(
                   driverData.filter((e, i) => {
-                    return e.cnic !== rejectedDriver.cnic;
+                    return e.id !== rejectedDriver.id;
                   }),
                 );
               })
@@ -452,6 +462,7 @@ export default function PassengerFindRide({navigation, route}) {
                 myDriversData: myDriverData,
               })
               .then(() => {
+                  setRequest(true)
                 setDriverData(
                   driverData.filter((e, i) => {
                     return e.id !== rejectedDriver.id;
@@ -480,9 +491,7 @@ export default function PassengerFindRide({navigation, route}) {
   };
 
   const rideRequests = ({item, index}) => {
-    console.log(item, 'items');
-    console.log(route.params, 'params');
-
+  
     let data = route.params;
 
     if (data.bidFare) {
@@ -547,7 +556,7 @@ export default function PassengerFindRide({navigation, route}) {
           </View>
           <View style={styles.priceContainer}>
             <View style={{alignItems: 'flex-end'}}>
-              <Text style={styles.priceText}>{item.bidFare ?? item.fare}$</Text>
+              <Text style={styles.priceText}>{item.bidFare}$</Text>
               <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
                 {item.minutes ?? distanceMinutes} minutes away
               </Text>

@@ -36,7 +36,7 @@ export default function DriverDetailScreen({ navigation }) {
     //error fields end
     //Date picker
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-    const [Date, setDate] = useState('');
+    // const [Date, setDate] = useState('');
     const showDatePicker = () => {
         setDatePickerVisibility(true);
     };
@@ -314,7 +314,7 @@ export default function DriverDetailScreen({ navigation }) {
 useEffect(()=>{
 
     let minutes = new Date().getMinutes()
-
+    
     if(minutes <= 15 || minutes >=45 ){
         setRating(5)
     }else{
