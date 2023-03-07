@@ -1,10 +1,12 @@
 import React from 'react'
-import { View, StyleSheet, Image, useWindowDimensions } from 'react-native'
+import { View, StyleSheet, Image, useWindowDimensions, Touchable, TouchableOpacity,Text } from 'react-native'
 import Colors from '../Constants/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-export default function CustomHeader({ onPress, iconname, color, source }) {
+export default function CustomHeader({ onPress, iconname, color, source,rightButton,cancelRideFunction}) {
     const { height } = useWindowDimensions();
+    
+        
     return (
         <View style={styles.header}>
             {/* <Image
@@ -24,7 +26,8 @@ export default function CustomHeader({ onPress, iconname, color, source }) {
                 resizeMode="contain"
                 source={source}
             />
-            <View style={styles.emptyContainer}></View>
+           {rightButton &&  <TouchableOpacity onPress={cancelRideFunction} style={{position:"absolute",right:10}} ><Text style={{color:"red",fontSize:16}} >Cancel Ride</Text></TouchableOpacity>}
+           <View style={styles.emptyContainer}></View>
 
         </View>
 
@@ -43,7 +46,7 @@ const styles = StyleSheet.create({
         marginTop: 5,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'space-between'
     },
     Logo: {
         flex: 1,

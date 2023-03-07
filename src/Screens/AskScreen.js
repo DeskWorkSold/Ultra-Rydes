@@ -18,7 +18,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal} from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
 
-
 export default function AskScreen({navigation}) {
   const [loading, setLoading] = useState();
   const {height} = useWindowDimensions();
@@ -68,10 +67,10 @@ export default function AskScreen({navigation}) {
       .collection('warning')
       .doc(uid)
       .onSnapshot(querySnapshot => {
-        console.log(querySnapshot,"query")
-        let data = querySnapshot.data()
-        if(data){
-          data = data.warningToDriver
+        console.log(querySnapshot, 'query');
+        let data = querySnapshot.data();
+        if (data) {
+          data = data.warningToDriver;
         }
         data =
           data &&
@@ -85,8 +84,6 @@ export default function AskScreen({navigation}) {
         }
       });
   }, []);
-
-  
 
   const hideModal = () => {
     let uid = auth().currentUser.uid;
@@ -163,7 +160,10 @@ export default function AskScreen({navigation}) {
                 ]}
                 onPress={() => hideModal()}>
                 <Text
-                  style={[styles.textStyle1, {backgroundColor: Colors.primary}]}>
+                  style={[
+                    styles.textStyle1,
+                    {backgroundColor: Colors.primary},
+                  ]}>
                   confirm
                 </Text>
               </TouchableOpacity>
@@ -197,8 +197,8 @@ export default function AskScreen({navigation}) {
   };
 
   useEffect(() => {
-    // getDriverBookingData();
-    // getPassengerBookingData();
+    getDriverBookingData();
+    getPassengerBookingData();
   }, []);
 
   const passengerModeHandler = async () => {
@@ -273,7 +273,7 @@ export default function AskScreen({navigation}) {
         <Text style={styles.textStyle}>Who are You</Text>
         <CustomButton text="Driver" onPress={driverModeHandler} />
         <View style={{marginVertical: 10}}></View>
-        <CustomButton text="Passenger" onPress={passengerModeHandler} bgColor/>
+        <CustomButton text="Passenger" onPress={passengerModeHandler} bgColor />
       </View>
       {warningData && warningData.length > 0 && warningModal()}
     </View>

@@ -18,6 +18,8 @@ import {getPreciseDistance} from 'geolib';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Icon from 'react-native-vector-icons/AntDesign';
+import { BackHandler } from 'react-native';
+
 
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
@@ -27,6 +29,7 @@ export default function PassengerFindRide({navigation, route}) {
   const [minutes, setMinutes] = useState([]);
   const [distance, setDistance] = useState([]);
   const [inlineDriver, setInlineDriver] = useState([]);
+  const [driverNotAvailable, setDriverNotAvailable] = useState([]);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -45,13 +48,13 @@ export default function PassengerFindRide({navigation, route}) {
           } else if (
             data &&
             data.myDriversData &&
-            Array.isArray(data.myDriversData) 
+            Array.isArray(data.myDriversData)
           ) {
-
-
-            setDriverData(data.myDriversData.filter((e,i)=>{
-              return e.requestStatus !== "rejected"
-            }));
+            setDriverData(
+              data.myDriversData.filter((e, i) => {
+                return e.requestStatus !== 'rejected';
+              }),
+            );
           }
         });
     }
@@ -65,23 +68,42 @@ export default function PassengerFindRide({navigation, route}) {
   }, []);
 
   useEffect(() => {
-    if (passengerData && !passengerData.bidFare) {
-      getDriverData();
+    if (passengerData && !passengerData.bidFare && !request) {
+      let interval = setInterval(() => {
+        getDriverData();
+      }, 30000);
+      return () => clearInterval(interval);
     } else {
       setDriverData([]);
       setRequest(true);
     }
-  }, [
-    passengerData,
-    passengerData.minutes,
-    passengerData.selectedCar.carName,
-    inlineDriver,
-  ]);
+  }, []);
 
-  
+
+  useEffect(() => {
+    if (request) {
+      const backAction = () => {
+        Alert.alert('Hold on!', 'Wait for the driver respond', [
+          {
+            text: 'Cancel',
+            onPress: () => null,
+            style: 'cancel',
+          },
+        ]);
+        return true;
+      };
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
+
+      return () => backHandler.remove();
+    }
+  }, [request]);
+
+
   const checkRequestStatus = () => {
-    
-    if (request && !passengerData.bidFare) {
+    if (request && !passengerData.bidFare && selectedDriver) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
@@ -104,7 +126,7 @@ export default function PassengerFindRide({navigation, route}) {
                 screen: 'PassengerHomeScreen',
                 params: {
                   passengerData: passengerData,
-                  driverData: selectedDriver,
+                  driverData : selectedDriver,
                 },
               });
             } else if (
@@ -153,15 +175,13 @@ export default function PassengerFindRide({navigation, route}) {
   useEffect(() => {
     if (request) {
       const interval = setInterval(() => {
-        
         checkRequestStatus();
-        checkAvailableDriverStatus()    
-      }
-      , 5000);
+        checkAvailableDriverStatus();
+      }, 5000);
 
       return () => clearInterval(interval);
     }
-  }, [request]);
+  }, [request,selectedDriver]);
 
   const getDriverData = async () => {
     /// GET ALL DRIVERS
@@ -172,121 +192,137 @@ export default function PassengerFindRide({navigation, route}) {
         let myDriversTemp = [];
         querySnapshot.forEach(documentSnapshot => {
           // console.log('User ID: ', documentSnapshot.id, documentSnapshot.data());
-          const driverData = documentSnapshot.data();
+          const myDriverData = documentSnapshot.data();
 
-          let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
-            return e.carName;
-          });
-
-          let selectedCar = selectedVehicleName[0];
-          let flag = '';
-          if (driverData && driverData.vehicleDetails) {
-            flag = selectedCar == driverData.vehicleDetails.vehicleCategory;
-          }
-          let mileDistance = '';
-          if (
-            driverData &&
-            driverData.currentLocation &&
-            driverData.status == 'online' &&
-            flag
-          ) {
-            let dis = getPreciseDistance(
-              {
-                latitude: passengerData.pickupCords.latitude,
-                longitude: passengerData.pickupCords.longitude,
-              },
-              {
-                latitude: driverData.currentLocation.latitude,
-                longitude: driverData.currentLocation.longitude,
-              },
-            );
-            mileDistance = (dis / 1609.34).toFixed(2);
-          }
-
-          let isInlined =
-            inlineDriver &&
-            inlineDriver.filter((e, i) => {
-              console.log(e,"eeee")
-              if (e == driverData.id ) {
-                return 'true';
-              }
+          let driverRequestedButNotRespond =
+            driverNotAvailable &&
+            driverNotAvailable.length > 0 &&
+            driverNotAvailable.some((e, i) => {
+              return e == myDriverData.id;
+            });
+              console.log(driverRequestedButNotRespond,myDriverData.id,"idddddd")
+              console.log(driverNotAvailable,"notAvailable")
+          
+            let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
+              return e.carName;
             });
 
-          isInlined = isInlined[0];
+            let selectedCar = selectedVehicleName[0];
+            let flag = '';
+            if (myDriverData && myDriverData.vehicleDetails) {
+              flag = selectedCar == myDriverData.vehicleDetails.vehicleCategory;
+            }
+            let mileDistance = '';
+            if (
+              myDriverData &&
+              myDriverData.currentLocation &&
+              myDriverData.status == 'online' &&
+              flag
+            ) {
+              let dis = getPreciseDistance(
+                {
+                  latitude: passengerData.pickupCords.latitude,
+                  longitude: passengerData.pickupCords.longitude,
+                },
+                {
+                  latitude: myDriverData.currentLocation.latitude,
+                  longitude: myDriverData.currentLocation.longitude,
+                },
+              );
+              mileDistance = (dis / 1609.34).toFixed(2);
+            }
 
-          if (
-            driverData.status == 'online' &&
-            mileDistance <= 3 &&
-            flag &&
-            !isInlined
-          ) {
-            driverData.fare = passengerData.fare;
-            myDriversTemp.push(driverData);
-          } else if (
-            myDriversTemp.length < 5 &&
-            driverData.status == 'online' &&
-            mileDistance > 3 &&
-            mileDistance < 5 &&
-            flag &&
-            !isInlined
-          ) {
-            driverData.fare = passengerData.fare;
-            myDriversTemp.push(driverData);
-          } else if (
-            myDriversTemp.length < 5 &&
-            driverData.status == 'online' &&
-            mileDistance < 10 &&
-            mileDistance > 5 &&
-            flag &&
-            !isInlined
-          ) {
-            driverData.fare = passengerData.fare;
-            myDriversTemp.push(driverData);
-          } else if (
-            myDriversTemp.length < 5 &&
-            driverData.status == 'online' &&
-            mileDistance < 15 &&
-            mileDistance > 10 &&
-            flag &&
-            !isInlined
-          ) {
-            driverData.fare = passengerData.fare;
-            myDriversTemp.push(driverData);
-          } else if (
-            myDriversTemp.length < 5 &&
-            driverData.status == 'online' &&
-            mileDistance < 20 &&
-            mileDistance > 15 &&
-            flag &&
-            !isInlined
-          ) {
-            driverData.fare = passengerData.fare;
-            myDriversTemp.push(driverData);
-          } else if (
-            myDriversTemp.length < 5 &&
-            driverData.status == 'online' &&
-            mileDistance < 25 &&
-            mileDistance > 20 &&
-            !isInlined
-          ) {
-            driverData.fare = passengerData.fare;
-            myDriversTemp.push(driverData);
+            let isInlined =
+              inlineDriver &&
+              inlineDriver.filter((e, i) => {
+                console.log(e, 'eeee');
+                if (e == myDriverData.id) {
+                  return 'true';
+                }
+              });
+
+            isInlined = isInlined[0];
+            if (!driverRequestedButNotRespond) {
+            if (
+              myDriverData.status == 'online' &&
+              mileDistance <= 3 &&
+              flag &&
+              !isInlined && !driverRequestedButNotRespond
+            ) {
+              myDriverData.fare = passengerData.fare;
+              myDriversTemp.push(myDriverData);
+            } else if (
+              myDriversTemp.length < 5 &&
+              myDriverData.status == 'online' &&
+              mileDistance > 3 &&
+              mileDistance < 5 &&
+              flag &&
+              !isInlined && !driverRequestedButNotRespond
+            ) {
+              myDriverData.fare = passengerData.fare;
+              myDriversTemp.push(myDriverData);
+            } else if (
+              myDriversTemp.length < 5 &&
+              myDriverData.status == 'online' &&
+              mileDistance < 10 &&
+              mileDistance > 5 &&
+              flag &&
+              !isInlined && !driverRequestedButNotRespond
+            ) {
+              myDriverData.fare = passengerData.fare;
+              myDriversTemp.push(myDriverData);
+            } else if (
+              myDriversTemp.length < 5 &&
+              myDriverData.status == 'online' &&
+              mileDistance < 15 &&
+              mileDistance > 10 &&
+              flag &&
+              !isInlined && !driverRequestedButNotRespond
+            ) {
+              myDriverData.fare = passengerData.fare;
+              myDriversTemp.push(myDriverData);
+            } else if (
+              myDriversTemp.length < 5 &&
+              myDriverData.status == 'online' &&
+              mileDistance < 20 &&
+              mileDistance > 15 &&
+              flag &&
+              !isInlined && !driverRequestedButNotRespond
+            ) {
+              myDriverData.fare = passengerData.fare;
+              myDriversTemp.push(myDriverData);
+            } else if (
+              myDriversTemp.length < 5 &&
+              myDriverData.status == 'online' &&
+              mileDistance < 25 &&
+              mileDistance > 20 &&
+              !isInlined && !driverRequestedButNotRespond
+            ) {
+              myDriverData.fare = passengerData.fare;
+              myDriversTemp.push(myDriverData);
+            }
           }
         });
         setDriverData(myDriversTemp);
       });
   };
 
-console.log(inlineDriver,"inlined")
+const deleteBookingData = () => {
+  firestore().collection("Request").doc(passengerData.id).delete()
+  navigation.navigate('AskScreen');
+}
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
+
+        
         return (
           <TouchableOpacity
             style={styles.cancelTextContainer}
             onPress={() => {
-              navigation.navigate('PassengerHomeScreen');
+              deleteBookingData()
+              
             }}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
@@ -382,24 +418,29 @@ console.log(inlineDriver,"inlined")
     }
   };
 
+  useEffect(()=>{
+    if(!passengerData.bidFare){
+    getDriverData()
+  }
+  },[driverNotAvailable])
+
   useEffect(() => {
     if (request && !passengerData.bidFare) {
       const interval = setInterval(() => {
-        setDriverData(
-          driverData.filter((e, i) => {
-            return e.cnic !== selectedDriver.cnic;
-          }),
-        );
-        setRequest(false);
-        ToastAndroid.show(
-          'This driver is not available right now',
-          ToastAndroid.SHORT,
-        );
-      }, 100000);
+        
+          setDriverNotAvailable([...driverNotAvailable, selectedDriver.id]);
+          
+          setRequest(false);
+          ToastAndroid.show(
+            'This driver is not available right now',
+            ToastAndroid.SHORT,
+          );
+        
+      }, 60000);
 
       return () => clearInterval(interval);
     }
-  }, [request]);
+  }, [request,selectedDriver]);
 
   const rejectOffer = rejectedDriver => {
     if (rejectedDriver && !passengerData.bidFare) {
@@ -462,7 +503,7 @@ console.log(inlineDriver,"inlined")
                 myDriversData: myDriverData,
               })
               .then(() => {
-                  setRequest(true)
+                setRequest(true);
                 setDriverData(
                   driverData.filter((e, i) => {
                     return e.id !== rejectedDriver.id;
@@ -491,17 +532,17 @@ console.log(inlineDriver,"inlined")
   };
 
   const rideRequests = ({item, index}) => {
-  
     let data = route.params;
-
+    
     if (data.bidFare) {
       data.selectedCar[0].carMiles.map((e, i) => {
         if (data.distance >= e.rangeMin && data.distance <= e.rangeMax) {
           let serviceCharges = e.serviceCharge;
           let creditCardFee = (Number(data.fare) * 5) / 100;
           let totalCharges = serviceCharges + creditCardFee;
-          item.bidFare = (Number(item.bidFare) + totalCharges).toFixed(2);
+          item.bidFare = (Number(data.bidFare) +  Number(totalCharges)).toFixed(2);
           console.log(totalCharges, 'total');
+          console.log(item.bidFare,"bidFare")
         }
       });
     }
@@ -522,8 +563,11 @@ console.log(inlineDriver,"inlined")
           return e;
         }
       });
+
+      let flag = driverNotAvailable.some((e,i)=> e == item.id)
+
     return (
-      <View style={styles.card}>
+     !flag && <View style={styles.card}>
         <MapViewDirections
           origin={item.currentLocation}
           destination={passengerData.pickupCords}
@@ -556,7 +600,7 @@ console.log(inlineDriver,"inlined")
           </View>
           <View style={styles.priceContainer}>
             <View style={{alignItems: 'flex-end'}}>
-              <Text style={styles.priceText}>{item.bidFare}$</Text>
+              <Text style={styles.priceText}>{item.bidFare ? Number(item.bidFare) : item.fare}$</Text>
               <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
                 {item.minutes ?? distanceMinutes} minutes away
               </Text>

@@ -18,13 +18,12 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import Geolocation from 'react-native-geolocation-service';
 import {getPreciseDistance} from 'geolib';
-
-import { useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useCallback} from 'react';
 
 export default function DriverHomeScreen({navigation, route}) {
   let reload = route.params;
 
-  console.log(reload, 'reload');
 
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
@@ -48,7 +47,7 @@ export default function DriverHomeScreen({navigation, route}) {
   const [loading, setLoading] = useState(false);
   const [passengerBookingData, setPassengerBookingData] = useState([]);
   const [inlinedDrivers, setInlinedDrivers] = useState(false);
-  const [checkData,setCheckData] = useState([])
+  const [checkData, setCheckData] = useState([]);
 
   const [watchState, setWatchState] = useState(null);
 
@@ -79,9 +78,52 @@ export default function DriverHomeScreen({navigation, route}) {
         interval: 10000,
         fastestInterval: 5000,
       },
-      );
-      return () => Geolocation.clearWatch(watchId)
+    );
+    return () => Geolocation.clearWatch(watchId);
   };
+
+  const getDriverBookingData = async () => {
+    try {
+      let data = await AsyncStorage.getItem('driverBooking');
+      let checkDriverArrive = await AsyncStorage.getItem(
+        'ArrivedAtpickUpLocation',
+      );
+      let startRide = await AsyncStorage.getItem('startRide');
+      let endRide = await AsyncStorage.getItem('EndRide');
+
+      data = JSON.parse(data);
+      if (data && Object.keys(data).length > 0) {
+        navigation.navigate('DriverRoutes', {
+          screen: 'DriverBiddingScreen',
+          params: {
+            data: data,
+            passengerState: {
+              pickupCords: data.passengerData
+                ? data.passengerData.pickupCords
+                : data.pickupCords,
+              dropLocationCords: data.passengerData
+                ? data.passengerData.dropLocationCords
+                : data.dropLocationCords,
+            },
+            selectedDriver: data.myDriversData
+              ? data.myDriversData
+              : data.driverData,
+
+            driverArrive: checkDriverArrive ? true : false,
+            startRide: startRide ? true : false,
+            endRide: endRide ? true : false,
+          },
+        });
+      }
+    } catch (error) {
+      console.log(error, 'error');
+    }
+  };
+
+
+  useEffect(()=>{
+    getDriverBookingData()
+  },[])
 
   const getRequestFromPassengers = () => {
     if (!inlinedDrivers) {
@@ -89,10 +131,11 @@ export default function DriverHomeScreen({navigation, route}) {
         let requestData = [];
         firestore()
           .collection('Request')
-          .get().then(querySnapshot => {
+          .get()
+          .then(querySnapshot => {
             querySnapshot.forEach(documentSnapshot => {
               let data = documentSnapshot.data();
-              console.log(data,"data")
+              console.log(data, 'data');
               if (data.requestStatus == 'accepted') {
                 setPassengerBookingData([]);
               }
@@ -216,21 +259,19 @@ export default function DriverHomeScreen({navigation, route}) {
     }
   };
 
-  
-
-
   useEffect(() => {
-    if(driverStatus == "online" && driverData && Object.keys(driverData.length>0)){
+    if (
+      driverStatus == 'online' &&
+      driverData &&
+      Object.keys(driverData.length > 0)
+    ) {
       let interval = setInterval(() => {
         getRequestFromPassengers();
       }, 5000);
-    
-      return () => clearInterval(interval)
+
+      return () => clearInterval(interval);
     }
-
   }, [driverStatus, driverData]);
-
-
 
   const getDriverData = () => {
     const currentUserUid = auth().currentUser.uid;
@@ -304,82 +345,82 @@ export default function DriverHomeScreen({navigation, route}) {
     }
   }, [driverStatus, state]);
 
+  const rideList = useCallback(
+    ({item, index}) => {
+      let items = item.passengerData ?? item;
+      items.selectedCar[0].carMiles.map((e, i) => {
+        if (
+          Number(items.distance) >= e.rangeMin &&
+          items.distance <= e.rangeMax
+        ) {
+          let percentageBid = Math.round(
+            (Number(items.bidFare) / Number(items.fare)) * 100,
+          );
 
+          let baseCharge = items.selectedCar[0].carMiles[0].mileCharge;
+          let myDistance = items.distance - 3;
+          let milesCharge = myDistance * e.mileCharge;
+          let totalCharges = baseCharge + milesCharge;
 
-const rideList = useCallback(({item,index})=>{
-
-  let items  = item.passengerData ?? item
-  items.selectedCar[0].carMiles.map((e, i) => {
- if (Number(items.distance) >= e.rangeMin && items.distance <= e.rangeMax) {
-   let percentageBid = Math.round(
-     (Number(items.bidFare) / Number(items.fare)) * 100,
-   );
-
-   let baseCharge = items.selectedCar[0].carMiles[0].mileCharge;
-   let myDistance = items.distance - 3;
-   let milesCharge = myDistance * e.mileCharge;
-   let totalCharges = baseCharge + milesCharge;
-
-   items.fare = totalCharges.toFixed(2);
-
-     items.bidFare = ((Number(items.fare) * percentageBid) / 100).toFixed(2);
- }
-});
-
-
-
-return (
-
-   <TouchableOpacity
-   style={styles.listItemContainer}
-   key={item.passengerData ? item.passengerData.id : item.id}
-   onPress={() => {
-     navigation.navigate('DriverBiddingScreen', {
-       data: item,
-       passengerState: {
-         pickupCords: item.passengerData
-           ? item.passengerData.pickupCords
-           : item.pickupCords,
-         dropLocationCords: item.passengerData
-           ? item.passengerData.dropLocationCords
-           : item.dropLocationCords,
-       },
-     });
-   }}
- >
-   <Text style={styles.itemTextStyle}>
-     Pickup Cords:
-     <Text style={styles.itemLocStyle}>
-       {item.passengerData
-         ? item.passengerData.pickupAddress
-         : item.pickupAddress}
-     </Text>
-   </Text>
-   <Text style={styles.itemTextStyle}>
-     Destination Cords:
-     <Text style={styles.itemLocStyle}>
-       {item.passengerData
-         ? item.passengerData.dropOffAddress
-         : item.dropOffAddress}
-     </Text>
-   </Text>
-   <Text style={styles.itemTextStyle}>
-     Fare:
-     <Text style={styles.itemLocStyle}>
-       {item.passengerData ? item.passengerData.fare : item.fare}$
-     </Text>
-   </Text>
-   {items && items.bidFare>0 && (
-     <Text style={styles.itemTextStyle}>
-       Bid Fare:<Text style={styles.itemLocStyle}>{item.bidFare}$</Text>
-     </Text>
-   )}
- </TouchableOpacity>
-);
-
-},[passengerBookingData])
-
-
+          items.fare = totalCharges.toFixed(2);
+          if (item && !item.passengerData) {
+            items.bidFare = (
+              (Number(items.fare) * percentageBid) /
+              100
+            ).toFixed(2);
+          }
+        }
+      });
+ 
+      return (
+        <TouchableOpacity
+          style={styles.listItemContainer}
+          key={item.passengerData ? item.passengerData.id : item.id}
+          onPress={() => {
+            navigation.navigate("DriverRoutes",{screen:'DriverBiddingScreen' , params:{ 
+              data : items,
+              passengerState: {
+                pickupCords: item.passengerData
+                  ? item.passengerData.pickupCords
+                  : item.pickupCords,
+                dropLocationCords: item.passengerData
+                  ? item.passengerData.dropLocationCords
+                  : item.dropLocationCords,
+              },
+            }});
+          }}>
+          <Text style={styles.itemTextStyle}>
+            Pickup Cords:
+            <Text style={styles.itemLocStyle}>
+              {item.passengerData
+                ? item.passengerData.pickupAddress
+                : item.pickupAddress}
+            </Text>
+          </Text>
+          <Text style={styles.itemTextStyle}>
+            Destination Cords:
+            <Text style={styles.itemLocStyle}>
+              {item.passengerData
+                ? item.passengerData.dropOffAddress
+                : item.dropOffAddress}
+            </Text>
+          </Text>
+          <Text style={styles.itemTextStyle}>
+            Fare:
+            <Text style={styles.itemLocStyle}>
+              {item.passengerData ? item.passengerData.fare : item.fare}$
+            </Text>
+          </Text>
+          {items && items.bidFare > 0 && (
+            <Text style={styles.itemTextStyle}>
+              Bid Fare:<Text style={styles.itemLocStyle}>{items.bidFare}$</Text>
+            </Text>
+          )}
+        </TouchableOpacity>
+      );
+    },
+    [passengerBookingData],
+  );
 
   return (
     <>
@@ -392,11 +433,16 @@ return (
           <View style={styles.headerContainer}>
             <CustomHeader
               iconname={'menu'}
+              
               color={Colors.white}
+              
               onPress={() => {
                 navigation.toggleDrawer();
               }}
               source={require('../../Assets/Images/URWhiteLogo.png')}
+              
+              
+              
             />
           </View>
           <View style={styles.statusContainer}>
@@ -439,8 +485,7 @@ return (
                 height: '70%',
                 alignItems: 'center',
                 justifyContent: 'center',
-              }}
-            >
+              }}>
               <Text
                 style={{
                   color: 'black',
@@ -448,8 +493,7 @@ return (
                   fontWeight: '700',
                   width: '95%',
                   textAlign: 'center',
-                }}
-              >
+                }}>
                 No Request Wait for passenger Request
               </Text>
             </View>

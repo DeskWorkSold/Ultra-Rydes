@@ -25,6 +25,7 @@ import CustomButton from '../../Components/CustomButton';
 import Icon from 'react-native-vector-icons/AntDesign';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {LogBox} from 'react-native';
 import {
   locationPermission,
@@ -60,6 +61,7 @@ export default function PassengerHomeScreen({navigation}) {
   const [pickupAddress, setPickUpAddress] = useState('');
   const [dropOffAddress, setDropOffAddress] = useState('');
   const [selectedDriver, setSelectedDriver] = useState('');
+  const [input, setInput] = useState(false);
   const [bookingData, setBookingData] = useState([]);
   const [result, setResult] = useState();
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
@@ -73,20 +75,20 @@ export default function PassengerHomeScreen({navigation}) {
     dropLocationCords: '',
   });
   const [routeData, setRouteData] = useState([]);
-  const [
-    driverArriveAtPickUpLocation,
-    setDriverArriveAtPickUpLocation,
-  ] = useState(false);
+  const [reasonForCancelRide, setReasonForCancelRide] = useState(false);
+  const [passengerReasonForCancelRide, setPassengerReasonForCancelRide] =
+    useState('');
+  const [driverArriveAtPickUpLocation, setDriverArriveAtPickUpLocation] =
+    useState(false);
 
-  const [
-    driverArriveAtdropoffLocation,
-    setDriverArriveAtdropoffLocation,
-  ] = useState(false);
+  const [driverArriveAtdropoffLocation, setDriverArriveAtdropoffLocation] =
+    useState(false);
   const [driverRatingStar, setDriverRatingStar] = useState(0);
   const [carRatingStar, setCarRatingStar] = useState(0);
   const [paymentByPassenger, setPaymentByPassenger] = useState(0);
   const [feedBack, setFeedBack] = useState('');
   const [showFeedBackModal, setShowFeedBackModal] = useState(false);
+  const [cancelRide, setCancelRide] = useState(false);
 
   const [location, setLocation] = useState({
     pickupCords: route.params ? route.params.passengerData.pickupCords : null,
@@ -141,14 +143,12 @@ export default function PassengerHomeScreen({navigation}) {
     },
   ]);
 
-  const [
-    minutesAndDistanceDifference,
-    setMinutesAndDistanceDifference,
-  ] = useState({
-    minutes: '',
-    distance: '',
-    details: '',
-  });
+  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
+    useState({
+      minutes: '',
+      distance: '',
+      details: '',
+    });
 
   useEffect(() => {
     if (!selectedDriver && !route.params) {
@@ -290,6 +290,9 @@ export default function PassengerHomeScreen({navigation}) {
       return () => backHandler.remove();
     }
   }, [route.params]);
+
+  console.log(selectedDriver, 'selected');
+  console.log(data, 'data');
 
   useEffect(() => {
     if (data) {
@@ -490,18 +493,17 @@ export default function PassengerHomeScreen({navigation}) {
       };
 
       firestore()
-        .collection('Request')
+        .collection('Request') 
         .doc(CurrentUserUid)
         .set(myData)
         .then(() => {
           ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
 
           navigation.navigate('PassengerFindRide', myData);
-
-        }).catch((error)=>{
-          console.log(error)
         })
-
+        .catch(error => {
+          console.log(error);
+        });
     }
   };
 
@@ -539,8 +541,7 @@ export default function PassengerHomeScreen({navigation}) {
               ? [styles.cards, {borderColor: Colors.primary, borderWidth: 2}]
               : [styles.cards]
           }
-          onPress={() => !bidFare && !route.params && onClickItem(item, index)}
-        >
+          onPress={() => !bidFare && !route.params && onClickItem(item, index)}>
           <Image
             style={styles.catImg}
             source={{uri: item.carImage}}
@@ -662,8 +663,7 @@ export default function PassengerHomeScreen({navigation}) {
               ...driverArrive,
               pickupLocation: false,
             });
-          }}
-        >
+          }}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View>
@@ -677,11 +677,9 @@ export default function PassengerHomeScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => hideModal()}
-              >
+                onPress={() => hideModal()}>
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
-                >
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
                   confirm
                 </Text>
               </TouchableOpacity>
@@ -864,8 +862,7 @@ export default function PassengerHomeScreen({navigation}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={driverArriveAtdropoffLocation && !showFeedBackModal}
-        >
+          visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
           <View style={[styles.centeredView]}>
             <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
               <Text style={[styles.modalText, {fontSize: 26}]}>
@@ -880,8 +877,7 @@ export default function PassengerHomeScreen({navigation}) {
                     marginHorizontal: 0,
                     fontWeight: '500',
                   },
-                ]}
-              >
+                ]}>
                 You have arrived at your destination
               </Text>
               <Text
@@ -895,8 +891,7 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}
-              >
+                ]}>
                 Your Bill Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   {route.params.passengerData.bidFare ??
@@ -915,8 +910,7 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}
-              >
+                ]}>
                 Your Payment Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   {paymentByPassenger}$
@@ -924,8 +918,7 @@ export default function PassengerHomeScreen({navigation}) {
               </Text>
 
               <Text
-                style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}
-              >
+                style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}>
                 Kindly give rating to driver
               </Text>
               <View
@@ -933,16 +926,14 @@ export default function PassengerHomeScreen({navigation}) {
                   width: '100%',
                   flexDirection: 'row',
                   justifyContent: 'center',
-                }}
-              >
+                }}>
                 {driverRating &&
                   driverRating.length > 0 &&
                   driverRating.map((e, i) => {
                     return (
                       <TouchableOpacity
                         key={i}
-                        onPress={() => getDriverRating(i)}
-                      >
+                        onPress={() => getDriverRating(i)}>
                         <Icon
                           size={30}
                           name="star"
@@ -962,8 +953,7 @@ export default function PassengerHomeScreen({navigation}) {
                   width: '100%',
                   flexDirection: 'row',
                   justifyContent: 'center',
-                }}
-              >
+                }}>
                 {carRating &&
                   carRating.length > 0 &&
                   carRating.map((e, i) => {
@@ -984,11 +974,9 @@ export default function PassengerHomeScreen({navigation}) {
                   styles.button,
                   {marginBottom: 5, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => confirmationByPassenger()}
-              >
+                onPress={() => confirmationByPassenger()}>
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
-                >
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
                   Confirm
                 </Text>
               </TouchableOpacity>
@@ -1012,8 +1000,7 @@ export default function PassengerHomeScreen({navigation}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={showFeedBackModal}
-        >
+          visible={showFeedBackModal}>
           <View style={[styles.centeredView]}>
             <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
               <MaterialIcon size={80} color="white" name="feedback" />
@@ -1026,8 +1013,7 @@ export default function PassengerHomeScreen({navigation}) {
                     marginHorizontal: 0,
                     fontWeight: '500',
                   },
-                ]}
-              >
+                ]}>
                 Kindly Give your feedback!
               </Text>
 
@@ -1058,11 +1044,9 @@ export default function PassengerHomeScreen({navigation}) {
                     marginTop: 10,
                   },
                 ]}
-                onPress={bookingComplete}
-              >
+                onPress={bookingComplete}>
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
-                >
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
                   Confirm
                 </Text>
               </TouchableOpacity>
@@ -1112,6 +1096,218 @@ export default function PassengerHomeScreen({navigation}) {
       />
     );
   }, [selectedDriver, data, selectedDriverLocation]);
+  // console.log(passengerData,"passenger")
+
+  const cancelRideByPassenger = () => {
+    setCancelRide(true);
+  };
+
+
+
+  const cancelBookingByPassenger = (passengerReasonForCancelRide) => {
+
+    let cancelRide = {
+      passengerData : route.params.passengerData,
+      driverData : route.params.driverData,
+      rideCancelByPassenger : true,
+      reasonForCancelRide : passengerReasonForCancelRide
+    }
+    firestore().collection("Request").doc(route.params.passengerData.id).update({
+      rideCancelByPassenger : true
+    }).then(()=>{
+      firestore().collection("RideCancel").doc(route.params.passengerData.id).set({
+        cancelledRides : firestore.FieldValue.arrayUnion(cancelRide) 
+      },{merge:true}).then(()=>{
+          AsyncStorage.removeItem("passengerBooking")
+          AsyncStorage.removeItem("driverArrive")
+          ToastAndroid.show("Your ride has been succesfully cancelled",ToastAndroid.SHORT)
+          navigation.navigate("AskScreen")
+      }).catch((error)=>{
+        console.log(error)
+      })
+
+    }).catch((error)=>{
+      console.log(error,"error")
+    })
+
+
+    console.log(route.params)
+
+
+  };
+
+  const cancelRideModal = useCallback(() => {
+    return (
+      cancelRide && (
+        <View style={styles.centeredView}>
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={cancelRide}
+            onRequestClose={() => {
+              setCancelRide(false);
+              setInput(false);
+              setReasonForCancelRide(false);
+            }}>
+            <View style={styles.centeredView}>
+              <View
+                style={[
+                  styles.modalView,
+                  {
+                    height: input ? '65%' : reasonForCancelRide ? '40%' : '45%',
+                    width: '90%',
+                  },
+                ]}>
+                {!reasonForCancelRide && (
+                  <MaterialCommunityIcons
+                    size={80}
+                    color="white"
+                    name="cancel"
+                  />
+                )}
+
+                {!reasonForCancelRide && (
+                  <Text
+                    style={[
+                      styles.modalText,
+                      {
+                        alignSelf: 'flex-start',
+                        fontWeight: '600',
+                        fontSize: 26,
+                        marginTop: 0,
+                        textAlign: 'left',
+                      },
+                    ]}>
+                    Are you sure You want to cancel Ride!
+                  </Text>
+                )}
+                {!reasonForCancelRide && (
+                  <Text
+                    style={[
+                      styles.modalText,
+                      {
+                        fontSize: 20,
+                        alignSelf: 'flex-start',
+                        marginTop: 0,
+                        fontWeight: '400',
+                      },
+                    ]}>
+                    Your driver is already on the way
+                  </Text>
+                )}
+
+                {!reasonForCancelRide && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                    }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        {
+                          marginBottom: 10,
+                          backgroundColor: Colors.black,
+                          position: 'relative',
+                          width: '48%',
+                          bottom: -40,
+                        },
+                      ]}
+                      onPress={() => setCancelRide(false)}>
+                      <Text
+                        style={[
+                          styles.textStyle,
+                          {backgroundColor: Colors.black},
+                        ]}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        {
+                          marginBottom: 10,
+                          backgroundColor: Colors.primary,
+                          position: 'relative',
+                          width: '48%',
+                          bottom: -40,
+                        },
+                      ]}
+                      onPress={() => setReasonForCancelRide(true)}>
+                      <Text
+                        style={[
+                          styles.textStyle,
+                          {backgroundColor: Colors.primary},
+                        ]}>
+                        confirm
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {reasonForCancelRide && (
+                  <View style={{width: '100%'}}>
+                    <Text
+                      style={[
+                        styles.modalText,
+                        {
+                          alignSelf: 'flex-start',
+                          fontWeight: '600',
+                          fontSize: 26,
+                          marginTop: 0,
+                          textAlign: 'left',
+                        },
+                      ]}>
+                      Kindly Write below the reasons for cancelling Ride!
+                    </Text>
+                    <TextInput
+                      onChange={setPassengerReasonForCancelRide}
+                      multiline={true}
+                      maxLength={100}
+                      style={{
+                        color: 'black',
+                        borderWidth: 1,
+                        backgroundColor: 'white',
+                        width: '95%',
+                        borderRadius: 10,
+                        paddingHorizontal: 10,
+                      }}
+                      placeholder={'Enter Reason'}
+                      placeholderTextColor="black"
+                      onPressIn={() => setInput(true)}
+                    />
+                    <View style={{alignItems: 'center'}}>
+                      <TouchableOpacity
+                        style={[
+                          styles.button,
+                          {
+                            marginBottom: 10,
+                            backgroundColor: Colors.primary,
+                            position: 'relative',
+                            width: '90%',
+                            bottom: -40,
+                          },
+                        ]}
+                        onPress={() => cancelBookingByPassenger(passengerReasonForCancelRide)}>
+                        <Text
+                          style={[
+                            styles.textStyle,
+                            {backgroundColor: Colors.primary},
+                          ]}>
+                          Cancel Ride
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
+          </Modal>
+        </View>
+      )
+    );
+  }, [cancelRide, reasonForCancelRide, input]);
 
   return (
     <View style={styles.container}>
@@ -1125,10 +1321,12 @@ export default function PassengerHomeScreen({navigation}) {
             <CustomHeader
               iconname={'menu'}
               color={Colors.white}
+              rightButton={selectedDriver ? 'show' : ''}
               onPress={() => {
                 navigation.toggleDrawer();
               }}
               source={require('../../Assets/Images/URWhiteLogo.png')}
+              cancelRideFunction={cancelRideByPassenger}
             />
           </View>
           <View style={styles.mapContainer}>
@@ -1140,8 +1338,7 @@ export default function PassengerHomeScreen({navigation}) {
                   ...pickupCords,
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA,
-                }}
-              >
+                }}>
                 <Marker coordinate={pickupCords} title="pickup location" />
 
                 {!selectedDriver &&
@@ -1172,8 +1369,7 @@ export default function PassengerHomeScreen({navigation}) {
                               latitude: b.currentLocation.latitude,
                               longitude: b.currentLocation.longitude,
                             }}
-                            pinColor="blue"
-                          >
+                            pinColor="blue">
                             <Image
                               source={require('../../Assets/Images/mapCar.png')}
                               style={{width: 40, height: 40}}
@@ -1270,8 +1466,7 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 18,
                     fontWeight: '900',
                     marginTop: 10,
-                  }}
-                >
+                  }}>
                   Duration:{' '}
                   {driverArriveAtPickUpLocation || driverArrive.pickupLocation
                     ? data.passengerData.minutes
@@ -1284,8 +1479,7 @@ export default function PassengerHomeScreen({navigation}) {
                     fontSize: 18,
                     fontWeight: '900',
                     marginTop: 5,
-                  }}
-                >
+                  }}>
                   Distance:{' '}
                   {driverArriveAtPickUpLocation || driverArrive.pickUpLocation
                     ? data.passengerData.distance
@@ -1302,15 +1496,13 @@ export default function PassengerHomeScreen({navigation}) {
             <KeyboardAvoidingView>
               <ScrollView
                 nestedScrollEnabled={true}
-                keyboardShouldPersistTaps="handled"
-              >
+                keyboardShouldPersistTaps="handled">
                 <View
                   style={{
                     flexDirection: 'row',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                  }}
-                >
+                  }}>
                   <FlatList
                     data={
                       data && data.passengerData.selectedCar
@@ -1335,16 +1527,14 @@ export default function PassengerHomeScreen({navigation}) {
                             Linking.openURL(
                               `tel:${selectedDriver.phoneNumber}`,
                             );
-                          }}
-                        >
+                          }}>
                           Contact Driver:{' '}
                           <Text
                             style={{
                               color: Colors.primary,
                               fontWeight: '700',
                               fontSize: 18,
-                            }}
-                          >
+                            }}>
                             {' '}
                             {selectedDriver.phoneNumber}
                           </Text>{' '}
@@ -1444,15 +1634,13 @@ export default function PassengerHomeScreen({navigation}) {
                         padding: 8,
                         width: '30%',
                         borderRadius: 10,
-                      }}
-                    >
+                      }}>
                       <Text
                         style={{
                           color: 'black',
                           fontSize: 20,
                           fontWeight: '700',
-                        }}
-                      >
+                        }}>
                         Bid Fare
                       </Text>
                     </TouchableOpacity>
@@ -1469,6 +1657,8 @@ export default function PassengerHomeScreen({navigation}) {
                   {driverArriveAtdropoffLocation && dropOffModal()}
 
                   {showFeedBackModal && FeedBackModal()}
+
+                  {cancelRide && cancelRideModal()}
 
                   <TextInput
                     placeholder="Additional Details"
