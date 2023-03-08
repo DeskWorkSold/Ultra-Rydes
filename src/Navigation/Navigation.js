@@ -26,6 +26,8 @@ import DriverDetailsEdit from '../Screens/DriverScreens/DriverDetailsEdit';
 import DriverVehicleAdd from '../Screens/DriverScreens/DriverVehicleAdd';
 import DriverVehicleEdit from '../Screens/DriverScreens/DriverVehicleEdit';
 import DriverBiddingScreen from '../Screens/DriverScreens/DriverBiddingScreen';
+import PassengerHistory from '../Screens/PassengerScreens/PassengerHistory';
+import PassengerHistorySingleData from '../Screens/PassengerSingleDataScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -62,6 +64,13 @@ function PassengerRoutes() {
             <Drawer.Screen
                 name="PassengerDetailsEdit"
                 component={PassengerDetailsEdit}
+                options={{
+                    headerShown: false
+                }}
+            />
+            <Drawer.Screen
+                name="PassengerHistory"
+                component={PassengerHistory}
                 options={{
                     headerShown: false
                 }}
@@ -156,6 +165,7 @@ export default function Navigation() {
                 <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen} />
                 <Stack.Screen name="PassengerRoutes" component={PassengerRoutes} />
                 <Stack.Screen name="DriverRoutes" component={DriverRoutes} />
+                <Stack.Screen name="PassengerHistorySingleData" component={PassengerHistorySingleData} />
             </Stack.Navigator>
         </NavigationContainer>)
 

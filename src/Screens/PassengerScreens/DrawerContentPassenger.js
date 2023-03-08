@@ -12,6 +12,8 @@ export default function DrawerContentPassenger({ navigation }) {
     const [passengerData, setPassengerData] = useState('');
     const [profilePicUrl, setProfilePicUrl] = useState('');
     const [loading, setLoading] = useState(false);
+
+
     useEffect(() => {
         setLoading(true);
         const CurrentUser = auth().currentUser.uid;
@@ -80,7 +82,7 @@ export default function DrawerContentPassenger({ navigation }) {
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.fieldItemContainer}>
-                                <TouchableOpacity style={styles.fieldItem}>
+                                <TouchableOpacity onPress={() => { navigation.navigate('PassengerHistory') }}   style={styles.fieldItem}>
                                     <MaterialCommunityIcons name="history" size={25} color={Colors.white} />
                                     <Text style={styles.fieldItemText}>History</Text>
                                 </TouchableOpacity>

@@ -493,7 +493,7 @@ export default function PassengerHomeScreen({navigation}) {
       };
 
       firestore()
-        .collection('Request') 
+        .collection('Request')
         .doc(CurrentUserUid)
         .set(myData)
         .then(() => {
@@ -833,6 +833,7 @@ export default function PassengerHomeScreen({navigation}) {
         driverRating: driverRatingStar,
         feedBack: feedBack,
         payment: paymentByPassenger,
+        bookingData : new Date()
       };
       firestore()
         .collection('Booking')
@@ -1102,39 +1103,79 @@ export default function PassengerHomeScreen({navigation}) {
     setCancelRide(true);
   };
 
-
-
-  const cancelBookingByPassenger = (passengerReasonForCancelRide) => {
-
+  const cancelBookingByPassenger = passengerReasonForCancelRide => {
     let cancelRide = {
-      passengerData : route.params.passengerData,
-      driverData : route.params.driverData,
-      rideCancelByPassenger : true,
-      reasonForCancelRide : passengerReasonForCancelRide
-    }
-    firestore().collection("Request").doc(route.params.passengerData.id).update({
-      rideCancelByPassenger : true
-    }).then(()=>{
-      firestore().collection("RideCancel").doc(route.params.passengerData.id).set({
-        cancelledRides : firestore.FieldValue.arrayUnion(cancelRide) 
-      },{merge:true}).then(()=>{
-          AsyncStorage.removeItem("passengerBooking")
-          AsyncStorage.removeItem("driverArrive")
-          ToastAndroid.show("Your ride has been succesfully cancelled",ToastAndroid.SHORT)
-          navigation.navigate("AskScreen")
-      }).catch((error)=>{
-        console.log(error)
+      passengerData: route.params.passengerData,
+      driverData: route.params.driverData,
+      rideCancelByPassenger: true,
+      reasonForCancelRide: passengerReasonForCancelRide,
+      date : new Date()
+    };
+    firestore()
+      .collection('Request')
+      .doc(route.params.passengerData.id)
+      .update({
+        rideCancelByPassenger: true,
       })
-
-    }).catch((error)=>{
-      console.log(error,"error")
-    })
-
-
-    console.log(route.params)
-
-
+      .then(() => {
+        firestore()
+          .collection('RideCancel')
+          .doc(route.params.passengerData.id)
+          .set(
+            {
+              cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
+            },
+            {merge: true},
+          )
+          .then(() => {
+            AsyncStorage.removeItem('passengerBooking');
+            AsyncStorage.removeItem('driverArrive');
+            ToastAndroid.show(
+              'Your ride has been succesfully cancelled',
+              ToastAndroid.SHORT,
+            );
+            navigation.navigate('AskScreen');
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      })
+      .catch(error => {
+        console.log(error, 'error');
+      });
   };
+
+
+console.log(route.params)
+
+const cancelRideByDriver = () => {
+  const id = auth().currentUser.uid
+  firestore()
+  .collection('Request')
+  .doc(id)
+  .onSnapshot(doc => {
+    let data = doc.data();
+    
+    if (data && data.rideCancelByDriver) {
+        ToastAndroid.show(
+        'Ride has been cancelled by Driver',
+        ToastAndroid.SHORT,
+        );
+        AsyncStorage.removeItem('passengerBooking');
+        AsyncStorage.removeItem("driverArrive");
+        navigation.navigate('AskScreen');
+          }
+  });
+}
+
+
+  useEffect(() => {
+    if (selectedDriver) {
+      let interval = setInterval(() => {
+        cancelRideByDriver();
+      }, 10000);
+      return ()=> clearInterval(interval)
+      }},[selectedDriver])
 
   const cancelRideModal = useCallback(() => {
     return (
@@ -1289,7 +1330,9 @@ export default function PassengerHomeScreen({navigation}) {
                             bottom: -40,
                           },
                         ]}
-                        onPress={() => cancelBookingByPassenger(passengerReasonForCancelRide)}>
+                        onPress={() =>
+                          cancelBookingByPassenger(passengerReasonForCancelRide)
+                        }>
                         <Text
                           style={[
                             styles.textStyle,

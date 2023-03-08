@@ -25,6 +25,7 @@ import auth from '@react-native-firebase/auth';
 import AppModal from '../../Components/modal';
 import {BackHandler} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   locationPermission,
   getCurrentLocation,
@@ -68,12 +69,17 @@ export default function DriverBiddingScreen({navigation}) {
   const [pickUpLocation, setpickUpLocation] = useState(
     data && data.pickupAddress ? data.pickupAddress : '',
   );
+  const [cancelRide, setCancelRide] = useState(false);
   const [dropOffLocation, setdropOffLocation] = useState(
     data && data.dropOffAddress ? data.dropOffAddress : '',
   );
   const [driverUid, setDriverUid] = useState('');
   const [loading, setLoading] = useState(false);
   const [offerFare, setOfferFare] = useState(null);
+  const [reasonForCancelRide, setReasonForCancelRide] = useState(false);
+  const [driverReasonForCancelRide, setDriverReasonForCancelRide] =
+    useState('');
+  const [input, setInput] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(
     route.params.selectedDriver ?? '',
   );
@@ -122,21 +128,15 @@ export default function DriverBiddingScreen({navigation}) {
     }
   }, []);
 
-
-  useEffect(()=>{
-
-    if(!selectedDriver){
+  useEffect(() => {
+    if (!selectedDriver) {
       let interval = setInterval(() => {
         checkRequestStatus();
       }, 5000);
-    
-      return () => clearInterval(interval)
+
+      return () => clearInterval(interval);
     }
-
-
-  },[loading])
-
-
+  }, [loading]);
 
   const getLocationUpdates = () => {
     if (
@@ -397,7 +397,7 @@ export default function DriverBiddingScreen({navigation}) {
               let flag1 = data.myDriversData.some(
                 (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
               );
-              if (flag && !flag1) {
+              if (flag && !flag1 & !selectedDriver) {
                 ToastAndroid.show(
                   'Your request has been accepted',
                   ToastAndroid.SHORT,
@@ -663,6 +663,243 @@ export default function DriverBiddingScreen({navigation}) {
     );
   }, [endRide]);
 
+  const cancelBookingByDriver = () => {
+    if (!driverReasonForCancelRide) {
+      ToastAndroid.show(
+        'Kindly Enter Reason of cancelling Ride',
+        ToastAndroid.SHORT,
+      );
+      return;
+    }
+
+    let cancelRide = {
+      passengerData: passengerData,
+      driverData: myDriverData,
+      rideCancelByDriver: true,
+      reasonForCancelRide: driverReasonForCancelRide,
+      date : new Date()
+    };
+
+    firestore()
+      .collection('Request')
+      .doc(passengerData.id)
+      .update({
+        rideCancelByDriver: true,
+      })
+      .then(() => {
+        firestore()
+          .collection('RideCancel')
+          .doc(myDriverData.id)
+          .set(
+            {
+              cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
+            },
+            {merge: true},
+          )
+          .then(() => {
+            firestore()
+              .collection('inlinedDriver')
+              .doc(myDriverData.id)
+              .update({
+                inlined: false,
+              })
+              .then(() => {
+                AsyncStorage.removeItem('driverBooking');
+                AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+                AsyncStorage.removeItem('startRide');
+                AsyncStorage.removeItem('EndRide');
+                ToastAndroid.show(
+                  'Your ride has been succesfully cancelled',
+                  ToastAndroid.SHORT,
+                );
+                navigation.navigate('AskScreen');
+              })
+              .catch(() => {
+                console.log(error);
+              });
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      })
+      .catch(error => {
+        console.log(error, 'error');
+      });
+  };
+
+  const cancelRideModal = useCallback(() => {
+    return (
+      cancelRide && (
+        <View style={styles.centeredView}>
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={cancelRide}
+            onRequestClose={() => {
+              setCancelRide(false);
+              setInput(false);
+              setReasonForCancelRide(false);
+            }}>
+            <View style={styles.centeredView}>
+              <View
+                style={[
+                  styles.modalView,
+                  {
+                    height: input ? '65%' : reasonForCancelRide ? '40%' : '45%',
+                    width: '90%',
+                  },
+                ]}>
+                {!reasonForCancelRide && (
+                  <MaterialCommunityIcons
+                    size={80}
+                    color="white"
+                    name="cancel"
+                  />
+                )}
+
+                {!reasonForCancelRide && (
+                  <Text
+                    style={[
+                      styles.modalText,
+                      {
+                        alignSelf: 'flex-start',
+                        fontWeight: '600',
+                        fontSize: 26,
+                        marginTop: 0,
+                        textAlign: 'left',
+                      },
+                    ]}>
+                    Are you sure You want to cancel Ride!
+                  </Text>
+                )}
+                {!reasonForCancelRide && (
+                  <Text
+                    style={[
+                      styles.modalText,
+                      {
+                        fontSize: 18,
+                        alignSelf: 'flex-start',
+                        marginTop: 0,
+                        fontWeight: '400',
+                      },
+                    ]}>
+                    Your Passenger is waiting for you!
+                  </Text>
+                )}
+
+                {!reasonForCancelRide && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                    }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        {
+                          marginBottom: 10,
+                          backgroundColor: Colors.black,
+                          position: 'relative',
+                          width: '48%',
+                          bottom: -40,
+                        },
+                      ]}
+                      onPress={() => setCancelRide(false)}>
+                      <Text
+                        style={[
+                          styles.textStyle,
+                          {backgroundColor: Colors.black},
+                        ]}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        {
+                          marginBottom: 10,
+                          backgroundColor: Colors.primary,
+                          position: 'relative',
+                          width: '48%',
+                          bottom: -40,
+                        },
+                      ]}
+                      onPress={() => setReasonForCancelRide(true)}>
+                      <Text
+                        style={[
+                          styles.textStyle,
+                          {backgroundColor: Colors.primary},
+                        ]}>
+                        confirm
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {reasonForCancelRide && (
+                  <View style={{width: '100%'}}>
+                    <Text
+                      style={[
+                        styles.modalText,
+                        {
+                          alignSelf: 'flex-start',
+                          fontWeight: '600',
+                          fontSize: 26,
+                          marginTop: 0,
+                          textAlign: 'left',
+                        },
+                      ]}>
+                      Kindly Write below the reasons for cancelling Ride!
+                    </Text>
+                    <TextInput
+                      onChangeText={e => setDriverReasonForCancelRide(e)}
+                      multiline={true}
+                      maxLength={100}
+                      style={{
+                        color: 'black',
+                        borderWidth: 1,
+                        backgroundColor: 'white',
+                        width: '95%',
+                        borderRadius: 10,
+                        paddingHorizontal: 10,
+                      }}
+                      placeholder={'Enter Reason'}
+                      placeholderTextColor="black"
+                      onPressIn={() => setInput(true)}
+                    />
+                    <View style={{alignItems: 'center'}}>
+                      <TouchableOpacity
+                        style={[
+                          styles.button,
+                          {
+                            marginBottom: 10,
+                            backgroundColor: Colors.primary,
+                            position: 'relative',
+                            width: '90%',
+                            bottom: -40,
+                          },
+                        ]}
+                        onPress={() => cancelBookingByDriver()}>
+                        <Text
+                          style={[
+                            styles.textStyle,
+                            {backgroundColor: Colors.primary},
+                          ]}>
+                          Cancel Ride
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
+          </Modal>
+        </View>
+      )
+    );
+  }, [cancelRide, reasonForCancelRide, input, driverReasonForCancelRide]);
+
   const getDriverUid = () => {
     if (!selectedDriver) {
       let uid = auth().currentUser.uid;
@@ -693,7 +930,7 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
-  console.log(route.params,"parmass")
+  console.log(route.params, 'parmass');
 
   const sendRequest = () => {
     if (!selectedDriver) {
@@ -713,9 +950,13 @@ export default function DriverBiddingScreen({navigation}) {
         return;
       }
 
-      console.log(selectedDriver,"selected")
+      console.log(selectedDriver, 'selected');
 
-      if (passengerData && !passengerData.requestStatus && !route.params.data.bidFare) {
+      if (
+        passengerData &&
+        !passengerData.requestStatus &&
+        !route.params.data.bidFare
+      ) {
         passengerData.requestStatus = 'accepted';
         firestore()
           .collection('Request')
@@ -782,36 +1023,53 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
-useEffect(()=>{
-  let interval =  setInterval(() => {
+  const cancelRideByPassenger = () => {
+    firestore()
+      .collection('Request')
+      .doc(passengerData.id)
+      .onSnapshot(doc => {
+        let data = doc.data();
+        console.log(data, 'dataaa');
+        if (data && data.rideCancelByPassenger) {
+          firestore()
+            .collection('inlinedDriver')
+            .doc(myDriverData.id)
+            .update({
+              inlined: false,
+            })
+            .then(() => {
+              ToastAndroid.show(
+                'Ride has been cancelled by passenger',
+                ToastAndroid.SHORT,
+              );
+              AsyncStorage.removeItem('driverBooking');
+              AsyncStorage.removeItem('startRide');
+              AsyncStorage.removeItem('EndRide');
+              AsyncStorage.removeItem("'ArrivedAtpickUpLocation'");
+              navigation.navigate('AskScreen');
+            })
+            .catch(error => {
+              console.log(error);
+            });
+        }
+      });
+  };
 
-    firestore().collection("Request").doc(passengerData.id).get().then((doc)=>{
-      let data = doc.data()
-      if(data.rideCancelByPassenger){
+  useEffect(() => {
+    if (selectedDriver) {
+      let interval = setInterval(() => {
+        cancelRideByPassenger();
+      }, 10000);
 
-        firestore().collection("inlinedDriver").doc(myDriverData.id).update({
-          inlined : false
-        }).then(()=>{
-          ToastAndroid.show("Ride has been cancelled by passenger",ToastAndroid.SHORT)
-          clearInterval(interval)
-          AsyncStorage.removeItem("driverBooking")
-          AsyncStorage.removeItem("startRide")
-          AsyncStorage.removeItem("EndRide")
-          AsyncStorage.removeItem("'ArrivedAtpickUpLocation'")
-          navigation.navigate("AskScreen")
-        }).catch((error)=>{
-          console.log(error)
-        })
-      }
-    })
-    return () => clearInterval(interval)
-  }, 10000);
-},[])
+      return () => clearInterval(interval);
+    }
+  }, [selectedDriver]);
 
   const sendDriverRequestInFirebase = () => {
     if (
       !selectedDriver &&
-      typeof selectedDriver !== 'object' && !loading &&
+      typeof selectedDriver !== 'object' &&
+      !loading &&
       passengerData.bidFare > 0
     ) {
       firestore()
@@ -819,8 +1077,6 @@ useEffect(()=>{
         .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
-
-
 
           if (data && !data.myDriversData) {
             firestore()
@@ -882,7 +1138,7 @@ useEffect(()=>{
             let flag = data.myDriversData.some(
               (e, i) => e.id == driverPersonalData.id,
             );
-            
+
             if (flag) {
               ToastAndroid.show(
                 'You have already requested',
@@ -994,12 +1250,18 @@ useEffect(()=>{
     }
   };
 
-console.log(myDriverData,"driver")
+  console.log(myDriverData, 'driver');
 
   const getViewLocation = useCallback(() => {
     return (
       <MapViewDirections
-        origin={driverCurrentLocation && Object.keys(driverCurrentLocation).length>0 ? driverCurrentLocation : myDriverData.currentLocation ? myDriverData.currentLocation : driverData.currentLocation }
+        origin={
+          driverCurrentLocation && Object.keys(driverCurrentLocation).length > 0
+            ? driverCurrentLocation
+            : myDriverData.currentLocation
+            ? myDriverData.currentLocation
+            : driverData.currentLocation
+        }
         destination={pickupCords}
         apikey={GoogleMapKey.GOOGLE_MAP_KEY}
         strokeColor={Colors.black}
@@ -1019,7 +1281,11 @@ console.log(myDriverData,"driver")
         }}
       />
     );
-  }, [selectedDriver, myDriverData,driverCurrentLocation]);
+  }, [selectedDriver, myDriverData, driverCurrentLocation]);
+
+  const cancelRideByDriver = () => {
+    setCancelRide(true);
+  };
 
   const rideEndByDriver = async () => {
     setEndRide(true);
@@ -1048,6 +1314,8 @@ console.log(myDriverData,"driver")
             navigation.toggleDrawer();
           }}
           source={require('../../Assets/Images/URWhiteLogo.png')}
+          rightButton={selectedDriver ? 'show' : ''}
+          cancelRideFunction={cancelRideByDriver}
         />
       </View>
       <View style={styles.mapContainer}>
@@ -1343,6 +1611,7 @@ console.log(myDriverData,"driver")
               {arrivePickUpLocation && <ArriveModal />}
               {endRide ||
                 (route.params && route.params.endRide && <DropOffModal />)}
+              {cancelRide && cancelRideModal()}
 
               {/* </ScrollView> */}
               {!selectedDriver && (

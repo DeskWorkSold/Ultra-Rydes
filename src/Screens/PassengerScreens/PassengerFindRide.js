@@ -308,8 +308,11 @@ export default function PassengerFindRide({navigation, route}) {
   };
 
 const deleteBookingData = () => {
-  firestore().collection("Request").doc(passengerData.id).delete()
-  navigation.navigate('AskScreen');
+  firestore().collection("Request").doc(passengerData.id).delete().then(()=>{
+    navigation.navigate('AskScreen');
+  }).catch((error)=>{
+    console.log(error,"error")
+  })
 }
 
   useLayoutEffect(() => {
@@ -454,8 +457,9 @@ const deleteBookingData = () => {
         .collection('Request')
         .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
+            if(querySnapshot.exists){
           let data = querySnapshot.data();
-
+          
           if (
             data &&
             data.myDriversData &&
@@ -514,6 +518,7 @@ const deleteBookingData = () => {
                 console.log(error);
               });
           }
+        }
         });
     }
   };
