@@ -88,13 +88,13 @@ export default function DrawerContentPassenger({ navigation }) {
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.fieldItemContainer}>
-                                <TouchableOpacity style={styles.fieldItem}>
+                                <TouchableOpacity style={styles.fieldItem} onPress={() => { navigation.navigate('PassengerSafetyScreen')}} >
                                     <MaterialCommunityIcons name="security" size={25} color={Colors.white} />
                                     <Text style={styles.fieldItemText}>Safety</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={styles.fieldItemContainer}>
-                                <TouchableOpacity style={styles.fieldItem}>
+                                <TouchableOpacity style={styles.fieldItem} onPress={() => { navigation.navigate('PassengerWalletScreen')}} >
                                     <MaterialCommunityIcons name="wallet" size={25} color={Colors.white} />
                                     <Text style={styles.fieldItemText}>Wallet</Text>
                                 </TouchableOpacity>

@@ -45,11 +45,6 @@ import {Linking} from 'react-native';
 
 export default function PassengerHomeScreen({navigation}) {
   let route = useRoute();
-
-  console.log(route);
-
-  console.log(route, 'routes');
-
   const [dummyDataCat, setDummyDataCat] = useState('');
   const [onlineDriversLocation, setOnlineDriversLocation] = useState([]);
   const [loading, setLoading] = useState('');
@@ -165,10 +160,11 @@ export default function PassengerHomeScreen({navigation}) {
         .doc(data.passengerData.id)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
+          if(data && data.myDriversData && data.driverData){
           let myDriversData = data.myDriversData
             ? data.myDriversData
             : data.driverData;
-
+          
           if (
             !driverArrive.pickupLocation &&
             !driverArriveAtPickUpLocation &&
@@ -210,8 +206,9 @@ export default function PassengerHomeScreen({navigation}) {
             selectedDriver = selectedDriver[0];
             setSelectedLocation(selectedDriver.currentLocation);
           }
+        }
         });
-    }
+      }
   };
 
   console.log(selectedDriverLocation, 'selectedDriver');
@@ -460,49 +457,75 @@ export default function PassengerHomeScreen({navigation}) {
     }
 
     if (!bidFare && !data) {
-      let data = {
-        pickupCords: pickupCords,
-        dropLocationCords: dropLocationCords,
-        selectedCar: dummyDataCat.filter((e, i) => e.selected),
-        distance: distance,
-        minutes: minutes,
-        fare: fare,
-        bidFare: bidFare,
-        pickupAddress: pickupAddress,
-        dropOffAddress: dropOffAddress,
-        additionalDetails: additionalDetails,
-        id: CurrentUserUid,
-      };
+      let id = auth().currentUser.uid;
+      let passengerPersonalDetails = '';
+      firestore()
+        .collection('Passengers')
+        .doc(id)
+        .get()
+        .then(doc => {
+          let passengerPersonalData = doc.data();
 
-      navigation.navigate('PassengerFindRide', data);
+          let data = {
+            pickupCords: pickupCords,
+            dropLocationCords: dropLocationCords,
+            selectedCar: dummyDataCat.filter((e, i) => e.selected),
+            distance: distance,
+            minutes: minutes,
+            fare: fare,
+            bidFare: bidFare,
+            pickupAddress: pickupAddress,
+            dropOffAddress: dropOffAddress,
+            additionalDetails: additionalDetails,
+            id: CurrentUserUid,
+            passengerPersonalDetails: passengerPersonalData,
+            requestDate : new Date()
+          };
+
+          navigation.navigate('PassengerFindRide', data);
+        });
     }
 
     if (bidFare) {
-      let myData = {
-        pickupCords: pickupCords,
-        dropLocationCords: dropLocationCords,
-        selectedCar: dummyDataCat.filter((e, i) => e.selected),
-        distance: distance,
-        minutes: minutes,
-        fare: fare,
-        bidFare: bidFare,
-        pickupAddress: pickupAddress,
-        dropOffAddress: dropOffAddress,
-        additionalDetails: additionalDetails,
-        id: CurrentUserUid,
-      };
-
+      const id = auth().currentUser.uid;
       firestore()
-        .collection('Request')
-        .doc(CurrentUserUid)
-        .set(myData)
-        .then(() => {
-          ToastAndroid.show('Your request has been sent', ToastAndroid.SHORT);
+        .collection('Passengers')
+        .doc(id)
+        .get()
+        .then(doc => {
+          let passengerPersonalData = doc.data();
 
-          navigation.navigate('PassengerFindRide', myData);
-        })
-        .catch(error => {
-          console.log(error);
+          let myData = {
+            pickupCords: pickupCords,
+            dropLocationCords: dropLocationCords,
+            selectedCar: dummyDataCat.filter((e, i) => e.selected),
+            distance: distance,
+            minutes: minutes,
+            fare: fare,
+            bidFare: bidFare,
+            pickupAddress: pickupAddress,
+            dropOffAddress: dropOffAddress,
+            additionalDetails: additionalDetails,
+            id: CurrentUserUid,
+            passengerPersonalDetails: passengerPersonalData,
+            requestDate : new Date()
+          };
+
+          firestore()
+            .collection('Request')
+            .doc(CurrentUserUid)
+            .set(myData)
+            .then(() => {
+              ToastAndroid.show(
+                'Your request has been sent',
+                ToastAndroid.SHORT,
+              );
+
+              navigation.navigate('PassengerFindRide', myData);
+            })
+            .catch(error => {
+              console.log(error);
+            });
         });
     }
   };
@@ -833,8 +856,9 @@ export default function PassengerHomeScreen({navigation}) {
         driverRating: driverRatingStar,
         feedBack: feedBack,
         payment: paymentByPassenger,
-        bookingData : new Date()
+        date: new Date(),
       };
+
       firestore()
         .collection('Booking')
         .doc(route.params.passengerData.id)
@@ -1109,7 +1133,7 @@ export default function PassengerHomeScreen({navigation}) {
       driverData: route.params.driverData,
       rideCancelByPassenger: true,
       reasonForCancelRide: passengerReasonForCancelRide,
-      date : new Date()
+      date: new Date(),
     };
     firestore()
       .collection('Request')
@@ -1145,37 +1169,36 @@ export default function PassengerHomeScreen({navigation}) {
       });
   };
 
+  console.log(route.params);
 
-console.log(route.params)
+  const cancelRideByDriver = () => {
+    const id = auth().currentUser.uid;
+    firestore()
+      .collection('Request')
+      .doc(id)
+      .onSnapshot(doc => {
+        let data = doc.data();
 
-const cancelRideByDriver = () => {
-  const id = auth().currentUser.uid
-  firestore()
-  .collection('Request')
-  .doc(id)
-  .onSnapshot(doc => {
-    let data = doc.data();
-    
-    if (data && data.rideCancelByDriver) {
-        ToastAndroid.show(
-        'Ride has been cancelled by Driver',
-        ToastAndroid.SHORT,
-        );
-        AsyncStorage.removeItem('passengerBooking');
-        AsyncStorage.removeItem("driverArrive");
-        navigation.navigate('AskScreen');
-          }
-  });
-}
-
+        if (data && data.rideCancelByDriver) {
+          ToastAndroid.show(
+            'Ride has been cancelled by Driver',
+            ToastAndroid.SHORT,
+          );
+          AsyncStorage.removeItem('passengerBooking');
+          AsyncStorage.removeItem('driverArrive');
+          navigation.navigate('AskScreen');
+        }
+      });
+  };
 
   useEffect(() => {
     if (selectedDriver) {
       let interval = setInterval(() => {
         cancelRideByDriver();
       }, 10000);
-      return ()=> clearInterval(interval)
-      }},[selectedDriver])
+      return () => clearInterval(interval);
+    }
+  }, [selectedDriver]);
 
   const cancelRideModal = useCallback(() => {
     return (

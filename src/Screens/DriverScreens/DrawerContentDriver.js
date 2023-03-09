@@ -71,13 +71,13 @@ export default function DrawerContentDriver({ navigation }) {
                     </TouchableOpacity>
                 </View>
                 <View style={styles.fieldItemContainer}>
-                    <TouchableOpacity style={styles.fieldItem} >
+                    <TouchableOpacity style={styles.fieldItem} onPress={() => { navigation.navigate('DriverHistory')}} >
                         <MaterialCommunityIcons name="history" size={25} color={Colors.white} />
                         <Text style={styles.fieldItemText}>History</Text>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.fieldItemContainer}>
-                    <TouchableOpacity style={styles.fieldItem}>
+                    <TouchableOpacity style={styles.fieldItem}  onPress={() => { navigation.navigate('DriverSafetyScreen')}} >
                         <MaterialCommunityIcons name="security" size={25} color={Colors.white} />
                         <Text style={styles.fieldItemText}>Safety</Text>
                     </TouchableOpacity>

@@ -10,17 +10,21 @@ import Icon from 'react-native-vector-icons/AntDesign';
 import MapView, {Marker} from 'react-native-maps';
 import GoogleMapKey from '../Constants/GoogleMapKey';
 import {useRef} from 'react';
+import {ScrollView} from 'react-native-gesture-handler';
 
-function PassengerHistorySingleData({navigation, route}) {
+function DriverHistorySingleDataScreen({navigation, route}) {
   const [driverProfilePicUrl, setDriverProfilePicUrl] = useState('');
   const [passengerProfilePicUrl, setPassengerProfilePicUrl] = useState('');
+  console.log(route.params, 'route');
   const ref = useRef();
   const mapRef = useRef();
   let data = route.params.item;
   let profilePic = data.driverData.profilePicture;
   let passengerprofilePic =
     data.passengerData.passengerPersonalDetails.profilePicture;
+
   let {fare} = route.params;
+
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
   const LATITUDE_DELTA = 0.1;
@@ -66,40 +70,6 @@ function PassengerHistorySingleData({navigation, route}) {
             source={require('../Assets/Images/URWhiteLogo.png')}
           />
         </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            padding: 10,
-            borderWidth: 3,
-            borderColor: Colors.primary,
-            margin: 20,
-
-            borderRadius: 10,
-            alignItems: 'center',
-          }}>
-          <Image
-            source={{uri: passengerProfilePicUrl}}
-            style={{height: 60, width: 60}}
-          />
-          <View style={{marginLeft: 10}}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}>
-              <Text style={styles.text}>
-                {data.passengerData.passengerPersonalDetails.firstName.toUpperCase()}{' '}
-                {data.passengerData.passengerPersonalDetails.lastName.toUpperCase()}
-              </Text>
-            </View>
-            <Text style={styles.text}>
-              {data.passengerData.passengerPersonalDetails.Email}{' '}
-            </Text>
-            <Text style={styles.text}>
-              {data.passengerData.passengerPersonalDetails.mobileNumber}{' '}
-            </Text>
-          </View>
-        </View>
 
         <View
           style={{
@@ -108,7 +78,6 @@ function PassengerHistorySingleData({navigation, route}) {
             borderWidth: 3,
             borderColor: Colors.primary,
             margin: 20,
-            marginTop: 0,
             borderRadius: 10,
             alignItems: 'center',
           }}>
@@ -124,7 +93,7 @@ function PassengerHistorySingleData({navigation, route}) {
                 alignItems: 'center',
               }}>
               <Text style={styles.text}>
-                {data.driverData.firstName.toUpperCase()}
+                {data.driverData.firstName.toUpperCase()}{' '}
                 {data.driverData.lastName.toUpperCase()}
               </Text>
               <View
@@ -148,7 +117,37 @@ function PassengerHistorySingleData({navigation, route}) {
             </Text>
           </View>
         </View>
-
+        <View
+          style={{
+            flexDirection: 'row',
+            padding: 10,
+            borderWidth: 3,
+            borderColor: Colors.primary,
+            margin: 20,
+            marginTop: 0,
+            borderRadius: 10,
+            alignItems: 'center',
+          }}>
+          <Image
+            source={{uri: passengerProfilePicUrl}}
+            style={{height: 60, width: 60}}
+          />
+          <View style={{marginLeft: 10}}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+              <Text style={styles.text}>
+                {data.passengerData.passengerPersonalDetails.firstName.toUpperCase()}{' '}
+                {data.passengerData.passengerPersonalDetails.lastName.toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.text}>
+              {data.passengerData.passengerPersonalDetails.Email}{' '}
+            </Text>
+          </View>
+        </View>
         <View
           style={{
             marginHorizontal: 20,
@@ -195,12 +194,8 @@ function PassengerHistorySingleData({navigation, route}) {
             }}>
             <View style={{flexDirection: 'row'}}>
               <Icon name="calendar" size={20} color="black" />
-              <Text
-                style={[
-                  styles.text,
-                  {marginLeft: 10, color: Colors.secondary},
-                ]}>
-                {data.date.toDate().toString().slice(0, 15)}
+              <Text style={[styles.text, {marginLeft: 10}]}>
+                {data.date && data.date.toDate().toString().slice(0, 15)}
               </Text>
               <Text
                 style={[
@@ -209,7 +204,6 @@ function PassengerHistorySingleData({navigation, route}) {
                 ]}>
                 {`${data.date.toDate().getHours()}:${data.date.toDate().getMinutes()}` }
               </Text>
-
             </View>
             <View style={{flexDirection: 'row', marginTop: 3}}>
               <Text style={[styles.text, {fontSize: 16}]}>
@@ -234,7 +228,7 @@ function PassengerHistorySingleData({navigation, route}) {
               {data.payment && (
                 <Text style={[styles.text, {fontSize: 16}]}>
                   payment:{' '}
-                  <Text style={{color: Colors.secondary, fontSize: 14}}>
+                  <Text style={{color: Colors.secondary, fontSize: 16}}>
                     {' '}
                     {data.payment}${' '}
                   </Text>
@@ -244,7 +238,7 @@ function PassengerHistorySingleData({navigation, route}) {
             <View style={{flexDirection: 'row', marginTop: 3}}>
               <Text style={[styles.text, {fontSize: 16}]}>
                 Fare:{' '}
-                <Text style={{color: Colors.secondary, fontSize: 14}}>
+                <Text style={{color: Colors.secondary, fontSize: 16}}>
                   {' '}
                   {fare ? fare : data.driverData.fare}${' '}
                 </Text>
@@ -257,7 +251,7 @@ function PassengerHistorySingleData({navigation, route}) {
   );
 }
 
-export default PassengerHistorySingleData;
+export default DriverHistorySingleDataScreen;
 
 const styles = StyleSheet.create({
   headerContainer: {

@@ -52,15 +52,19 @@ function PassengerHistory({navigation}) {
       .then(doc => {
         const id = auth().currentUser.uid;
         let data = doc._docs;
-        data = data[0]._data.cancelledRides;
-
-        setCancelledBookingData(
-          data &&
-            data.length > 0 &&
-            data.filter((e, i) => {
-              return e.passengerData.id == id;
-            }),
-        );
+        console.log(data, 'data');
+        let myNames = [];
+        data = data.forEach((e, i) => {
+          let myData = e._data.cancelledRides;
+          myData &&
+            myData.length > 0 &&
+            myData.map((j, ind) => {
+              if (j.passengerData.id == id) {
+                myNames.push(j);
+              }
+            });
+        });
+        setCancelledBookingData(myNames);
       });
   };
 
@@ -90,6 +94,12 @@ function PassengerHistory({navigation}) {
   };
 
   const renderBookingData = ({item, index}) => {
+
+    let date = item.date.toDate()  
+    
+    let stringDate = date.toString()
+    stringDate = stringDate.slice(0,15)
+
     let fare = null;
     if (
       item.driverData &&
@@ -127,7 +137,7 @@ function PassengerHistory({navigation}) {
             })
           }>
           {/* Date is mentioned Here */}
-          <Text style={[styles.text, {marginTop: 5}]}>abc</Text>
+          <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
             numberOfLines={1}>
@@ -161,6 +171,10 @@ function PassengerHistory({navigation}) {
 
   const renderCancelBookingData = ({item, index}) => {
     let fare = null;
+
+    let date  = item.date.toDate()
+
+    let stringDate = date.toString().slice(0,15)
     if (
       item.driverData &&
       item.driverData.bidFare &&
@@ -197,7 +211,7 @@ function PassengerHistory({navigation}) {
             })
           }>
           {/* Date is mentioned Here */}
-          <Text style={[styles.text, {marginTop: 5}]}>abc</Text>
+          <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
             numberOfLines={1}>
