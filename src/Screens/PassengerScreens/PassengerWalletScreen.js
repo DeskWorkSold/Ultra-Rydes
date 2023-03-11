@@ -9,20 +9,183 @@ import {
   View,
   ScrollView,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import COLORS from '../../Constants/Colors';
-import CustomeButton from '../../Components/CustomButton';
+import CustomButton from '../../Components/CustomButton';
 import CustomHeader from '../../Components/CustomHeader';
-import {ColorSpace} from 'react-native-reanimated';
-
+import Icon from 'react-native-vector-icons/AntDesign';
+import {set} from 'react-native-reanimated';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import { ToastAndroid } from 'react-native';
 const CurrentBalanceScreen = ({navigation}) => {
-  const [name, setName] = useState();
+  const [currentwallet, setCurrentWallet] = useState(null);
+  const [allWalletData, setAllWalletData] = useState(true);
+  const [monthlyWalletData, setMonthlyWalletData] = useState([]);
+  const [allData, setAllData] = useState([]);
+  const [addAmount,setAddAmount] = useState("")
+  const [deposit, setDeposit] = useState({
+    monthly: null,
+    total: null,
+  });
+  const [spent, setSpent] = useState({
+    monthly: null,
+    total: null,
+  });
+
+  const getWalletData = async () => {
+    const userId = auth().currentUser.uid;
+
+    const myWallet = await firestore()
+      .collection('wallet')
+      .doc(userId)
+      .onSnapshot(querySnapshot => {
+        let data = querySnapshot.data().wallet;
+        setAllData(data);
+        let date = new Date();
+        let currentMonth = date.getMonth();
+        let currentYear = date.getFullYear();
+        let currentDate = date.getDate();
+
+        setMonthlyWalletData(
+          data &&
+            data.length > 0 &&
+            data.filter((e, i) => {
+              let walletDate = e.date.toDate();
+              let walletMonth = walletDate.getMonth();
+              let walletYear = walletDate.getFullYear();
+              if (walletMonth == currentMonth && walletYear == currentYear) {
+                return e;
+              }
+            }),
+        );
+      });
+  };
+
+  useEffect(() => {
+    getWalletData();
+  }, []);
+
+  const getAmountDepositInWallet = () => {
+    let myDepositData = [];
+
+    allData &&
+      allData.length > 0 &&
+      allData.map((e, i) => {
+        if (e && e.payment) {
+          myDepositData.push(Number(e.payment));
+        }
+      });
+    let myDeposits =
+      myDepositData &&
+      myDepositData.length > 0 &&
+      myDepositData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    myDeposits && setDeposit({...deposit, total: myDeposits});
+  };
+  const getAmountSpentFromWallet = () => {
+    let mySpentData = [];
+
+    allData &&
+      allData.length > 0 &&
+      allData.map((e, i) => {
+        if (e && e.fare) {
+          mySpentData.push(Number(e.fare));
+        }
+      });
+    let mySpents =
+      mySpentData &&
+      mySpentData.length > 0 &&
+      mySpentData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    mySpents && setSpent({...spent, total: mySpents});
+  };
+
+  const getMonthlyAmountDepositInWallet = () => {
+    let myDepositData = [];
+
+    monthlyWalletData &&
+      monthlyWalletData.length > 0 &&
+      monthlyWalletData.map((e, i) => {
+        if (e && e.payment) {
+          myDepositData.push(Number(e.payment));
+        }
+      });
+
+    let myDeposits =
+      myDepositData &&
+      myDepositData.length > 0 &&
+      myDepositData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    myDeposits && setDeposit({...deposit, monthly: myDeposits});
+  };
+
+  const getMonthlyAmountSpentFromWallet = () => {
+    let mySpentData = [];
+
+    monthlyWalletData &&
+      monthlyWalletData.length > 0 &&
+      monthlyWalletData.map((e, i) => {
+        if (e && e.fare) {
+          mySpentData.push(Number(e.fare));
+        }
+      });
+    let mySpents =
+      mySpentData &&
+      mySpentData.length > 0 &&
+      mySpentData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    mySpents && setSpent({...spent, monthly: mySpents});
+  };
+
+  useEffect(() => {
+    if (deposit && deposit.total && spent.total) {
+      let currentWalletAmount = deposit.total - spent.total;
+      setCurrentWallet(currentWalletAmount.toFixed(2));
+    }
+  }, [deposit, spent]);
+
+  
+
+  useEffect(() => {
+    if (allData && allData.length > 0) {
+      getAmountDepositInWallet();
+      getAmountSpentFromWallet();
+    }
+    if (monthlyWalletData && monthlyWalletData.length > 0) {
+      getMonthlyAmountDepositInWallet();
+      getMonthlyAmountSpentFromWallet();
+    }
+  }, [allData, monthlyWalletData]);
+
+
+  console.log(addAmount,"addd")
+const navigateToPaymentScreen = () => {
+
+  if(!addAmount){
+      ToastAndroid.show("Kindly Enter Deposit Amount",ToastAndroid.SHORT)
+      
+  }else{
+    navigation.navigate('passengerPaymentMethod',addAmount)
+  }
+
+}
 
   return (
     <SafeAreaView>
       <StatusBar backgroundColor={COLORS.black} />
-
-      <ScrollView vertical showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{height: '100%', backgroundColor: COLORS.white}}
+        vertical
+        showsVerticalScrollIndicator={false}>
         <View style={styles.container}>
           <View style={styles.headerContainer}>
             <CustomHeader
@@ -47,11 +210,11 @@ const CurrentBalanceScreen = ({navigation}) => {
               <View style={{width: '100%', alignItems: 'center'}}>
                 <Text
                   style={{
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: 'bold',
-                    color: COLORS.black,
+                    color: COLORS.secondary,
                   }}>
-                  Current Balance
+                  YOUR WALLET
                 </Text>
               </View>
 
@@ -95,7 +258,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                     fontSize: 18,
                     color: COLORS.black,
                   }}>
-                  $424
+                  ${currentwallet}
                 </Text>
               </View>
             </View>
@@ -118,25 +281,23 @@ const CurrentBalanceScreen = ({navigation}) => {
                   Details
                 </Text>
               </View>
-              <View
+              <TouchableOpacity
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                }}>
+                }}
+                onPress={() => setAllWalletData(allWalletData ? false : true)}>
                 <Text
                   style={{
                     color: COLORS.black,
                     paddingRight: 5,
                   }}>
-                  This Month
+                  {allWalletData ? 'All Data' : 'This Month'}
                 </Text>
                 <TouchableOpacity>
-                  <Image
-                    source={require('../../Assets/Images/walletDeposit.jpg')}
-                    resizeMode="contain"
-                  />
+                  <Icon name="down" color={COLORS.secondary} />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </View>
 
             <View
@@ -145,7 +306,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                 justifyContent: 'space-between',
                 paddingHorizontal: 20,
               }}>
-              <View
+              <TouchableOpacity
                 style={{
                   backgroundColor: COLORS.white,
                   elevation: 5,
@@ -154,7 +315,12 @@ const CurrentBalanceScreen = ({navigation}) => {
                   paddingVertical: 20,
                   alignItems: 'center',
                   width: '49%',
-                }}>
+                }}
+                onPress={()=>navigation.navigate("passengerDepositDataScreen",{data : {
+                  allData: allData,
+                  monthlyData : monthlyWalletData
+                }})}
+                >
                 <View>
                   <Image
                     source={require('../../Assets/Images/walletDeposit.jpg')}
@@ -186,13 +352,16 @@ const CurrentBalanceScreen = ({navigation}) => {
                       fontSize: 13,
                       textAlign: 'center',
                     }}>
-                    $424
+                    ${allWalletData ? deposit.total : deposit.monthly}
                   </Text>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate('PaymentOptionScreen')}
+                onPress={()=>navigation.navigate("passengerSpentDataScreen",{data : {
+                  allData: allData,
+                  monthlyData : monthlyWalletData
+                }})}
                 style={{
                   backgroundColor: COLORS.white,
                   elevation: 5,
@@ -233,7 +402,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                       fontSize: 13,
                       textAlign: 'center',
                     }}>
-                    $424
+                    ${allWalletData ? spent.total : spent.monthly.toFixed(2)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -267,6 +436,8 @@ const CurrentBalanceScreen = ({navigation}) => {
                   <TextInput
                     style={[styles.TextInput, {color: COLORS.black}]}
                     placeholder="$200"
+                    keyboardType="numeric"
+                    onChangeText={setAddAmount}
                     placeholderTextColor={COLORS.black}
                   />
                 </View>
@@ -279,10 +450,10 @@ const CurrentBalanceScreen = ({navigation}) => {
               paddingTop: 20,
               alignItems: 'center',
             }}>
-            <CustomeButton
-              onpress={() => navigation.navigate('')}
-              title={'Add $20'}
-              btnTextStyle= {{color:COLORS.black}}
+            <CustomButton
+              onPress={navigateToPaymentScreen}
+              text={'Add Amount'}
+              btnTextStyle={{color: COLORS.white}}
             />
           </View>
         </View>

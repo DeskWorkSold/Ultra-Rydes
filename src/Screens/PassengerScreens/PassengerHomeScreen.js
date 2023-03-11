@@ -159,59 +159,57 @@ export default function PassengerHomeScreen({navigation}) {
         .collection('Request')
         .doc(data.passengerData.id)
         .onSnapshot(querySnapshot => {
-          let data = querySnapshot.data();
-          if(data && data.myDriversData && data.driverData){
-          let myDriversData = data.myDriversData
-            ? data.myDriversData
-            : data.driverData;
-          
-          if (
-            !driverArrive.pickupLocation &&
-            !driverArriveAtPickUpLocation &&
-            !route.params.driverArriveAtPickupLocation &&
-            data &&
-            data.driverArriveAtPickupLocation
-          ) {
-            setDriverArrive({
-              ...driverArrive,
-              pickupLocation: true,
-            });
-          }
+          let myData = querySnapshot.data();
+          if (myData && myData.myDriversData || myData.driverData) {
+            let myDriversData = myData.myDriversData
+              ? myData.myDriversData
+              : myData.driverData;
 
-          if (
-            !driverArrive.dropoffLocation &&
-            !driverArriveAtdropoffLocation &&
-            data &&
-            data.driverArriveAtDropoffLocation &&
-            !paymentByPassenger
-          ) {
-            setPaymentByPassenger(data.payment);
-            setDriverArriveAtdropoffLocation(true);
-          }
+            if (
+              !driverArrive.pickupLocation &&
+              !driverArriveAtPickUpLocation &&
+              !route.params.driverArriveAtPickupLocation &&
+              myData &&
+              myData.driverArriveAtPickupLocation
+            ) {
+              setDriverArrive({
+                ...driverArrive,
+                pickupLocation: true,
+              });
+            }
 
-          if (data && !Array.isArray(myDriversData)) {
-            myDriversData.currentLocation.latitude =
-              myDriversData.currentLocation.latitude;
-            myDriversData.currentLocation.longitude =
-              myDriversData.currentLocation.longitude;
-            myDriversData.currentLocation.heading = myDriversData
-              .currentLocation.heading
-              ? myDriversData.currentLocation.heading.toString()
-              : '180';
-            setSelectedLocation(myDriversData.currentLocation);
-          } else if (data && Array.isArray(myDriversData)) {
-            let selectedDriver = myDriversData.filter(
-              (e, i) => (e.requestStatus = 'accepted'),
-            );
-            selectedDriver = selectedDriver[0];
-            setSelectedLocation(selectedDriver.currentLocation);
+            if (
+              !driverArrive.dropoffLocation &&
+              !driverArriveAtdropoffLocation &&
+              myData &&
+              myData.driverArriveAtDropoffLocation &&
+              !paymentByPassenger
+            ) {
+              setPaymentByPassenger(myData.payment);
+              setDriverArriveAtdropoffLocation(true);
+            }
+
+            if (myData && !Array.isArray(myDriversData)) {
+              myDriversData.currentLocation.latitude =
+                myDriversData.currentLocation.latitude;
+              myDriversData.currentLocation.longitude =
+                myDriversData.currentLocation.longitude;
+              myDriversData.currentLocation.heading = myDriversData
+                .currentLocation.heading
+                ? myDriversData.currentLocation.heading.toString()
+                : '180';
+              setSelectedLocation(myDriversData.currentLocation);
+            } else if (myData && Array.isArray(myDriversData)) {
+              let selectedDriver = myDriversData.filter(
+                (e, i) => (e.requestStatus = 'accepted'),
+              );
+              selectedDriver = selectedDriver[0];
+              setSelectedLocation(selectedDriver.currentLocation);
+            }
           }
-        }
         });
-      }
+    }
   };
-
-  console.log(selectedDriverLocation, 'selectedDriver');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -479,7 +477,7 @@ export default function PassengerHomeScreen({navigation}) {
             additionalDetails: additionalDetails,
             id: CurrentUserUid,
             passengerPersonalDetails: passengerPersonalData,
-            requestDate : new Date()
+            requestDate: new Date(),
           };
 
           navigation.navigate('PassengerFindRide', data);
@@ -508,7 +506,7 @@ export default function PassengerHomeScreen({navigation}) {
             additionalDetails: additionalDetails,
             id: CurrentUserUid,
             passengerPersonalDetails: passengerPersonalData,
-            requestDate : new Date()
+            requestDate: new Date(),
           };
 
           firestore()
@@ -790,59 +788,32 @@ export default function PassengerHomeScreen({navigation}) {
       ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
     } else {
       let id = auth().currentUser.uid;
+      let totalFare =
+        data.passengerData && data.passengerData.bidFare
+          ? data.passengerData.bidFare
+          : data.passengerData.fare;
+      let remainingWallet = Number(paymentByPassenger) - Number(totalFare);
+        console.log(remainingWallet)
+        console.log(paymentByPassenger)
+        console.log(totalFare)    
+      let sendWalletData = {
+        payment: paymentByPassenger,
+        fare: totalFare,
+        wallet: (remainingWallet).toFixed(2),
+        date: new Date(),
+      };
+      console.log(sendWalletData,"send")
       firestore()
-        .collection('Passengers')
+        .collection('wallet')
         .doc(id)
-        .get()
-        .then(doc => {
-          if (doc.exists) {
-            let myData = doc.data();
-            let wallet = myData.wallet;
-            console.log(wallet, 'outside');
-            if (wallet) {
-              console.log(wallet, 'wallet');
-
-              let totalFare =
-                data.passengerData && data.passengerData.bidFare
-                  ? data.passengerData.bidFare
-                  : data.passengerData.fare;
-              console.log(totalFare, 'totalFare');
-              let mergePayment =
-                Number(wallet) + Number(paymentByPassenger) - Number(totalFare);
-
-              firestore()
-                .collection('Passengers')
-                .doc(id)
-                .update({
-                  wallet: mergePayment.toFixed(2),
-                })
-                .then(() => {
-                  console.log('wallet successfully updated');
-                })
-                .catch(error => {
-                  console.log(error);
-                });
-            } else {
-              let totalFare =
-                data.passengerData && data.passengerData.bidFare
-                  ? data.passengerData.bidFare
-                  : data.passengerData.fare;
-              let remainingWallet =
-                Number(paymentByPassenger) - Number(totalFare);
-              firestore()
-                .collection('Passengers')
-                .doc(id)
-                .update({
-                  wallet: remainingWallet.toFixed(2),
-                })
-                .then(() => {
-                  console.log('wallet successfully updated');
-                })
-                .catch(error => {
-                  console.log(error);
-                });
-            }
-          }
+        .set(
+          {
+            wallet: firestore.FieldValue.arrayUnion(sendWalletData)
+          },
+          {merge: true},
+        )
+        .then(() => {
+          console.log('wallet successfully updated');
         })
         .catch(error => {
           console.log(error);
@@ -858,7 +829,6 @@ export default function PassengerHomeScreen({navigation}) {
         payment: paymentByPassenger,
         date: new Date(),
       };
-
       firestore()
         .collection('Booking')
         .doc(route.params.passengerData.id)

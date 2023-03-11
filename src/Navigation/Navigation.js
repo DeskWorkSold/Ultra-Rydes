@@ -33,6 +33,11 @@ import DriverHistorySingleDataScreen from '../Screens/DriverHistorySingleDataScr
 import PassengerSafetyScreen from '../Screens/PassengerScreens/PassengerSafetyScreen';
 import DriverSafetyScreen from '../Screens/DriverScreens/DriverSafetyScreen';
 import PassengerWalletScreen from '../Screens/PassengerScreens/PassengerWalletScreen';
+import depositDataScreen from '../Screens/PassengerScreens/passengerDepositDataScreen';
+import SpentDataScreen from '../Screens/PassengerScreens/PassengerSpentDataScreen';
+import DepositDataScreen from '../Screens/PassengerScreens/passengerDepositDataScreen';
+import PaymentMethod from '../Screens/PassengerScreens/PassengerPaymentMethodScreen';
+import PassengerCheckOutScreen from '../Screens/PassengerScreens/passengerCheckOutScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -211,6 +216,22 @@ export default function Navigation() {
         <Stack.Screen
           name="DriverHistorySingleData"
           component={DriverHistorySingleDataScreen}
+        />
+        <Stack.Screen
+          name="passengerDepositDataScreen"
+          component={DepositDataScreen}
+        />
+        <Stack.Screen
+          name="passengerSpentDataScreen"
+          component={SpentDataScreen}
+        />
+        <Stack.Screen
+          name="passengerPaymentMethod"
+          component={PaymentMethod}
+        />
+        <Stack.Screen
+          name="passengerCheckoutScreen"
+          component={PassengerCheckOutScreen}
         />
       </Stack.Navigator>
     </NavigationContainer>
