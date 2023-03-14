@@ -45,7 +45,7 @@ function PassengerCheckOutScreen({navigation, route}) {
           source={require('../../Assets/Images/masterCard.png')}
           cardHolderName={selectedData?.cardHolderName}
           cardNumber={selectedData?.cardNumber}
-          cardDate={selectedData?.cardDate}
+          cardDate={selectedData?.expiryDate}
         />
       )}
       <View

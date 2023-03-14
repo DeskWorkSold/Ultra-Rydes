@@ -33,6 +33,13 @@ const CurrentBalanceScreen = ({navigation}) => {
     total: null,
   });
 
+  const [cardDetail,setCardDetail] = useState({
+    cardHolderName : "",
+    cardNumber  : null,
+    expiryDate : "",
+    CVC : null
+  })
+
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
 

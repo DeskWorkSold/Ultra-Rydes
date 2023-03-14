@@ -8,9 +8,20 @@ import {ScrollView, TextInput} from 'react-native-gesture-handler';
 import CustomCard from '../../Components/customCard';
 import {useState} from 'react';
 import PassengerCheckOutScreen from './passengerCheckOutScreen';
+import {ToastAndroid} from 'react-native';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import {useEffect} from 'react';
 
 function PaymentMethod({navigation, route}) {
   const [savedCards, setSavedCards] = React.useState(true);
+
+  const [cardDetail, setCardDetail] = useState({
+    cardHolderName: '',
+    cardNumber: null,
+    expiryDate: '',
+    CVC: null,
+  });
 
   let data = route.params;
 
@@ -38,6 +49,64 @@ function PaymentMethod({navigation, route}) {
     },
   ]);
 
+  const getPassengerSavedCards = () => {
+    const id = auth().currentUser.uid;
+    firestore()
+      .collection('passengerCards')
+      .doc(id)
+      .onSnapshot(querySnapshot => {
+        let data = querySnapshot.data().savedCards;
+        data =
+          data &&
+          data.length > 0 &&
+          data.map((e, i) => {
+            e.PaymentMethod = 'Credit Card';
+            return e;
+          });
+
+        setSavedCardsData(data);
+      });
+  };
+
+  useEffect(() => {
+    getPassengerSavedCards();
+  }, []);
+
+  const getCardData = () => {
+    let values = Object.values(cardDetail);
+    let flag = values.some(e => e == '');
+    if (flag) {
+      ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
+    } else {
+      let id = auth().currentUser.uid;
+
+      let savedCards = {
+        ...cardDetail,
+        date: new Date(),
+      };
+
+      firestore()
+        .collection('passengerCards')
+        .doc(id)
+        .set(
+          {
+            savedCards: firestore.FieldValue.arrayUnion(savedCards),
+          },
+          {merge: true},
+        )
+        .then(() => {
+          ToastAndroid.show(
+            'Card has been successfully added',
+            ToastAndroid.SHORT,
+          );
+          setSavedCards(true);
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    }
+  };
+
   const getSelectedCard = (selectedCard, ind) => {
     setSavedCardsData(
       savedCardsData &&
@@ -57,6 +126,8 @@ function PaymentMethod({navigation, route}) {
         }),
     );
   };
+
+  console.log(cardDetail, 'details');
 
   return (
     <View style={{height: '100%'}}>
@@ -123,10 +194,14 @@ function PaymentMethod({navigation, route}) {
                 Card Holder Name
               </Text>
               <TextInput
+                onChangeText={e =>
+                  setCardDetail({...cardDetail, cardHolderName: e})
+                }
                 placeholder="Enter name..."
                 placeholderTextColor={Colors.black}
                 style={{
                   width: '100%',
+                  color: 'black',
                   borderWidth: 1,
                   borderColor: Colors.black,
                   padding: 10,
@@ -141,12 +216,16 @@ function PaymentMethod({navigation, route}) {
               </Text>
               <TextInput
                 placeholder="Enter card number..."
+                onChangeText={e =>
+                  setCardDetail({...cardDetail, cardNumber: e})
+                }
                 placeholderTextColor={Colors.black}
                 style={{
                   width: '100%',
                   borderWidth: 1,
                   borderColor: Colors.black,
                   padding: 10,
+                  color: 'black',
                   borderRadius: 10,
                   marginTop: 5,
                 }}
@@ -157,6 +236,9 @@ function PaymentMethod({navigation, route}) {
                 Expiry Date
               </Text>
               <TextInput
+                onChangeText={e =>
+                  setCardDetail({...cardDetail, expiryDate: e})
+                }
                 placeholder="Enter expiry date..."
                 placeholderTextColor={Colors.black}
                 style={{
@@ -164,6 +246,7 @@ function PaymentMethod({navigation, route}) {
                   borderWidth: 1,
                   borderColor: Colors.black,
                   padding: 10,
+                  color: 'black',
                   borderRadius: 10,
                   marginTop: 5,
                 }}
@@ -173,12 +256,14 @@ function PaymentMethod({navigation, route}) {
               <Text style={[styles.text, {textAlign: 'left'}]}>CVC</Text>
               <TextInput
                 placeholder="Enter cvc..."
+                onChangeText={e => setCardDetail({...cardDetail, CVC: e})}
                 placeholderTextColor={Colors.black}
                 style={{
                   width: '100%',
                   borderWidth: 1,
                   borderColor: Colors.black,
                   padding: 10,
+                  color: 'black',
                   borderRadius: 10,
                   marginTop: 5,
                 }}
@@ -196,7 +281,7 @@ function PaymentMethod({navigation, route}) {
                     source={require('../../Assets/Images/masterCard.png')}
                     cardHolderName={e.cardHolderName}
                     cardNumber={e.cardNumber}
-                    cardDate={e.cardDate}
+                    cardDate={e.expiryDate}
                     selected={e?.selected}
                     onPress={() => getSelectedCard(e, i)}
                   />
@@ -216,7 +301,7 @@ function PaymentMethod({navigation, route}) {
             <CustomButton
               styleContainer={{marginRight: 10, width: '90%'}}
               text={'Add card'}
-              onPress={() => setSavedCards(true)}
+              onPress={() => getCardData()}
             />
           )}
           {savedCards && savedCardsData && (

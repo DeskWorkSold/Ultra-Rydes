@@ -83,6 +83,8 @@ function DriverHistory ({navigation}) {
       getBookingData();
       getCancelRidesData();
     }, []);
+
+    console.log(cancelledBookingData,"cancell")
   
     const activateTab = index => {
       setCurrentTab(

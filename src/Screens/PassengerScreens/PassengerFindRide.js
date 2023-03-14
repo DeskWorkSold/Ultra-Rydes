@@ -38,6 +38,7 @@ export default function PassengerFindRide({navigation, route}) {
         .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
+          
           if (
             data &&
             data.bidFare &&

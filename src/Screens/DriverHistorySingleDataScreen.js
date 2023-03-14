@@ -53,6 +53,8 @@ function DriverHistorySingleDataScreen({navigation, route}) {
     }
   }, [profilePic, passengerprofilePic]);
 
+  console.log(data,"dataa")
+
   return (
     data &&
     data.passengerData &&

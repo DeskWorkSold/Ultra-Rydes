@@ -38,7 +38,17 @@ import SpentDataScreen from '../Screens/PassengerScreens/PassengerSpentDataScree
 import DepositDataScreen from '../Screens/PassengerScreens/passengerDepositDataScreen';
 import PaymentMethod from '../Screens/PassengerScreens/PassengerPaymentMethodScreen';
 import PassengerCheckOutScreen from '../Screens/PassengerScreens/passengerCheckOutScreen';
-
+import PassengerFAQ from '../Screens/PassengerScreens/PassengerFAQ';
+import PassengerFaqDetail from '../Screens/PassengerScreens/PassengerFaqDetailScreen';
+import PassengerPhoneNumberChangeScreen from '../Screens/PassengerScreens/PassengerPhoneNumberChangeScreen';
+import PassengerLanguageScreen from '../Screens/PassengerScreens/PassengerLanguageScreen';
+import PassengerRulesAndTerms from '../Screens/PassengerScreens/PassengerRulesAndTerm';
+import PassengerRulesAndTermsDetail from '../Screens/PassengerScreens/PassengerRulesAndTermsDetail';
+import DriverPhoneNumberChangeScreen from '../Screens/DriverScreens/DriverPhoneNumberChangeScreen';
+import DriverRulesAndTerms from '../Screens/DriverScreens/DriverRulesAndTerms';
+import DriverRulesAndTermsDetail from '../Screens/DriverScreens/DriverRulesAndTermsDetails';
+import DriverFAQ from '../Screens/DriverScreens/DriverFAQ';
+import DriverFaqDetail from '../Screens/DriverScreens/DriverFaqDetails';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
@@ -95,6 +105,13 @@ function PassengerRoutes() {
       <Drawer.Screen
         name="PassengerWalletScreen"
         component={PassengerWalletScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="PassengerFAQScreen"
+        component={PassengerFAQ}
         options={{
           headerShown: false,
         }}
@@ -157,6 +174,13 @@ function DriverRoutes() {
       <Drawer.Screen
         name="DriverSafetyScreen"
         component={DriverSafetyScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="DriverFAQScreen"
+        component={DriverFAQ}
         options={{
           headerShown: false,
         }}
@@ -225,13 +249,46 @@ export default function Navigation() {
           name="passengerSpentDataScreen"
           component={SpentDataScreen}
         />
-        <Stack.Screen
-          name="passengerPaymentMethod"
-          component={PaymentMethod}
-        />
+        <Stack.Screen name="passengerPaymentMethod" component={PaymentMethod} />
         <Stack.Screen
           name="passengerCheckoutScreen"
           component={PassengerCheckOutScreen}
+        />
+        <Stack.Screen
+          name="passengerFaqDetail"
+          component={PassengerFaqDetail}
+        />
+        <Stack.Screen
+          name="passengerPhoneNumberChangeScreen"
+          component={PassengerPhoneNumberChangeScreen}
+        />
+        <Stack.Screen
+          name="passengerLanguageScreen"
+          component={PassengerLanguageScreen}
+        />
+        <Stack.Screen
+          name="passengerRulesAndTermsScreen"
+          component={PassengerRulesAndTerms}
+        />
+        <Stack.Screen
+          name="passengerRulesAndTermsDetailScreen"
+          component={PassengerRulesAndTermsDetail}
+        />
+        <Stack.Screen
+          name="driverPhoneNumberChangeScreen"
+          component={DriverPhoneNumberChangeScreen}
+        />
+        <Stack.Screen
+          name="driverRulesAndTermsScreen"
+          component={DriverRulesAndTerms}
+        />
+        <Stack.Screen
+          name="driverRulesAndTermsDetailScreen"
+          component={DriverRulesAndTermsDetail}
+        />
+        <Stack.Screen
+          name="driverFaqDetail"
+          component={DriverFaqDetail}
         />
       </Stack.Navigator>
     </NavigationContainer>
