@@ -9,8 +9,6 @@ import CustomButton from '../../Components/CustomButton';
 function PassengerCheckOutScreen({navigation, route}) {
   let data = route.params;
 
-  console.log(data, 'data');
-
   const [selectedData, setSelectedData] = useState([]);
 
   useEffect(() => {
@@ -44,8 +42,8 @@ function PassengerCheckOutScreen({navigation, route}) {
           PaymentMethod="Credit Card"
           source={require('../../Assets/Images/masterCard.png')}
           cardHolderName={selectedData?.cardHolderName}
-          cardNumber={selectedData?.cardNumber}
-          cardDate={selectedData?.expiryDate}
+          cardNumber={`XXXX XXXX XXXX ${selectedData?.last4}`}
+          cardDate={`${selectedData?.expiryMonth}/${selectedData?.expiryYear}`}
         />
       )}
       <View

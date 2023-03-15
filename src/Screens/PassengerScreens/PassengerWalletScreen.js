@@ -17,13 +17,13 @@ import Icon from 'react-native-vector-icons/AntDesign';
 import {set} from 'react-native-reanimated';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { ToastAndroid } from 'react-native';
+import {ToastAndroid} from 'react-native';
 const CurrentBalanceScreen = ({navigation}) => {
   const [currentwallet, setCurrentWallet] = useState(null);
   const [allWalletData, setAllWalletData] = useState(true);
   const [monthlyWalletData, setMonthlyWalletData] = useState([]);
   const [allData, setAllData] = useState([]);
-  const [addAmount,setAddAmount] = useState("")
+  const [addAmount, setAddAmount] = useState('');
   const [deposit, setDeposit] = useState({
     monthly: null,
     total: null,
@@ -32,13 +32,6 @@ const CurrentBalanceScreen = ({navigation}) => {
     monthly: null,
     total: null,
   });
-
-  const [cardDetail,setCardDetail] = useState({
-    cardHolderName : "",
-    cardNumber  : null,
-    expiryDate : "",
-    CVC : null
-  })
 
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
@@ -160,8 +153,6 @@ const CurrentBalanceScreen = ({navigation}) => {
     }
   }, [deposit, spent]);
 
-  
-
   useEffect(() => {
     if (allData && allData.length > 0) {
       getAmountDepositInWallet();
@@ -173,18 +164,14 @@ const CurrentBalanceScreen = ({navigation}) => {
     }
   }, [allData, monthlyWalletData]);
 
-
-  console.log(addAmount,"addd")
-const navigateToPaymentScreen = () => {
-
-  if(!addAmount){
-      ToastAndroid.show("Kindly Enter Deposit Amount",ToastAndroid.SHORT)
-      
-  }else{
-    navigation.navigate('passengerPaymentMethod',addAmount)
-  }
-
-}
+  console.log(addAmount, 'addd');
+  const navigateToPaymentScreen = () => {
+    if (!addAmount) {
+      ToastAndroid.show('Kindly Enter Deposit Amount', ToastAndroid.SHORT);
+    } else {
+      navigation.navigate('passengerPaymentMethod', addAmount);
+    }
+  };
 
   return (
     <SafeAreaView>
@@ -323,11 +310,14 @@ const navigateToPaymentScreen = () => {
                   alignItems: 'center',
                   width: '49%',
                 }}
-                onPress={()=>navigation.navigate("passengerDepositDataScreen",{data : {
-                  allData: allData,
-                  monthlyData : monthlyWalletData
-                }})}
-                >
+                onPress={() =>
+                  navigation.navigate('passengerDepositDataScreen', {
+                    data: {
+                      allData: allData,
+                      monthlyData: monthlyWalletData,
+                    },
+                  })
+                }>
                 <View>
                   <Image
                     source={require('../../Assets/Images/walletDeposit.jpg')}
@@ -365,10 +355,14 @@ const navigateToPaymentScreen = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={()=>navigation.navigate("passengerSpentDataScreen",{data : {
-                  allData: allData,
-                  monthlyData : monthlyWalletData
-                }})}
+                onPress={() =>
+                  navigation.navigate('passengerSpentDataScreen', {
+                    data: {
+                      allData: allData,
+                      monthlyData: monthlyWalletData,
+                    },
+                  })
+                }
                 style={{
                   backgroundColor: COLORS.white,
                   elevation: 5,
