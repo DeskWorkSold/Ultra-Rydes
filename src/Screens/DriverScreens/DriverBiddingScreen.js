@@ -77,8 +77,9 @@ export default function DriverBiddingScreen({navigation}) {
   const [loading, setLoading] = useState(false);
   const [offerFare, setOfferFare] = useState(null);
   const [reasonForCancelRide, setReasonForCancelRide] = useState(false);
-  const [driverReasonForCancelRide, setDriverReasonForCancelRide] =
-    useState('');
+  const [driverReasonForCancelRide, setDriverReasonForCancelRide] = useState(
+    '',
+  );
   const [input, setInput] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(
     route.params.selectedDriver ?? '',
@@ -107,12 +108,14 @@ export default function DriverBiddingScreen({navigation}) {
     dropOffLocation: false,
   });
   const [startRide, setStartRide] = useState(false);
-  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
-    useState({
-      minutes: '',
-      distance: '',
-      details: '',
-    });
+  const [
+    minutesAndDistanceDifference,
+    setMinutesAndDistanceDifference,
+  ] = useState({
+    minutes: '',
+    distance: '',
+    details: '',
+  });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
   const [endRide, setEndRide] = useState(false);
 
@@ -476,7 +479,8 @@ export default function DriverBiddingScreen({navigation}) {
           visible={arrivePickUpLocation}
           onRequestClose={() => {
             setArrivePickupLocation(false);
-          }}>
+          }}
+        >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View>
@@ -490,7 +494,8 @@ export default function DriverBiddingScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => sendArriveMessageToPassenger()}>
+                onPress={() => sendArriveMessageToPassenger()}
+              >
                 <Text style={styles.textStyle}>confirm</Text>
               </TouchableOpacity>
             </View>
@@ -500,9 +505,8 @@ export default function DriverBiddingScreen({navigation}) {
     );
   }, [arrivePickUpLocation]);
 
-  const bookingComplete = payment => {
+  const bookingComplete = () => {
     let uid = auth().currentUser.uid;
-
     firestore()
       .collection('Drivers')
       .doc(uid)
@@ -511,7 +515,10 @@ export default function DriverBiddingScreen({navigation}) {
         if (doc.exists) {
           let data = doc.data();
           if (data.wallet) {
-            let wallet = Number(data.wallet) + Number(payment);
+            let wallet =
+              Number(data.wallet) + driverBidFare
+                ? driverBidFare
+                : route.params.selectedDriver.bidFare;
             firestore()
               .collection('Drivers')
               .doc(uid)
@@ -528,7 +535,9 @@ export default function DriverBiddingScreen({navigation}) {
                 console.log(error);
               });
           } else {
-            let wallet = Number(payment);
+            let wallet = driverBidFare
+              ? driverBidFare
+              : route.params.selectedDriver.bidFare;
             firestore()
               .collection('Drivers')
               .doc(uid)
@@ -564,7 +573,6 @@ export default function DriverBiddingScreen({navigation}) {
       .collection('Request')
       .doc(data.id)
       .update({
-        payment: payment,
         driverArriveAtDropoffLocation: true,
       })
       .then(() => {
@@ -580,9 +588,6 @@ export default function DriverBiddingScreen({navigation}) {
   };
 
   const DropOffModal = useCallback(() => {
-    const [input, setInput] = useState(false);
-    const [payment, setPayment] = useState(null);
-
     console.log(input);
     return (
       <View style={styles.centeredView}>
@@ -592,14 +597,16 @@ export default function DriverBiddingScreen({navigation}) {
           visible={endRide || (route.params && route.params.endRide)}
           onRequestClose={() => {
             setInput(false);
-          }}>
+          }}
+        >
           <View style={styles.centeredView}>
             <View style={[styles.modalView, {height: input ? '70%' : '50%'}]}>
               <Text
                 style={[
                   styles.modalText,
                   {fontSize: 26, fontWeight: '600', color: 'white'},
-                ]}>
+                ]}
+              >
                 Congratulations!
               </Text>
               <Text
@@ -611,7 +618,8 @@ export default function DriverBiddingScreen({navigation}) {
                     color: 'white',
                     marginTop: 0,
                   },
-                ]}>
+                ]}
+              >
                 You have arrived at destination
               </Text>
               <Text
@@ -625,35 +633,21 @@ export default function DriverBiddingScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}>
+                ]}
+              >
                 Bill Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   {data.bidFare ?? data.fare}$
                 </Text>
               </Text>
-              <TextInput
-                onChangeText={e => setPayment(e)}
-                style={{
-                  width: '50%',
-                  padding: 10,
-                  backgroundColor: 'white',
-                  textAlign: 'center',
-                  color: 'black',
-                  marginTop: 20,
-                  borderRadius: 10,
-                }}
-                keyboardType={'numeric'}
-                placeholder="Payment Amount"
-                placeholderTextColor={'black'}
-                onPressIn={() => setInput(true)}
-              />
 
               <TouchableOpacity
                 style={[
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => bookingComplete(payment)}>
+                onPress={() => bookingComplete()}
+              >
                 <Text style={styles.textStyle}>confirm</Text>
               </TouchableOpacity>
             </View>
@@ -677,7 +671,7 @@ export default function DriverBiddingScreen({navigation}) {
       driverData: myDriverData,
       rideCancelByDriver: true,
       reasonForCancelRide: driverReasonForCancelRide,
-      date : new Date()
+      date: new Date(),
     };
 
     firestore()
@@ -739,7 +733,8 @@ export default function DriverBiddingScreen({navigation}) {
               setCancelRide(false);
               setInput(false);
               setReasonForCancelRide(false);
-            }}>
+            }}
+          >
             <View style={styles.centeredView}>
               <View
                 style={[
@@ -748,7 +743,8 @@ export default function DriverBiddingScreen({navigation}) {
                     height: input ? '65%' : reasonForCancelRide ? '40%' : '45%',
                     width: '90%',
                   },
-                ]}>
+                ]}
+              >
                 {!reasonForCancelRide && (
                   <MaterialCommunityIcons
                     size={80}
@@ -768,7 +764,8 @@ export default function DriverBiddingScreen({navigation}) {
                         marginTop: 0,
                         textAlign: 'left',
                       },
-                    ]}>
+                    ]}
+                  >
                     Are you sure You want to cancel Ride!
                   </Text>
                 )}
@@ -782,7 +779,8 @@ export default function DriverBiddingScreen({navigation}) {
                         marginTop: 0,
                         fontWeight: '400',
                       },
-                    ]}>
+                    ]}
+                  >
                     Your Passenger is waiting for you!
                   </Text>
                 )}
@@ -793,7 +791,8 @@ export default function DriverBiddingScreen({navigation}) {
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       width: '100%',
-                    }}>
+                    }}
+                  >
                     <TouchableOpacity
                       style={[
                         styles.button,
@@ -805,12 +804,14 @@ export default function DriverBiddingScreen({navigation}) {
                           bottom: -40,
                         },
                       ]}
-                      onPress={() => setCancelRide(false)}>
+                      onPress={() => setCancelRide(false)}
+                    >
                       <Text
                         style={[
                           styles.textStyle,
                           {backgroundColor: Colors.black},
-                        ]}>
+                        ]}
+                      >
                         Cancel
                       </Text>
                     </TouchableOpacity>
@@ -825,12 +826,14 @@ export default function DriverBiddingScreen({navigation}) {
                           bottom: -40,
                         },
                       ]}
-                      onPress={() => setReasonForCancelRide(true)}>
+                      onPress={() => setReasonForCancelRide(true)}
+                    >
                       <Text
                         style={[
                           styles.textStyle,
                           {backgroundColor: Colors.primary},
-                        ]}>
+                        ]}
+                      >
                         confirm
                       </Text>
                     </TouchableOpacity>
@@ -849,7 +852,8 @@ export default function DriverBiddingScreen({navigation}) {
                           marginTop: 0,
                           textAlign: 'left',
                         },
-                      ]}>
+                      ]}
+                    >
                       Kindly Write below the reasons for cancelling Ride!
                     </Text>
                     <TextInput
@@ -880,12 +884,14 @@ export default function DriverBiddingScreen({navigation}) {
                             bottom: -40,
                           },
                         ]}
-                        onPress={() => cancelBookingByDriver()}>
+                        onPress={() => cancelBookingByDriver()}
+                      >
                         <Text
                           style={[
                             styles.textStyle,
                             {backgroundColor: Colors.primary},
-                          ]}>
+                          ]}
+                        >
                           Cancel Ride
                         </Text>
                       </TouchableOpacity>
@@ -1298,7 +1304,8 @@ export default function DriverBiddingScreen({navigation}) {
 
   return loading ? (
     <View
-      style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}>
+      style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}
+    >
       <ActivityIndicator size={100} color="black" />
       <Text style={{color: 'black', marginTop: 20}}>
         Processing Your request Please Wait!
@@ -1328,7 +1335,8 @@ export default function DriverBiddingScreen({navigation}) {
               ...pickupCords,
               latitudeDelta: 0.005,
               longitudeDelta: 0.001,
-            }}>
+            }}
+          >
             <Marker
               coordinate={pickupCords}
               title="pickup Location"
@@ -1359,7 +1367,8 @@ export default function DriverBiddingScreen({navigation}) {
                   description={
                     minutesAndDistanceDifference.details.start_address
                   }
-                  pinColor="blue">
+                  pinColor="blue"
+                >
                   <Image
                     source={require('../../Assets/Images/mapCar.png')}
                     style={{
@@ -1414,7 +1423,8 @@ export default function DriverBiddingScreen({navigation}) {
                   borderRadius: 10,
                   paddingHorizontal: 20,
                 }}
-                onPress={() => rideStartByDriver()}>
+                onPress={() => rideStartByDriver()}
+              >
                 <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
                   Start Ride
                 </Text>
@@ -1435,7 +1445,8 @@ export default function DriverBiddingScreen({navigation}) {
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress={() => rideEndByDriver()}>
+              onPress={() => rideEndByDriver()}
+            >
               <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
                 End Ride
               </Text>
@@ -1449,7 +1460,8 @@ export default function DriverBiddingScreen({navigation}) {
               fontSize: 18,
               fontWeight: '900',
               marginTop: 10,
-            }}>
+            }}
+          >
             Duration:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
@@ -1464,7 +1476,8 @@ export default function DriverBiddingScreen({navigation}) {
               fontSize: 18,
               fontWeight: '900',
               marginTop: 5,
-            }}>
+            }}
+          >
             Distance:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
@@ -1481,7 +1494,8 @@ export default function DriverBiddingScreen({navigation}) {
         <KeyboardAvoidingView>
           <ScrollView
             nestedScrollEnabled={true}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+          >
             <KeyboardAvoidingView>
               {selectedDriver && (
                 <View>
@@ -1490,7 +1504,8 @@ export default function DriverBiddingScreen({navigation}) {
                       fontSize: 18,
                       fontWeight: '600',
                       color: Colors.secondary,
-                    }}>
+                    }}
+                  >
                     Contact Passenger:
                   </Text>
                   <TouchableOpacity
@@ -1504,13 +1519,15 @@ export default function DriverBiddingScreen({navigation}) {
                     }}
                     onPress={() => {
                       Linking.openURL(`tel:${passengerData.mobileNumber}`);
-                    }}>
+                    }}
+                  >
                     <Text
                       style={{
                         fontSize: 18,
                         fontWeight: '600',
                         color: Colors.primary,
-                      }}>
+                      }}
+                    >
                       {passengerData.mobileNumber}
                     </Text>
                     <View style={{marginRight: 160}}>
@@ -1588,13 +1605,15 @@ export default function DriverBiddingScreen({navigation}) {
                     padding: 8,
                     width: '30%',
                     borderRadius: 10,
-                  }}>
+                  }}
+                >
                   <Text
                     style={{
                       color: 'black',
                       fontSize: 20,
                       fontWeight: '700',
-                    }}>
+                    }}
+                  >
                     Bid Fare
                   </Text>
                 </TouchableOpacity>

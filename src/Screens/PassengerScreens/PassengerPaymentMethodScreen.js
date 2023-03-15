@@ -12,37 +12,41 @@ import {ToastAndroid} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import {useEffect} from 'react';
-import {CardField, useStripe} from '@stripe/stripe-react-native';
 
 function PaymentMethod({navigation, route}) {
   const [savedCards, setSavedCards] = React.useState(true);
-  const [cardHolderName, setCardHolderName] = React.useState('');
+
   const [cardDetail, setCardDetail] = useState({
-    complete: false,
+    cardHolderName: '',
+    cardNumber: null,
+    expiryYear: null,
+    expiryMonth : null,
+    cvc: null,
   });
 
   let data = route.params;
-
-  console.log(cardDetail, 'details');
 
   const [savedCardsData, setSavedCardsData] = useState([
     {
       PaymentMethod: 'Credit Card',
       cardHolderName: 'John R Halton',
-      last4: '5282',
+      cardNumber: '5282 3456 7890 1289',
       cardDate: '09/25',
+      cvc: '1234',
     },
     {
       PaymentMethod: 'Credit Card',
       cardHolderName: 'John R Halton',
-      last4: '5282',
+      cardNumber: '5282 3456 7890 1289',
       cardDate: '09/25',
+      cvc: '1234',
     },
     {
       PaymentMethod: 'Credit Card',
       cardHolderName: 'John R Halton',
-      last4: '5282',
+      cardNumber: '5282 3456 7890 1289',
       cardDate: '09/25',
+      cvc: '1234',
     },
   ]);
 
@@ -52,6 +56,7 @@ function PaymentMethod({navigation, route}) {
       .collection('passengerCards')
       .doc(id)
       .onSnapshot(querySnapshot => {
+        if(querySnapshot.exists){
         let data = querySnapshot.data().savedCards;
         data =
           data &&
@@ -62,7 +67,9 @@ function PaymentMethod({navigation, route}) {
           });
 
         setSavedCardsData(data);
+      }
       });
+
   };
 
   useEffect(() => {
@@ -70,14 +77,17 @@ function PaymentMethod({navigation, route}) {
   }, []);
 
   const getCardData = () => {
-    if (!cardDetail.complete || !cardHolderName) {
+    let values = Object.values(cardDetail);
+    console.log(values,"bales")
+    let flag = values.some(e => e == '');
+    if (flag) {
       ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
     } else {
       let id = auth().currentUser.uid;
+
       let savedCards = {
         ...cardDetail,
-        cardHolderName: cardHolderName,
-        PaymentMethod: 'Credit Card',
+        date: new Date(),
       };
 
       firestore()
@@ -178,51 +188,116 @@ function PaymentMethod({navigation, route}) {
             cardHolderName="Add a new Card"
             cardNumber="XXXX XXXX XXXX XXXX"
             cardDate="9/25"
+
             source={require('../../Assets/Images/masterCard.png')}
           />
         )}
 
         {!savedCards ? (
-          <View style={{paddingHorizontal: 10}}>
-            <Text style={[styles.text, {textAlign: 'left'}]}>
-              Card Holder Name
-            </Text>
-            <TextInput
-              onChangeText={e => setCardHolderName(e)}
-              placeholder="Enter name..."
-              placeholderTextColor={Colors.black}
-              style={{
-                width: '100%',
-                color: 'black',
-                borderWidth: 1,
-                borderColor: Colors.black,
-                padding: 10,
-                borderRadius: 10,
-                marginTop: 5,
-              }}
-            />
-            <CardField
-              postalCodeEnabled={false}
-              placeholders={{
-                number: 'XXXX XXXX XXXX XXXX',
-              }}
-              cardStyle={{
-                backgroundColor: '#FFFFFF',
-                textColor: '#000000',
-                placeholderColor: 'black',
-              }}
-              style={{
-                width: '100%',
-                height: 50,
-                marginVertical: 30,
-              }}
-              onCardChange={cardDetails => {
-                setCardDetail(cardDetails);
-              }}
-              onFocus={focusedField => {
-                console.log('focusField', focusedField);
-              }}
-            />
+          <View style={{width: '100%', paddingHorizontal: 20, marginTop: 30}}>
+            <View style={{width: '95%'}}>
+              <Text style={[styles.text, {textAlign: 'left'}]}>
+                Card Holder Name
+              </Text>
+              <TextInput
+                onChangeText={e =>
+                  setCardDetail({...cardDetail, cardHolderName: e})
+                }
+                placeholder="Enter name..."
+                placeholderTextColor={Colors.black}
+                style={{
+                  width: '100%',
+                  color: 'black',
+                  borderWidth: 1,
+                  borderColor: Colors.black,
+                  padding: 10,
+                  borderRadius: 10,
+                  marginTop: 5,
+                }}
+              />
+            </View>
+            <View style={{width: '95%', marginTop: 10}}>
+              <Text style={[styles.text, {textAlign: 'left'}]}>
+                Card Number
+              </Text>
+              <TextInput
+                placeholder="Enter card number..."
+                onChangeText={e =>
+                  setCardDetail({...cardDetail, cardNumber: e})
+                }
+                placeholderTextColor={Colors.black}
+                style={{
+                  width: '100%',
+                  borderWidth: 1,
+                  borderColor: Colors.black,
+                  padding: 10,
+                  color: 'black',
+                  borderRadius: 10,
+                  marginTop: 5,
+                }}
+              />
+            </View>
+            <View style={{width: '95%', marginTop: 10}}>
+              <Text style={[styles.text, {textAlign: 'left'}]}>
+                Expiry Month
+              </Text>
+              <TextInput
+              keyboardType='numeric'
+                onChangeText={e =>
+                  setCardDetail({...cardDetail, expiryMonth: e})
+                }
+                placeholder="Enter expiry date..."
+                placeholderTextColor={Colors.black}
+                style={{
+                  width: '100%',
+                  borderWidth: 1,
+                  borderColor: Colors.black,
+                  padding: 10,
+                  color: 'black',
+                  borderRadius: 10,
+                  marginTop: 5,
+                }}
+              />
+            </View>
+            <View style={{width: '95%', marginTop: 10}}>
+              <Text style={[styles.text, {textAlign: 'left'}]}>
+                Expiry Year
+              </Text>
+              <TextInput
+              keyboardType='numeric'
+                onChangeText={e =>
+                  setCardDetail({...cardDetail, expiryYear: e})
+                }
+                placeholder="Enter expiry date..."
+                placeholderTextColor={Colors.black}
+                style={{
+                  width: '100%',
+                  borderWidth: 1,
+                  borderColor: Colors.black,
+                  padding: 10,
+                  color: 'black',
+                  borderRadius: 10,
+                  marginTop: 5,
+                }}
+              />
+            </View>
+            <View style={{width: '95%', marginTop: 10}}>
+              <Text style={[styles.text, {textAlign: 'left'}]}>CVC</Text>
+              <TextInput
+                placeholder="Enter cvc..."
+                onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
+                placeholderTextColor={Colors.black}
+                style={{
+                  width: '100%',
+                  borderWidth: 1,
+                  borderColor: Colors.black,
+                  padding: 10,
+                  color: 'black',
+                  borderRadius: 10,
+                  marginTop: 5,
+                }}
+              />
+            </View>
           </View>
         ) : (
           <ScrollView horizontal={true} style={{marginTop: 20}}>
@@ -234,8 +309,8 @@ function PaymentMethod({navigation, route}) {
                     PaymentMethod="Credit Card"
                     source={require('../../Assets/Images/masterCard.png')}
                     cardHolderName={e.cardHolderName}
-                    cardNumber={`XXXX XXXX XXXX ${e.last4}`}
-                    cardDate={`${e.expiryMonth}/${e.expiryYear}`}
+                    cardNumber={e.cardNumber}
+                    cardDate={`${e.expiryMonth}/${e.expiryYear}` }
                     selected={e?.selected}
                     onPress={() => getSelectedCard(e, i)}
                   />
