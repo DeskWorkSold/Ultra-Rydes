@@ -144,6 +144,20 @@ export default function DrawerContentPassenger({navigation}) {
                 <TouchableOpacity
                   style={styles.fieldItem}
                   onPress={() => {
+                    navigation.navigate('PassengerDefinedPlacesScreen');
+                  }}>
+                  <Ionicons
+                    name="location"
+                    size={25}
+                    color={Colors.white}
+                  />
+                  <Text style={styles.fieldItemText}>Add Places</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.fieldItemContainer}>
+                <TouchableOpacity
+                  style={styles.fieldItem}
+                  onPress={() => {
                     navigation.navigate('PassengerWalletScreen');
                   }}>
                   <MaterialCommunityIcons

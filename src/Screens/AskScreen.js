@@ -32,8 +32,10 @@ export default function AskScreen({navigation}) {
       let startRide = await AsyncStorage.getItem('startRide');
       let endRide = await AsyncStorage.getItem('EndRide');
 
+        console.log(data,"dataaaa")
+
       data = JSON.parse(data);
-      if (data && Object.keys(data).length > 0) {
+     if (data && Object.keys(data).length > 0) {
         navigation.navigate('DriverRoutes', {
           screen: 'DriverBiddingScreen',
           params: {

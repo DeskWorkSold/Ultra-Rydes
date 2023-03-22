@@ -9,38 +9,89 @@ import {
   View,
   ScrollView,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import COLORS from '../../Constants/Colors';
 import CustomButton from '../../Components/CustomButton';
 import CustomHeader from '../../Components/CustomHeader';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {set} from 'react-native-reanimated';
+import {set, withSpring} from 'react-native-reanimated';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import Colors from '../../Constants/Colors';
 import {ToastAndroid} from 'react-native';
+import {Modal} from 'react-native';
+import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
+import axios from 'axios';
+import {Linking} from 'react-native';
+import {ActivityIndicator} from 'react-native-paper';
+
 const CurrentBalanceScreen = ({navigation}) => {
   const [currentwallet, setCurrentWallet] = useState(null);
   const [allWalletData, setAllWalletData] = useState(true);
   const [monthlyWalletData, setMonthlyWalletData] = useState([]);
   const [allData, setAllData] = useState([]);
   const [addAmount, setAddAmount] = useState('');
-  const [deposit, setDeposit] = useState({
+  const [openCreateAccountModal, setOpenCreateAccountModal] = useState(false);
+  const [stripeAccountId, setStripeAccountId] = useState(false);
+  const [stripeVerifiedAccount, setStripeVerifiedAccount] = useState(false);
+  const [stripeId, setStripeId] = useState('');
+  const [driverData, setDriverData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [amountWithdrawn, setAmountWithdrawn] = useState(false);
+  const [earn, setEarn] = useState({
     monthly: null,
     total: null,
   });
-  const [spent, setSpent] = useState({
+  const [withdraw, setWithdraw] = useState({
     monthly: null,
     total: null,
   });
+
+  const getAccountId = () => {
+    let id = auth().currentUser.uid;
+
+    firestore()
+      .collection('DriverstripeAccount')
+      .doc(id)
+      .onSnapshot(querySnapshot => {
+        if (querySnapshot._exists) {
+          let data = querySnapshot.data().id;
+          if (data) {
+            setStripeAccountId(true);
+            setStripeId(data);
+            axios
+              .post('http://192.168.100.45:3000/api/retrieveAccount', {
+                id: data,
+              })
+              .then(res => {
+                let {capabilities} = res.data.accountStatus;
+
+                let {transfers, card_payments} = capabilities;
+
+                if (transfers == 'active' && card_payments == 'active') {
+                  setStripeVerifiedAccount(true);
+                }
+              })
+              .catch(error => {
+                console.log(error);
+              });
+          }
+        }
+      });
+  };
+
+  useEffect(() => {
+    getAccountId();
+  }, []);
 
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
 
     const myWallet = await firestore()
-      .collection('wallet')
+      .collection('driverWallet')
       .doc(userId)
       .onSnapshot(querySnapshot => {
-        let data = querySnapshot.data().wallet;
+        let data = querySnapshot.data().driverWallet;
         setAllData(data);
         let date = new Date();
         let currentMonth = date.getMonth();
@@ -64,77 +115,98 @@ const CurrentBalanceScreen = ({navigation}) => {
 
   useEffect(() => {
     getWalletData();
+  }, [amountWithdrawn]);
+
+  const getAmountWithdrawFromWallet = () => {
+    let myDepositData = [];
+    allData &&
+      allData.length > 0 &&
+      allData.map((e, i) => {
+        if (e && e.withdraw) {
+          myDepositData.push(Number(e.withdraw));
+        }
+      });
+    let myDeposits =
+      myDepositData &&
+      myDepositData.length > 0 &&
+      myDepositData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    myDeposits && setWithdraw({...withdraw, total: myDeposits});
+  };
+  const getAmountEarnFromWallet = () => {
+    let mySpentData = [];
+
+    allData &&
+      allData.length > 0 &&
+      allData.map((e, i) => {
+        console.log(e, 'eee');
+        if ((e && e.fare) || (e && e.tip)) {
+          let tip = 0;
+          if (e?.tip) {
+            tip = e.tip;
+          }
+
+          mySpentData.push(Number(e.fare) + Number(tip));
+        }
+      });
+    let mySpents =
+      mySpentData &&
+      mySpentData.length > 0 &&
+      mySpentData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    mySpents && setEarn({...earn, total: mySpents});
+  };
+
+  const getMonthlyAmountWithdrawFromWallet = () => {
+    let myDepositData = [];
+    monthlyWalletData &&
+      monthlyWalletData.length > 0 &&
+      monthlyWalletData.map((e, i) => {
+        if (e && e.withdraw) {
+          myDepositData.push(Number(e.withdraw));
+        }
+      });
+    let myDeposits =
+      myDepositData &&
+      myDepositData.length > 0 &&
+      myDepositData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    myDeposits && setWithdraw({...withdraw, monthly: myDeposits});
+  };
+  const getDriverData = () => {
+    let id = auth().currentUser.uid;
+    firestore()
+      .collection('Drivers')
+      .doc(id)
+      .onSnapshot(querySnapshot => {
+        let data = querySnapshot.data();
+        setDriverData(data);
+      });
+  };
+  useEffect(() => {
+    getDriverData();
   }, []);
 
-  const getAmountDepositInWallet = () => {
-    let myDepositData = [];
-
-    allData &&
-      allData.length > 0 &&
-      allData.map((e, i) => {
-        if (e && e.payment) {
-          myDepositData.push(Number(e.payment));
-        }
-      });
-    let myDeposits =
-      myDepositData &&
-      myDepositData.length > 0 &&
-      myDepositData.reduce((previous, current) => {
-        return previous + current;
-      }, 0);
-
-    myDeposits && setDeposit({...deposit, total: myDeposits});
-  };
-  const getAmountSpentFromWallet = () => {
-    let mySpentData = [];
-
-    allData &&
-      allData.length > 0 &&
-      allData.map((e, i) => {
-        if (e && e.fare) {
-          mySpentData.push(Number(e.fare) + Number(e.tip));
-        }
-      });
-    console.log(mySpentData, 'spentData');
-    let mySpents =
-      mySpentData &&
-      mySpentData.length > 0 &&
-      mySpentData.reduce((previous, current) => {
-        return previous + current;
-      }, 0);
-
-    mySpents && setSpent({...spent, total: mySpents});
-  };
-
-  const getMonthlyAmountDepositInWallet = () => {
-    let myDepositData = [];
-
-    monthlyWalletData &&
-      monthlyWalletData.length > 0 &&
-      monthlyWalletData.map((e, i) => {
-        if (e && e.payment) {
-          myDepositData.push(Number(e.payment));
-        }
-      });
-
-    let myDeposits =
-      myDepositData &&
-      myDepositData.length > 0 &&
-      myDepositData.reduce((previous, current) => {
-        return previous + current;
-      }, 0);
-
-    myDeposits && setDeposit({...deposit, monthly: myDeposits});
-  };
-
-  const getMonthlyAmountSpentFromWallet = () => {
+  const getMonthlyAmountEarnFromWallet = () => {
     let mySpentData = [];
 
     monthlyWalletData &&
       monthlyWalletData.length > 0 &&
       monthlyWalletData.map((e, i) => {
         if (e && e.fare) {
-          mySpentData.push(Number(e.fare) + Number(e.tip));
+          let tip = 0;
+
+          if (e?.tip) {
+            tip = e.tip;
+          }
+
+          mySpentData.push(Number(e.fare) + Number(tip));
         }
       });
     let mySpents =
@@ -144,34 +216,188 @@ const CurrentBalanceScreen = ({navigation}) => {
         return previous + current;
       }, 0);
 
-    mySpents && setSpent({...spent, monthly: mySpents});
+    mySpents && setEarn({...earn, monthly: mySpents});
   };
 
   useEffect(() => {
-    if (deposit && deposit.total && spent.total) {
-      let currentWalletAmount = deposit.total - spent.total;
-      setCurrentWallet(currentWalletAmount.toFixed(2));
+    if ((earn && earn.total) || withdraw.total) {
+      let currentWalletAmount = earn.total - withdraw.total;
+      currentWalletAmount && setCurrentWallet(currentWalletAmount.toFixed(2));
     }
-  }, [deposit, spent]);
+  }, [earn, withdraw, amountWithdrawn]);
 
   useEffect(() => {
     if (allData && allData.length > 0) {
-      getAmountDepositInWallet();
-      getAmountSpentFromWallet();
+      getAmountEarnFromWallet();
+      getAmountWithdrawFromWallet();
     }
     if (monthlyWalletData && monthlyWalletData.length > 0) {
-      getMonthlyAmountDepositInWallet();
-      getMonthlyAmountSpentFromWallet();
+      getMonthlyAmountEarnFromWallet();
+      getMonthlyAmountWithdrawFromWallet();
     }
-  }, [allData, monthlyWalletData]);
+  }, [allData, monthlyWalletData, amountWithdrawn]);
 
-  const navigateToPaymentScreen = () => {
+  const checkStripeAccount = () => {
+    if (!stripeId) {
+      let id = auth().currentUser.uid;
+      axios
+        .post('http://192.168.100.45:3000/api/createAccount', driverData)
+        .then(res => {
+          console.log(res.data, 'res');
+          firestore()
+            .collection('DriverstripeAccount')
+            .doc(id)
+            .set(res.data)
+            .then(() => {
+              ToastAndroid.show(
+                'Your account has been created',
+                ToastAndroid.SHORT,
+              );
+              setOpenCreateAccountModal(true);
+            })
+            .catch(error => {
+              console.log(error);
+            });
+        });
+      return;
+    }
+
+    if (stripeId && !stripeVerifiedAccount) {
+      setOpenCreateAccountModal(true);
+      return;
+    }
     if (!addAmount) {
       ToastAndroid.show('Kindly Enter Deposit Amount', ToastAndroid.SHORT);
-    } else {
-      navigation.navigate('passengerPaymentMethod', addAmount);
+      return;
+    }
+    if (
+      stripeAccountId &&
+      stripeVerifiedAccount &&
+      currentwallet < Number(addAmount)
+    ) {
+      ToastAndroid.show(
+        "You don't have enought amount in your wallet",
+        ToastAndroid.SHORT,
+      );
+      return;
+    }
+    if (stripeAccountId && stripeVerifiedAccount) {
+      setLoading(true);
+      let data = {
+        amount: addAmount,
+        accountId: stripeId,
+      };
+      axios
+        .post('http://192.168.100.45:3000/api/tranferPayment', data)
+        .then(res => {
+          setLoading(false);
+          let data = res.data;
+          let id = auth().currentUser.uid;
+          ToastAndroid.show(
+            'Amount Successfully withdrawn This amount will be deposit in your given account within 1 week',
+            ToastAndroid.SHORT,
+          );
+
+          let walletDataToUpdate = {
+            date: new Date(),
+            fare: 0,
+            withdraw: data.data.amount / 100,
+            remainingWallet: 0 - data.data.amount / 100,
+          };
+          firestore()
+            .collection('driverWallet')
+            .doc(id)
+            .set(
+              {
+                driverWallet: firestore.FieldValue.arrayUnion(
+                  walletDataToUpdate,
+                ),
+              },
+              {merge: true},
+            );
+        })
+        .then(res => {
+          ToastAndroid.show(
+            'Amount successfully deducted from your wallet',
+            ToastAndroid.SHORT,
+          );
+          setAddAmount('');
+          setTimeout(() => {
+            setAmountWithdrawn(!amountWithdrawn);
+          }, 2000);
+        })
+        .catch(error => {
+          console.log(error);
+        })
+        .catch(error => {
+          setLoading(false);
+          console.log(error);
+        });
     }
   };
+
+  const getStripeAccountDetailsFromDriver = () => {
+    if (stripeAccountId && stripeVerifiedAccount) {
+      axios.post();
+    }
+
+    let id = auth().currentUser.uid;
+    firestore()
+      .collection('DriverstripeAccount')
+      .doc(id)
+      .onSnapshot(querySnapshot => {
+        let accountId = querySnapshot.data().id;
+        axios
+          .post('http://192.168.100.45:3000/api/accountLink', {id: accountId})
+          .then(res => {
+            let data = res.data;
+            Linking.openURL(data.data.url);
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      });
+  };
+
+  const CreateAccountModal = useCallback(() => {
+    return (
+      <View style={styles.centeredView}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={openCreateAccountModal}
+          onRequestClose={() => {
+            setOpenCreateAccountModal(false);
+          }}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <View>
+                <Ionicons size={80} color="white" name="account-alert" />
+              </View>
+              <Text style={styles.modalText}>
+                You have to give some naccessary information to withdraw from
+                your wallet.
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  {marginBottom: 10, backgroundColor: Colors.primary},
+                ]}
+                onPress={() => getStripeAccountDetailsFromDriver()}
+              >
+                <Text
+                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
+                >
+                  Get my Details
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }, [openCreateAccountModal]);
 
   return (
     <SafeAreaView>
@@ -323,7 +549,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                   width: '49%',
                 }}
                 onPress={() =>
-                  navigation.navigate('passengerDepositDataScreen', {
+                  navigation.navigate('driverEarningScreen', {
                     data: {
                       allData: allData,
                       monthlyData: monthlyWalletData,
@@ -355,7 +581,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                       color: COLORS.black,
                     }}
                   >
-                    Deposit:
+                    Earnings:
                   </Text>
                   <Text
                     style={{
@@ -365,14 +591,17 @@ const CurrentBalanceScreen = ({navigation}) => {
                       textAlign: 'center',
                     }}
                   >
-                    ${allWalletData ? deposit.total : deposit.monthly}
+                    $
+                    {allWalletData
+                      ? earn.total && earn.total.toFixed(2)
+                      : earn.monthly && earn.monthly.toFixed(2)}
                   </Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() =>
-                  navigation.navigate('passengerSpentDataScreen', {
+                  navigation.navigate('driverWithdrawScreen', {
                     data: {
                       allData: allData,
                       monthlyData: monthlyWalletData,
@@ -413,7 +642,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                       color: COLORS.black,
                     }}
                   >
-                    Spent:
+                    Withdrawal:
                   </Text>
                   <Text
                     style={{
@@ -423,7 +652,10 @@ const CurrentBalanceScreen = ({navigation}) => {
                       textAlign: 'center',
                     }}
                   >
-                    ${allWalletData ? spent.total : spent.monthly.toFixed(2)}
+                    $
+                    {allWalletData
+                      ? withdraw.total
+                      : withdraw.monthly && withdraw.monthly.toFixed(2)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -447,7 +679,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                     color: COLORS.black,
                   }}
                 >
-                  Add Balance
+                  Withdraw Balance
                 </Text>
               </View>
             </View>
@@ -459,7 +691,8 @@ const CurrentBalanceScreen = ({navigation}) => {
                 <View style={styles.NumberInput}>
                   <TextInput
                     style={[styles.TextInput, {color: COLORS.black}]}
-                    placeholder="Enter Deposit Amount"
+                    placeholder="Enter Amount"
+                    value={addAmount}
                     keyboardType="numeric"
                     onChangeText={setAddAmount}
                     placeholderTextColor={COLORS.black}
@@ -468,7 +701,7 @@ const CurrentBalanceScreen = ({navigation}) => {
               </View>
             </View>
           </View>
-
+          {openCreateAccountModal && CreateAccountModal()}
           <View
             style={{
               paddingTop: 20,
@@ -476,8 +709,18 @@ const CurrentBalanceScreen = ({navigation}) => {
             }}
           >
             <CustomButton
-              onPress={navigateToPaymentScreen}
-              text={'Add Amount'}
+              onPress={checkStripeAccount}
+              text={
+                loading ? (
+                  <ActivityIndicator size="large" color={Colors.secondary} />
+                ) : !stripeAccountId ? (
+                  'Create Account'
+                ) : !stripeVerifiedAccount ? (
+                  'Need naccessary details'
+                ) : (
+                  'Withdraw Amount'
+                )
+              }
               btnTextStyle={{color: COLORS.white}}
             />
           </View>
@@ -512,5 +755,56 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: COLORS.secondary,
     zIndex: 1,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: Colors.secondary,
+    height: '40%',
+    width: '80%',
+    borderRadius: 20,
+    padding: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 10,
+    padding: 10,
+    elevation: 2,
+    width: '90%',
+    color: 'white',
+    borderWidth: 1,
+    borderColor: 'white',
+    position: 'absolute',
+    bottom: 20,
+  },
+  buttonOpen: {
+    backgroundColor: '#white',
+  },
+
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 18,
+    marginTop: 20,
+    fontWeight: '800',
+    color: 'white',
   },
 });

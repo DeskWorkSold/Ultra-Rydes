@@ -82,7 +82,7 @@ export default function DriverBiddingScreen({navigation}) {
   );
   const [input, setInput] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(
-    route.params.selectedDriver ?? '',
+    route.params.selectedDriver ?? myDriverData,
   );
   const [pressInInput, setPressInInput] = useState(false);
   const screen = Dimensions.get('window');
@@ -154,8 +154,8 @@ export default function DriverBiddingScreen({navigation}) {
     ) {
       const dis = getPreciseDistance(
         {
-          latitude: driverCurrentLocation.latitude,
-          longitude: driverCurrentLocation.longitude,
+          latitude: 24.9180271,
+          longitude: 67.0970916,
         },
         {latitude: pickupCords.latitude, longitude: pickupCords.longitude},
       );
@@ -164,6 +164,10 @@ export default function DriverBiddingScreen({navigation}) {
         setArrivePickupLocation(true);
       }
     }
+
+    console.log(selectedDriver, 'selected');
+
+    console.log(driverData, 'driverData');
 
     if (
       !arrive.dropOffLocation &&
@@ -176,8 +180,8 @@ export default function DriverBiddingScreen({navigation}) {
     ) {
       const dis = getPreciseDistance(
         {
-          latitude: driverCurrentLocation.latitude,
-          longitude: driverCurrentLocation.longitude,
+          latitude: 24.9180271,
+          longitude: 67.0970916,
         },
         {
           latitude: dropLocationCords.latitude,
@@ -296,6 +300,8 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
+  
+
   const checkRequestStatus = async () => {
     if (!selectedDriver) {
       if (passengerData && passengerData.bidFare) {
@@ -354,7 +360,6 @@ export default function DriverBiddingScreen({navigation}) {
                   'Your request has been accepted',
                   ToastAndroid.SHORT,
                 );
-
                 firestore()
                   .collection('inlinedDriver')
                   .doc(driverUid)
@@ -507,53 +512,31 @@ export default function DriverBiddingScreen({navigation}) {
 
   const bookingComplete = () => {
     let uid = auth().currentUser.uid;
+
+    let walletData = {
+      fare: data.bidFare ? data.bidFare : data.fare,
+      withdraw: 0,
+      date: new Date(),
+      remainingWallet: Number(data.bidFare ?? data.fare) - 0,
+    };
+
     firestore()
-      .collection('Drivers')
+      .collection('driverWallet')
       .doc(uid)
-      .get()
-      .then(doc => {
-        if (doc.exists) {
-          let data = doc.data();
-          if (data.wallet) {
-            let wallet =
-              Number(data.wallet) + driverBidFare
-                ? driverBidFare
-                : route.params.selectedDriver.bidFare;
-            firestore()
-              .collection('Drivers')
-              .doc(uid)
-              .update({
-                wallet: wallet,
-              })
-              .then(() => {
-                ToastAndroid.show(
-                  'Amount has been successfully add in your wallet',
-                  ToastAndroid.SHORT,
-                );
-              })
-              .catch(error => {
-                console.log(error);
-              });
-          } else {
-            let wallet = driverBidFare
-              ? driverBidFare
-              : route.params.selectedDriver.bidFare;
-            firestore()
-              .collection('Drivers')
-              .doc(uid)
-              .update({
-                wallet: wallet,
-              })
-              .then(() => {
-                ToastAndroid.show(
-                  'Amount has been successfully add in your wallet',
-                );
-              })
-              .catch(error => {
-                console.log(error);
-              });
-          }
-        }
+      .set(
+        {
+          driverWallet: firestore.FieldValue.arrayUnion(walletData),
+        },
+        {merge: true},
+      )
+      .then(() => {
+        ToastAndroid.show(
+          'Amount has been successfully added in your wallet',
+          ToastAndroid.SHORT,
+        );
+      })
+      .catch(error => {
+        console.log(error);
       });
 
     firestore()
@@ -568,7 +551,6 @@ export default function DriverBiddingScreen({navigation}) {
       .catch(error => {
         console.log(error);
       });
-
     firestore()
       .collection('Request')
       .doc(data.id)
@@ -587,6 +569,8 @@ export default function DriverBiddingScreen({navigation}) {
       });
   };
 
+  console.log(endRide, 'endRide');
+
   const DropOffModal = useCallback(() => {
     console.log(input);
     return (
@@ -594,7 +578,7 @@ export default function DriverBiddingScreen({navigation}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={endRide || (route.params && route.params.endRide)}
+          visible={endRide || route.params.endRide}
           onRequestClose={() => {
             setInput(false);
           }}
@@ -952,11 +936,11 @@ export default function DriverBiddingScreen({navigation}) {
           'You have already accepted this request',
           ToastAndroid.SHORT,
         );
-
         return;
       }
 
       console.log(selectedDriver, 'selected');
+      console.log(myData, 'daattttaaaaaaaaaaaaaaaaaa');
 
       if (
         passengerData &&
@@ -978,6 +962,8 @@ export default function DriverBiddingScreen({navigation}) {
             );
 
             try {
+              console.log(data, 'dataaaaa');
+              let driverData = driverData ? driverData : myDriverData;
               let myData = JSON.stringify(data);
               AsyncStorage.setItem('driverBooking', myData);
             } catch (error) {
@@ -1036,6 +1022,7 @@ export default function DriverBiddingScreen({navigation}) {
       .onSnapshot(doc => {
         let data = doc.data();
         console.log(data, 'dataaa');
+
         if (data && data.rideCancelByPassenger) {
           firestore()
             .collection('inlinedDriver')
@@ -1300,6 +1287,9 @@ export default function DriverBiddingScreen({navigation}) {
     await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
   };
 
+  console.log(selectedDriver, 'selected');
+  console.log(route.params);
+
   const mapRef = useRef();
 
   return loading ? (
@@ -1431,8 +1421,8 @@ export default function DriverBiddingScreen({navigation}) {
               </TouchableOpacity>
             ))}
 
-        {arrive.pickUpLocation ||
-          (arriveDropOffLocation && !route.params.endRide && (
+        {
+          (arriveDropOffLocation || route.params.arriveDropOffLocation && (
             <TouchableOpacity
               style={{
                 position: 'absolute',
@@ -1628,8 +1618,7 @@ export default function DriverBiddingScreen({navigation}) {
                 />
               )}
               {arrivePickUpLocation && <ArriveModal />}
-              {endRide ||
-                (route.params && route.params.endRide && <DropOffModal />)}
+              {endRide && <DropOffModal />}
               {cancelRide && cancelRideModal()}
 
               {/* </ScrollView> */}

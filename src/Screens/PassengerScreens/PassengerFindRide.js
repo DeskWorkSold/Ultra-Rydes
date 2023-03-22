@@ -104,11 +104,11 @@ export default function PassengerFindRide({navigation, route}) {
 
 
   const checkRequestStatus = () => {
-    if (request && !passengerData.bidFare && selectedDriver) {
+    if (request && !passengerData.bidFare && selectedDriver && !passengerData?.rideCancelByPassenger) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
-        .onSnapshot(querySnapshot => {
+        .get().then(querySnapshot => {
           let data = querySnapshot.data();
           if (
             data &&

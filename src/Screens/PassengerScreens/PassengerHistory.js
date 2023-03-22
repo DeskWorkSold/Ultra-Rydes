@@ -10,12 +10,15 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
 function PassengerHistory({navigation}) {
   const [bookingData, setBookingData] = useState([]);
   const [cancelledBookingData, setCancelledBookingData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [currentTab, setCurrentTab] = useState([
     {
@@ -31,6 +34,7 @@ function PassengerHistory({navigation}) {
   ]);
 
   const getBookingData = () => {
+    setLoading(true);
     const id = auth().currentUser.uid;
 
     firestore()
@@ -41,11 +45,13 @@ function PassengerHistory({navigation}) {
         if (doc.exists) {
           let data = doc.data();
           setBookingData(data.bookingData);
+          setLoading(false);
         }
       });
   };
 
   const getCancelRidesData = () => {
+    setLoading(true);
     firestore()
       .collection('RideCancel')
       .get()
@@ -65,6 +71,7 @@ function PassengerHistory({navigation}) {
             });
         });
         setCancelledBookingData(myNames);
+        setLoading(false);
       });
   };
 
@@ -94,11 +101,10 @@ function PassengerHistory({navigation}) {
   };
 
   const renderBookingData = ({item, index}) => {
+    let date = item.date.toDate();
 
-    let date = item.date.toDate()  
-    
-    let stringDate = date.toString()
-    stringDate = stringDate.slice(0,15)
+    let stringDate = date.toString();
+    stringDate = stringDate.slice(0, 15);
 
     let fare = null;
     if (
@@ -135,17 +141,20 @@ function PassengerHistory({navigation}) {
               item,
               fare: fare,
             })
-          }>
+          }
+        >
           {/* Date is mentioned Here */}
           <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}>
+            numberOfLines={1}
+          >
             {item.passengerData.pickupAddress}
           </Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}>
+            numberOfLines={1}
+          >
             {item.passengerData.dropOffAddress}
           </Text>
           <Text style={[styles.text, {paddingTop: 5, fontSize: 14}]}>
@@ -161,7 +170,8 @@ function PassengerHistory({navigation}) {
             style={[
               styles.text,
               {paddingTop: 5, marginBottom: 5, fontSize: 14},
-            ]}>
+            ]}
+          >
             Payment: {item.payment}$
           </Text>
         </TouchableOpacity>
@@ -172,9 +182,9 @@ function PassengerHistory({navigation}) {
   const renderCancelBookingData = ({item, index}) => {
     let fare = null;
 
-    let date  = item.date.toDate()
+    let date = item.date.toDate();
 
-    let stringDate = date.toString().slice(0,15)
+    let stringDate = date.toString().slice(0, 15);
     if (
       item.driverData &&
       item.driverData.bidFare &&
@@ -209,24 +219,28 @@ function PassengerHistory({navigation}) {
               item,
               fare: fare,
             })
-          }>
+          }
+        >
           {/* Date is mentioned Here */}
           <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}>
+            numberOfLines={1}
+          >
             {item.passengerData.pickupAddress}
           </Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}>
+            numberOfLines={1}
+          >
             {item.passengerData.dropOffAddress}
           </Text>
           <Text
             style={[
               styles.text,
               {paddingTop: 5, fontSize: 14, marginBottom: 10},
-            ]}>
+            ]}
+          >
             Fare:{' '}
             {fare
               ? fare
@@ -243,23 +257,69 @@ function PassengerHistory({navigation}) {
   const firstRoute = useCallback(() => {
     return (
       <View style={{marginVertical: 20}}>
-        <FlatList
-          data={bookingData}
-          renderItem={renderBookingData}
-          keyExtractor={(items, index) => index}
-        />
+        {!bookingData && bookingData.length == 0 ? (
+          <View
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: Dimensions.get('window').height / 2,
+              width: Dimensions.get('window').width,
+            }}
+          >
+            <Text
+              style={{
+                color: 'black',
+                fontSize: 24,
+                textAlign: 'center',
+                width: '100%',
+                fontWeight: '800',
+              }}
+            >
+              There is no booking Data Yet
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={bookingData}
+            renderItem={renderBookingData}
+            keyExtractor={(items, index) => index}
+          />
+        )}
       </View>
     );
   }, [currentTab, bookingData]);
 
   const secondeRoute = useCallback(() => {
     return (
-      <View style={{marginVertical: 20}}>
-        <FlatList
-          data={cancelledBookingData}
-          renderItem={renderCancelBookingData}
-          keyExtractor={(items, index) => index}
-        />
+      <View style={{marginVertical: 20, flex: 1}}>
+        {!cancelledBookingData && cancelledBookingData.length == 0 ? (
+          <View
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: Dimensions.get('window').height / 2,
+              width: Dimensions.get('window').width,
+            }}
+          >
+            <Text
+              style={{
+                color: 'black',
+                fontSize: 24,
+                textAlign: 'center',
+                width: '100%',
+                fontWeight: '800',
+              }}
+            >
+              There is no cancel bookings
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={cancelledBookingData}
+            renderItem={renderCancelBookingData}
+            keyExtractor={(items, index) => index}
+          />
+        )}
       </View>
     );
   }, [currentTab, cancelledBookingData]);
@@ -284,7 +344,8 @@ function PassengerHistory({navigation}) {
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
-          }}>
+          }}
+        >
           <TouchableOpacity
             onPress={() => activateTab(0)}
             style={{
@@ -299,7 +360,8 @@ function PassengerHistory({navigation}) {
               )
                 ? Colors.black
                 : 'white',
-            }}>
+            }}
+          >
             <Text
               style={[
                 styles.text,
@@ -308,7 +370,8 @@ function PassengerHistory({navigation}) {
                     ? Colors.primary
                     : Colors.secondary,
                 },
-              ]}>
+              ]}
+            >
               Completed
             </Text>
           </TouchableOpacity>
@@ -326,7 +389,8 @@ function PassengerHistory({navigation}) {
               )
                 ? Colors.black
                 : 'white',
-            }}>
+            }}
+          >
             <Text
               style={[
                 styles.text,
@@ -335,17 +399,31 @@ function PassengerHistory({navigation}) {
                     ? Colors.primary
                     : Colors.secondary,
                 },
-              ]}>
+              ]}
+            >
               Cancelled
             </Text>
           </TouchableOpacity>
         </View>
-
-        {currentTab &&
-        currentTab.length > 0 &&
-        currentTab.some((e, i) => e.index == 0 && e.selected)
-          ? firstRoute()
-          : secondeRoute()}
+        <View style={{flex: 1, justifyContent: 'center'}}>
+          {loading ? (
+            <View
+              style={{
+                height: Dimensions.get('window').height / 2 + 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ActivityIndicator size="large" color={Colors.secondary} />
+            </View>
+          ) : currentTab &&
+            currentTab.length > 0 &&
+            currentTab.some((e, i) => e.index == 0 && e.selected) ? (
+            firstRoute()
+          ) : (
+            secondeRoute()
+          )}
+        </View>
       </ScrollView>
     </View>
   );

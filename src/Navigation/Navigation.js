@@ -49,6 +49,11 @@ import DriverRulesAndTerms from '../Screens/DriverScreens/DriverRulesAndTerms';
 import DriverRulesAndTermsDetail from '../Screens/DriverScreens/DriverRulesAndTermsDetails';
 import DriverFAQ from '../Screens/DriverScreens/DriverFAQ';
 import DriverFaqDetail from '../Screens/DriverScreens/DriverFaqDetails';
+import DriverWalletScreen from '../Screens/DriverScreens/DriverWalletScreen';
+import DriverWithdrawScreen from '../Screens/DriverScreens/DriverWithdraw';
+import DriverEarningScreen from '../Screens/DriverScreens/DriverEarning';
+import PredefinedPlaces from '../Screens/PassengerScreens/addPlaces';
+import PassengerDefinedPlaces from '../Screens/PassengerScreens/passengerDefinedPlacesScreen';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
@@ -116,6 +121,14 @@ function PassengerRoutes() {
           headerShown: false,
         }}
       />
+      <Drawer.Screen
+        name="PassengerDefinedPlacesScreen"
+        component={PassengerDefinedPlaces}
+        options={{
+          headerShown: false,
+        }}
+      />
+      
     </Drawer.Navigator>
   );
 }
@@ -181,6 +194,13 @@ function DriverRoutes() {
       <Drawer.Screen
         name="DriverFAQScreen"
         component={DriverFAQ}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="DriverWalletScreen"
+        component={DriverWalletScreen}
         options={{
           headerShown: false,
         }}
@@ -289,6 +309,18 @@ export default function Navigation() {
         <Stack.Screen
           name="driverFaqDetail"
           component={DriverFaqDetail}
+        />
+        <Stack.Screen
+          name="driverWithdrawScreen"
+          component={DriverWithdrawScreen}
+        />
+        <Stack.Screen
+          name="driverEarningScreen"
+          component={DriverEarningScreen}
+        />
+        <Stack.Screen
+          name="passengerAddPlacesScreen"
+          component={PredefinedPlaces}
         />
       </Stack.Navigator>
     </NavigationContainer>

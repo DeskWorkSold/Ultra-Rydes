@@ -149,6 +149,16 @@ export default function DrawerContentDriver({navigation}) {
           </TouchableOpacity>
         </View>
         <View style={styles.fieldItemContainer}>
+          <TouchableOpacity
+            style={styles.fieldItem}
+            onPress={() => {
+              navigation.navigate('DriverWalletScreen');
+            }}>
+            <Ionicons name="wallet" size={25} color={Colors.white} />
+            <Text style={styles.fieldItemText}>Wallet</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.fieldItemContainer}>
           <TouchableOpacity style={styles.fieldItem} onPress={()=>navigation.navigate("DriverFAQScreen")} >
             <MaterialCommunityIcons
               name="message-question-outline"

@@ -14,9 +14,6 @@ import {ToastAndroid} from 'react-native';
 function PassengerCheckOutScreen({navigation, route}) {
   let data = route.params;
   const {confirmPayment} = useStripe();
-
-  console.log(data, 'data');
-
   const {cardData} = data;
 
   // stripe.setOptions({
@@ -36,9 +33,6 @@ function PassengerCheckOutScreen({navigation, route}) {
       });
   }, []);
 
-  console.log(data, 'data');
-  console.log(typeof data.amount, 'data');
-
   const handlePayPress = async () => {
     let customerData = {
       cardNumber: selectedData.cardNumber,
@@ -47,21 +41,16 @@ function PassengerCheckOutScreen({navigation, route}) {
       cvc: selectedData.cvc,
       amount: Number(data.amount),
     };
-
     axios
-      .post('http:192.168.100.45:3000/api/dopayment', customerData)
+      .post('http:192.168.18.121:3000/api/dopayment', customerData)
       .then(res => {
         let data = res.data;
-        console.log(data, 'data');
-        console.log(data.paid, 'paid');
-
         let walletData = {
           payment: data.amount / 100,
           fare: 0,
           wallet: data.amount / 100,
           date: new Date(),
         };
-
         let id = auth().currentUser.uid;
         firestore()
           .collection('wallet')
@@ -85,86 +74,7 @@ function PassengerCheckOutScreen({navigation, route}) {
       .catch(error => {
         ToastAndroid.show('error', ToastAndroid.SHORT);
       });
-
-    // const response = await fetch('http:192.168.100.45:3000/api/dopayment', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: {
-    //     amount: 1000, // Amount in cents
-    //     token: {
-    //       number: "4242 4242 4242 4242",
-    //       exp_month: 11,
-    //       exp_year: 2022,
-    //       cvc : '123'
-    //     },
-    //   }
-    // }).then((res)=>{
-    //   console.log(res)
-    // }).catch((error)=>{
-    //   console.log(error)
-    // })
-
-    // axios.post("https://us-central1-ultrarydes.cloudfunctions.net/stripe").then((res)=>{
-    //   console.log(res)
-    // }).catch((error)=>{
-    //   console.log(error)
-    // })
-
-    // let data = JSON.stringify({
-    //   type: 'Card',
-    //   billingDetails: {
-    //     email: 'jane.doe@example.com',
-    //     name: 'Jane Doe',
-    //   },
-    //   card: {
-    //     number: '4242 4242 4242 4242',
-    //     expMonth: 4,
-    //     expYear: 2023,
-    //     cvc: "123",
-    //   },
-    // })
-
-    // const { error, paymentMethod } = await confirmPayment(data);
-
-    // if (error) {
-    //   console.error(error,"error");
-    // } else {
-    //   // Payment succeeded, handle success state
-    //   console.log(paymentMethod,"payment")
-    // }
-
-    // const cardDetails = {
-    //   number: '4242424242424242',
-    //   expMonth: 11,
-    //   expYear: 23,
-    //   cvc: '123',
-    // };
-
-    // const paymentMethod = await stripe.createPaymentMethod({
-    //   type: 'card',
-    //   card: cardDetails,
-    // });
-
-    // const paymentIntent = await stripe.confirmPayment({
-    //   paymentMethodId: paymentMethod.id,
-    //   amount: 1000,
-    //   currency: 'usd',
-    //   confirm: true,
-    // });
-
-    // if (paymentIntent.status === 'succeeded') {
-    //   console.log('Payment succeeded!');
-    // } else if (paymentIntent.status === 'requires_action') {
-    //   console.log('Payment requires additional action to complete.');
-    // } else {
-    //   console.log('Payment failed.');
-    // }
   };
-
-  console.log(selectedData, 'selected');
-
   return (
     <View style={{height: '100%'}}>
       <View style={styles.headerContainer}>

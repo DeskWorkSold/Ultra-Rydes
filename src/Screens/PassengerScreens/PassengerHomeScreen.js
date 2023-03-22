@@ -60,6 +60,7 @@ export default function PassengerHomeScreen({navigation}) {
   const [bookingData, setBookingData] = useState([]);
   const [result, setResult] = useState();
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
+  const [wallet, setWallet] = useState(null);
   const [bidFare, setBidFare] = useState(null);
   const [driverArrive, setDriverArrive] = useState({
     pickupLocation: false,
@@ -86,11 +87,10 @@ export default function PassengerHomeScreen({navigation}) {
   ] = useState(false);
   const [driverRatingStar, setDriverRatingStar] = useState(0);
   const [carRatingStar, setCarRatingStar] = useState(0);
-  const [paymentByPassenger, setPaymentByPassenger] = useState(0);
+  const [tipAmount, setTipAmount] = useState('');
   const [feedBack, setFeedBack] = useState('');
   const [showFeedBackModal, setShowFeedBackModal] = useState(false);
   const [cancelRide, setCancelRide] = useState(false);
-  const [wallet, setWallet] = useState(null);
 
   const [location, setLocation] = useState({
     pickupCords: route.params ? route.params.passengerData.pickupCords : null,
@@ -217,6 +217,33 @@ export default function PassengerHomeScreen({navigation}) {
         });
     }
   };
+
+  const getWalletAmount = () => {
+    const id = auth().currentUser.uid;
+
+    firestore()
+      .collection('wallet')
+      .doc(id)
+      .get()
+      .then(doc => {
+        if (doc._exists) {
+          let wallet = null;
+          let data = doc._data.wallet;
+
+          data &&
+            data.length > 0 &&
+            data.map((e, i) => {
+              wallet = wallet + Number(e.wallet);
+            });
+
+          setWallet(wallet);
+        }
+      });
+  };
+
+  useEffect(() => {
+    getWalletAmount();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -424,6 +451,8 @@ export default function PassengerHomeScreen({navigation}) {
     });
   };
 
+  console.log(wallet, 'wallet');
+
   const getPickUpAndDropOffAddress = () => {
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
     Geocoder.from(pickupCords.latitude, pickupCords.longitude)
@@ -441,34 +470,7 @@ export default function PassengerHomeScreen({navigation}) {
       .catch(error => console.warn(error));
   };
 
-  const getWalletAmount = () => {
-    const id = auth().currentUser.uid;
-
-    firestore()
-      .collection('wallet')
-      .doc(id)
-      .get()
-      .then(doc => {
-        if (doc._exists) {
-          let wallet = null;
-          let data = doc._data.wallet;
-
-          data &&
-            data.length > 0 &&
-            data.map((e, i) => {
-              wallet = wallet + Number(e.wallet);
-            });
-
-          setWallet(wallet);
-        }
-      });
-  };
-
-  useEffect(() => {
-    getWalletAmount();
-  }, []);
-
-  const checkValidation = async () => {
+  const checkValidation = () => {
     if (Object.keys(pickupCords).length === 0) {
       ToastAndroid.show('Pickup Cords cannot be empty', ToastAndroid.SHORT);
       return false;
@@ -488,20 +490,20 @@ export default function PassengerHomeScreen({navigation}) {
       return;
     }
 
-    if (bidFare && bidFare > wallet) {
-      ToastAndroid.show(
-        "You don't have enough wallet amount",
-        ToastAndroid.SHORT,
-      );
-      return false;
-    }
-    if (fare && fare > wallet) {
-      ToastAndroid.show(
-        "You don't have enough wallet amount",
-        ToastAndroid.SHORT,
-      );
-      return false;
-    }
+    // if (bidFare && bidFare > wallet) {
+    //   ToastAndroid.show(
+    //     "You don't have enough wallet amount",
+    //     ToastAndroid.SHORT,
+    //   );
+    //   return false;
+    // }
+    // if (fare && fare > wallet) {
+    //   ToastAndroid.show(
+    //     "You don't have enough wallet amount",
+    //     ToastAndroid.SHORT,
+    //   );
+    //   return false;
+    // }
 
     if (!bidFare && !data) {
       let id = auth().currentUser.uid;
@@ -836,7 +838,6 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const bookingComplete = () => {
-    console.log(feedBack, 'feedback');
     if (!feedBack) {
       ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
     } else {
@@ -845,12 +846,11 @@ export default function PassengerHomeScreen({navigation}) {
         data.passengerData && data.passengerData.bidFare
           ? data.passengerData.bidFare
           : data.passengerData.fare;
-      let remainingWallet = 0 - Number(totalFare);
-
+      let remainingWallet = 0 - Number(totalFare) - tipAmount;
       let sendWalletData = {
-        payment: 0,
         fare: totalFare,
         wallet: remainingWallet.toFixed(2),
+        tip: tipAmount,
         date: new Date(),
       };
       firestore()
@@ -869,14 +869,37 @@ export default function PassengerHomeScreen({navigation}) {
           console.log(error);
         });
 
+      let driverWallet = {
+        tip: tipAmount,
+        fare: 0,
+        date: new Date(),
+        withdraw: 0,
+        remainingWallet: tipAmount,
+      };
+      firestore()
+        .collection('driverWallet')
+        .doc(route.params.driverData.id)
+        .set(
+          {
+            driverWallet: firestore.FieldValue.arrayUnion(driverWallet),
+          },
+          {merge: true},
+        )
+        .then(res => {
+          console.log('driver Wallet successfully updated');
+        })
+        .catch(error => {
+          console.log(error);
+        });
+
       let myData = {
         booking: 'complete',
         passengerData: route.params.passengerData,
         driverData: route.params.driverData,
         carRating: carRatingStar,
         driverRating: driverRatingStar,
+        tip: tipAmount,
         feedBack: feedBack,
-        payment: paymentByPassenger,
         date: new Date(),
       };
       firestore()
@@ -947,24 +970,21 @@ export default function PassengerHomeScreen({navigation}) {
                   $
                 </Text>
               </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {
-                    marginTop: 0,
-                    paddingHorizontal: 2,
-                    marginHorizontal: 5,
-                    fontWeight: '500',
-                    fontSize: 14,
-                    alignSelf: 'flex-start',
-                  },
-                ]}
-              >
-                Your Payment Amount:{' '}
-                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  {paymentByPassenger}$
-                </Text>
-              </Text>
+
+              <TextInput
+                placeholder="Enter Tip Amount $"
+                placeholderTextColor={Colors.black}
+                keyboardType={'number-pad'}
+                style={{
+                  backgroundColor: Colors.white,
+                  width: '50%',
+                  textAlign: 'center',
+                  borderRadius: 10,
+                  marginBottom: 5,
+                  color: Colors.black,
+                }}
+                onChangeText={setTipAmount}
+              />
 
               <Text
                 style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}
@@ -1040,12 +1060,7 @@ export default function PassengerHomeScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [
-    driverArriveAtdropoffLocation,
-    driverRatingStar,
-    carRatingStar,
-    paymentByPassenger,
-  ]);
+  }, [driverArriveAtdropoffLocation, driverRatingStar, carRatingStar]);
 
   console.log(bookingData, 'booking');
 
@@ -1154,7 +1169,7 @@ export default function PassengerHomeScreen({navigation}) {
         }}
       />
     );
-  }, [selectedDriver, data, selectedDriverLocation]);
+  }, [selectedDriver, data]);
   // console.log(passengerData,"passenger")
 
   const cancelRideByPassenger = () => {

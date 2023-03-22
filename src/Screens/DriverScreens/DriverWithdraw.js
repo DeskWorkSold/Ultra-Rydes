@@ -5,50 +5,50 @@ import Colors from '../../Constants/Colors';
 import Icon from 'react-native-vector-icons/AntDesign';
 import CustomHeader from '../../Components/CustomHeader';
 import {FlatList} from 'react-native';
-function DepositDataScreen({route, navigation}) {
+function DriverWithdrawScreen ({route, navigation}) {
   const [allWalletData, setAllWalletData] = useState(true);
 
   let data = route.params.data;
 
   let {allData, monthlyData} = data;
 
-  const renderDepositData = ({item, index}) => {
+  console.log(data,"dataaaaa")
+  
+  const renderDepositData  = ({item, index}) => {
     let date = item.date.toDate().toString().slice(0, 15);
 
-    if (item && item.fare) {
-      return (
-        <View>
-          <TouchableOpacity
-            style={{
-              alignItems: 'flex-start',
-              width: '100%',
-              paddingHorizontal: 30,
-              paddingVertical: 5,
-              borderBottomWidth: 1,
-              borderColor: Colors.primary,
-            }}>
-            {/* Date is mentioned Here */}
-            <Text style={[styles.text, {marginTop: 5}]}>{date}</Text>
-            <Text
-              style={[
-                styles.text,
-                {paddingTop: 5, marginBottom: 5, fontSize: 14},
-              ]}>
-              Fare:{' '}
-              <Text style={{color: Colors.secondary}}> {item.fare}$ </Text>
-            </Text>
-            <Text
-              style={[
-                styles.text,
-                {paddingTop: 5, marginBottom: 5, fontSize: 14},
-              ]}>
-              Tip:{' '}
-              <Text style={{color: Colors.secondary}}> {item.tip}$ </Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
+
+    if(item.withdraw){
+
+
+
+    return (
+      <View>
+        <TouchableOpacity
+          style={{
+            alignItems: 'flex-start',
+            width: '100%',
+            paddingHorizontal: 30,
+            paddingVertical: 5,
+            borderBottomWidth: 1,
+            borderColor: Colors.primary,
+          }}
+        >
+          {/* Date is mentioned Here */}
+          <Text style={[styles.text, {marginTop: 5}]}>{date}</Text>
+          <Text
+            style={[
+              styles.text,
+              {paddingTop: 5, marginBottom: 5, fontSize: 14},
+            ]}
+          >
+            Withdraw:
+            <Text style={{color: Colors.secondary}}> {item.withdraw}$ </Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+}
   };
 
   return (
@@ -71,15 +71,17 @@ function DepositDataScreen({route, navigation}) {
             alignItems: 'center',
             borderBottomColor: Colors.black,
             borderBottomWidth: 3,
-          }}>
+          }}
+        >
           <Text
             style={{
               color: Colors.secondary,
               fontSize: 32,
               padding: 20,
               fontWeight: '600',
-            }}>
-            Spents Details
+            }}
+          >
+            Withdraw Details
           </Text>
 
           <TouchableOpacity
@@ -87,12 +89,14 @@ function DepositDataScreen({route, navigation}) {
               flexDirection: 'row',
               alignItems: 'center',
             }}
-            onPress={() => setAllWalletData(allWalletData ? false : true)}>
+            onPress={() => setAllWalletData(allWalletData ? false : true)}
+          >
             <Text
               style={{
                 color: Colors.black,
                 paddingRight: 5,
-              }}>
+              }}
+            >
               {allWalletData ? 'All Data' : 'This Month'}
             </Text>
             <TouchableOpacity>
@@ -110,7 +114,7 @@ function DepositDataScreen({route, navigation}) {
   );
 }
 
-export default DepositDataScreen;
+export default DriverWithdrawScreen;
 
 const styles = StyleSheet.create({
   headerContainer: {
