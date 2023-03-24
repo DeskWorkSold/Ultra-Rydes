@@ -30,6 +30,7 @@ import {LogBox} from 'react-native';
 import {
   locationPermission,
   getCurrentLocation,
+  NotificationPermission,
 } from '../../Helper/HelperFunction';
 import auth from '@react-native-firebase/auth';
 import * as geolib from 'geolib';
@@ -42,7 +43,8 @@ import {useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
 import {Linking} from 'react-native';
-
+import messaging from '@react-native-firebase/messaging';
+import axios from 'axios';
 export default function PassengerHomeScreen({navigation}) {
   let route = useRoute();
   const [dummyDataCat, setDummyDataCat] = useState('');
@@ -241,8 +243,82 @@ export default function PassengerHomeScreen({navigation}) {
       });
   };
 
+  const getNotificationPermission = async () => {
+    //   let token = await NotificationPermission()
+    // console.log(token,"tokeeen")
+
+    //   const fcmToken = await messaging().getToken();
+    // const notification = {
+    //   title: 'Your ride has arrived',
+    //   body: 'Your driver has arrived at your location.',
+    // };
+    // const message = {
+    //   notification,
+    //   token: fcmToken,
+    //   android: {
+    //     priority: 'high',
+    //     notification: {
+    //       sound: 'default',
+    //       tag: 'my-tag',
+    //       click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    //     },
+    //   },
+    //   apns: {
+    //     payload: {
+    //       aps: {
+    //         sound: 'default',
+    //       },
+    //     },
+    //   },
+    //   webpush: {
+    //     headers: {
+    //       TTL: '86400',
+    //     },
+    //   },
+    //   // Add the server key below
+    //   data: {
+    //     serverKey: 'AAAApuKg0tA:APA91bHOO2IbbnnFhrV5s-ZsGTQQR1ltgXcGtL74enNjBwgsC_LlqWXB-Zketf6Eg1uTqPOYF3O4er_XM3QA_RqCjU4uO-znlKzxhXmgSG_1ElMKYiXXh_wZNn5S6c9tkYzURIZIooxA',
+    //   },
+    // };
+    // console.log(message,"message")
+
+    // await messaging().send(message);
+
+    let id = auth().currentUser.uid;
+
+    messaging()
+      .hasPermission()
+      .then(enabled => {
+        if (enabled) {
+          messaging()
+            .getToken()
+            .then(fcmToken => {
+              if (fcmToken) {
+                firestore()
+                  .collection('token')
+                  .doc(id)
+                  .set({
+                    token: fcmToken,
+                  })
+                  .then(() => {
+                    console.log('token succssfully saved');
+                  })
+                  .catch(error => {
+                    console.log(error);
+                  });
+              } else {
+                console.log("user doesn't have a device token yet");
+              }
+            });
+        } else {
+          console.log('no');
+        }
+      });
+  };
+
   useEffect(() => {
     getWalletAmount();
+    getNotificationPermission();
   }, []);
 
   useEffect(() => {
@@ -469,7 +545,6 @@ export default function PassengerHomeScreen({navigation}) {
       })
       .catch(error => console.warn(error));
   };
-
   const checkValidation = () => {
     if (Object.keys(pickupCords).length === 0) {
       ToastAndroid.show('Pickup Cords cannot be empty', ToastAndroid.SHORT);
@@ -482,28 +557,25 @@ export default function PassengerHomeScreen({navigation}) {
       );
       return false;
     }
-
     let flag = dummyDataCat.some((e, i) => e.selected);
-
     if (!flag) {
       ToastAndroid.show('Kindly select Car type', ToastAndroid.SHORT);
       return;
     }
-
-    // if (bidFare && bidFare > wallet) {
-    //   ToastAndroid.show(
-    //     "You don't have enough wallet amount",
-    //     ToastAndroid.SHORT,
-    //   );
-    //   return false;
-    // }
-    // if (fare && fare > wallet) {
-    //   ToastAndroid.show(
-    //     "You don't have enough wallet amount",
-    //     ToastAndroid.SHORT,
-    //   );
-    //   return false;
-    // }
+    if (bidFare && bidFare > (bidFare * 110) / 100) {
+      ToastAndroid.show(
+        "You don't have enough wallet amount",
+        ToastAndroid.SHORT,
+      );
+      return false;
+    }
+    if (fare && fare > wallet) {
+      ToastAndroid.show(
+        "You don't have enough wallet amount",
+        ToastAndroid.SHORT,
+      );
+      return false;
+    }
 
     if (!bidFare && !data) {
       let id = auth().currentUser.uid;
@@ -1146,7 +1218,12 @@ export default function PassengerHomeScreen({navigation}) {
   const getViewLocation = useCallback(() => {
     return (
       <MapViewDirections
-        origin={selectedDriverLocation}
+        origin={
+          selectedDriverLocation.pickupCords &&
+          selectedDriverLocation.dropLocationCords
+            ? selectedDriverLocation
+            : selectedDriver.currentLocation
+        }
         destination={
           data && data.passengerData
             ? data.passengerData.pickupCords

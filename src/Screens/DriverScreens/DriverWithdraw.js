@@ -1,10 +1,11 @@
 import React from 'react';
 import {useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, ScrollViewBase} from 'react-native';
 import Colors from '../../Constants/Colors';
 import Icon from 'react-native-vector-icons/AntDesign';
 import CustomHeader from '../../Components/CustomHeader';
 import {FlatList} from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 function DriverWithdrawScreen ({route, navigation}) {
   const [allWalletData, setAllWalletData] = useState(true);
 
@@ -53,6 +54,7 @@ function DriverWithdrawScreen ({route, navigation}) {
 
   return (
     <View>
+    <ScrollView>
       <View style={styles.headerContainer}>
         <CustomHeader
           iconname={'arrow-back'}
@@ -110,6 +112,7 @@ function DriverWithdrawScreen ({route, navigation}) {
           keyExtractor={(item, i) => i}
         />
       </View>
+      </ScrollView>
     </View>
   );
 }

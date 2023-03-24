@@ -18,8 +18,7 @@ import {getPreciseDistance} from 'geolib';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Icon from 'react-native-vector-icons/AntDesign';
-import { BackHandler } from 'react-native';
-
+import {BackHandler} from 'react-native';
 
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
@@ -38,7 +37,7 @@ export default function PassengerFindRide({navigation, route}) {
         .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
           let data = querySnapshot.data();
-          
+
           if (
             data &&
             data.bidFare &&
@@ -78,8 +77,7 @@ export default function PassengerFindRide({navigation, route}) {
       setDriverData([]);
       setRequest(true);
     }
-  }, []);
-
+  }, [route.params]);
 
   useEffect(() => {
     if (request) {
@@ -102,13 +100,18 @@ export default function PassengerFindRide({navigation, route}) {
     }
   }, [request]);
 
-
   const checkRequestStatus = () => {
-    if (request && !passengerData.bidFare && selectedDriver && !passengerData?.rideCancelByPassenger) {
+    if (
+      request &&
+      !passengerData.bidFare &&
+      selectedDriver &&
+      !passengerData?.rideCancelByPassenger
+    ) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
-        .get().then(querySnapshot => {
+        .get()
+        .then(querySnapshot => {
           let data = querySnapshot.data();
           if (
             data &&
@@ -127,7 +130,7 @@ export default function PassengerFindRide({navigation, route}) {
                 screen: 'PassengerHomeScreen',
                 params: {
                   passengerData: passengerData,
-                  driverData : selectedDriver,
+                  driverData: selectedDriver,
                 },
               });
             } else if (
@@ -182,7 +185,7 @@ export default function PassengerFindRide({navigation, route}) {
 
       return () => clearInterval(interval);
     }
-  }, [request,selectedDriver]);
+  }, [request, selectedDriver]);
 
   const getDriverData = async () => {
     /// GET ALL DRIVERS
@@ -201,54 +204,55 @@ export default function PassengerFindRide({navigation, route}) {
             driverNotAvailable.some((e, i) => {
               return e == myDriverData.id;
             });
-              console.log(driverRequestedButNotRespond,myDriverData.id,"idddddd")
-              console.log(driverNotAvailable,"notAvailable")
-          
-            let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
-              return e.carName;
+          console.log(driverRequestedButNotRespond, myDriverData.id, 'idddddd');
+          console.log(driverNotAvailable, 'notAvailable');
+
+          let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
+            return e.carName;
+          });
+
+          let selectedCar = selectedVehicleName[0];
+          let flag = '';
+          if (myDriverData && myDriverData.vehicleDetails) {
+            flag = selectedCar == myDriverData.vehicleDetails.vehicleCategory;
+          }
+          let mileDistance = '';
+          if (
+            myDriverData &&
+            myDriverData.currentLocation &&
+            myDriverData.status == 'online' &&
+            flag
+          ) {
+            let dis = getPreciseDistance(
+              {
+                latitude: passengerData.pickupCords.latitude,
+                longitude: passengerData.pickupCords.longitude,
+              },
+              {
+                latitude: myDriverData.currentLocation.latitude,
+                longitude: myDriverData.currentLocation.longitude,
+              },
+            );
+            mileDistance = (dis / 1609.34).toFixed(2);
+          }
+
+          let isInlined =
+            inlineDriver &&
+            inlineDriver.filter((e, i) => {
+              console.log(e, 'eeee');
+              if (e == myDriverData.id) {
+                return 'true';
+              }
             });
 
-            let selectedCar = selectedVehicleName[0];
-            let flag = '';
-            if (myDriverData && myDriverData.vehicleDetails) {
-              flag = selectedCar == myDriverData.vehicleDetails.vehicleCategory;
-            }
-            let mileDistance = '';
-            if (
-              myDriverData &&
-              myDriverData.currentLocation &&
-              myDriverData.status == 'online' &&
-              flag
-            ) {
-              let dis = getPreciseDistance(
-                {
-                  latitude: passengerData.pickupCords.latitude,
-                  longitude: passengerData.pickupCords.longitude,
-                },
-                {
-                  latitude: myDriverData.currentLocation.latitude,
-                  longitude: myDriverData.currentLocation.longitude,
-                },
-              );
-              mileDistance = (dis / 1609.34).toFixed(2);
-            }
-
-            let isInlined =
-              inlineDriver &&
-              inlineDriver.filter((e, i) => {
-                console.log(e, 'eeee');
-                if (e == myDriverData.id) {
-                  return 'true';
-                }
-              });
-
-            isInlined = isInlined[0];
-            if (!driverRequestedButNotRespond) {
+          isInlined = isInlined[0];
+          if (!driverRequestedButNotRespond) {
             if (
               myDriverData.status == 'online' &&
               mileDistance <= 3 &&
               flag &&
-              !isInlined && !driverRequestedButNotRespond
+              !isInlined &&
+              !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
@@ -258,7 +262,8 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance > 3 &&
               mileDistance < 5 &&
               flag &&
-              !isInlined && !driverRequestedButNotRespond
+              !isInlined &&
+              !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
@@ -268,7 +273,8 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance < 10 &&
               mileDistance > 5 &&
               flag &&
-              !isInlined && !driverRequestedButNotRespond
+              !isInlined &&
+              !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
@@ -278,7 +284,8 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance < 15 &&
               mileDistance > 10 &&
               flag &&
-              !isInlined && !driverRequestedButNotRespond
+              !isInlined &&
+              !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
@@ -288,7 +295,8 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance < 20 &&
               mileDistance > 15 &&
               flag &&
-              !isInlined && !driverRequestedButNotRespond
+              !isInlined &&
+              !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
@@ -297,7 +305,8 @@ export default function PassengerFindRide({navigation, route}) {
               myDriverData.status == 'online' &&
               mileDistance < 25 &&
               mileDistance > 20 &&
-              !isInlined && !driverRequestedButNotRespond
+              !isInlined &&
+              !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
@@ -308,26 +317,29 @@ export default function PassengerFindRide({navigation, route}) {
       });
   };
 
-const deleteBookingData = () => {
-  firestore().collection("Request").doc(passengerData.id).delete().then(()=>{
-    navigation.navigate('AskScreen');
-  }).catch((error)=>{
-    console.log(error,"error")
-  })
-}
+  const deleteBookingData = () => {
+    firestore()
+      .collection('Request')
+      .doc(passengerData.id)
+      .delete()
+      .then(() => {
+        navigation.navigate('AskScreen');
+      })
+      .catch(error => {
+        console.log(error, 'error');
+      });
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
-
-        
         return (
           <TouchableOpacity
             style={styles.cancelTextContainer}
             onPress={() => {
-              deleteBookingData()
-              
-            }}>
+              deleteBookingData();
+            }}
+          >
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
@@ -422,29 +434,32 @@ const deleteBookingData = () => {
     }
   };
 
-  useEffect(()=>{
-    if(!passengerData.bidFare){
-    getDriverData()
-  }
-  },[driverNotAvailable])
+  useEffect(() => {
+    if (!passengerData.bidFare) {
+      getDriverData();
+    }
+  }, [driverNotAvailable]);
 
   useEffect(() => {
+    let interval;
     if (request && !passengerData.bidFare) {
-      const interval = setInterval(() => {
-        
-          setDriverNotAvailable([...driverNotAvailable, selectedDriver.id]);
-          
-          setRequest(false);
-          ToastAndroid.show(
-            'This driver is not available right now',
-            ToastAndroid.SHORT,
-          );
-        
+      interval = setInterval(() => {
+        setDriverNotAvailable([...driverNotAvailable, selectedDriver.id]);
+
+        setRequest(false);
+        ToastAndroid.show(
+          'This driver is not available right now',
+          ToastAndroid.SHORT,
+        );
       }, 60000);
 
       return () => clearInterval(interval);
     }
-  }, [request,selectedDriver]);
+    
+    if(passengerData.bidFare){
+      return () => clearInterval(interval);
+    }
+  }, [request, selectedDriver,route.params]);
 
   const rejectOffer = rejectedDriver => {
     if (rejectedDriver && !passengerData.bidFare) {
@@ -458,68 +473,68 @@ const deleteBookingData = () => {
         .collection('Request')
         .doc(passengerData.id)
         .onSnapshot(querySnapshot => {
-            if(querySnapshot.exists){
-          let data = querySnapshot.data();
-          
-          if (
-            data &&
-            data.myDriversData &&
-            !Array.isArray(data.myDriversData)
-          ) {
-            data.myDriversData.selected = false;
-            data.myDriversData.requestStatus = 'rejected';
+          if (querySnapshot.exists) {
+            let data = querySnapshot.data();
 
-            firestore()
-              .collection('Request')
-              .doc(passengerData.id)
-              .update({
-                myDriversData: data.myDriversData,
-              })
-              .then(() => {
-                setDriverData(
-                  driverData.filter((e, i) => {
-                    return e.id !== rejectedDriver.id;
-                  }),
-                );
-              })
-              .catch(error => {
-                console.log(error);
+            if (
+              data &&
+              data.myDriversData &&
+              !Array.isArray(data.myDriversData)
+            ) {
+              data.myDriversData.selected = false;
+              data.myDriversData.requestStatus = 'rejected';
+
+              firestore()
+                .collection('Request')
+                .doc(passengerData.id)
+                .update({
+                  myDriversData: data.myDriversData,
+                })
+                .then(() => {
+                  setDriverData(
+                    driverData.filter((e, i) => {
+                      return e.id !== rejectedDriver.id;
+                    }),
+                  );
+                })
+                .catch(error => {
+                  console.log(error);
+                });
+            } else if (
+              data &&
+              data.myDriversData &&
+              Array.isArray(data.myDriversData)
+            ) {
+              myDriverData = data.myDriversData.map((e, i) => {
+                if (e.id == rejectedDriver.id) {
+                  return {
+                    ...e,
+                    selected: false,
+                    requestStatus: (e.requestStatus = 'rejected'),
+                  };
+                } else {
+                  return e;
+                }
               });
-          } else if (
-            data &&
-            data.myDriversData &&
-            Array.isArray(data.myDriversData)
-          ) {
-            myDriverData = data.myDriversData.map((e, i) => {
-              if (e.id == rejectedDriver.id) {
-                return {
-                  ...e,
-                  selected: false,
-                  requestStatus: (e.requestStatus = 'rejected'),
-                };
-              } else {
-                return e;
-              }
-            });
-            firestore()
-              .collection('Request')
-              .doc(passengerData.id)
-              .update({
-                myDriversData: myDriverData,
-              })
-              .then(() => {
-                setRequest(true);
-                setDriverData(
-                  driverData.filter((e, i) => {
-                    return e.id !== rejectedDriver.id;
-                  }),
-                );
-              })
-              .catch(error => {
-                console.log(error);
-              });
+              firestore()
+                .collection('Request')
+                .doc(passengerData.id)
+                .update({
+                  myDriversData: myDriverData,
+                })
+                .then(() => {
+                  setRequest(true);
+                  setDriverData(
+                    driverData.filter((e, i) => {
+                      return e.id !== rejectedDriver.id;
+                    }),
+                  );
+                })
+                .catch(error => {
+                  console.log(error);
+                });
+            }
           }
-        }
         });
     }
   };
@@ -539,16 +554,18 @@ const deleteBookingData = () => {
 
   const rideRequests = ({item, index}) => {
     let data = route.params;
-    
+
     if (data.bidFare) {
       data.selectedCar[0].carMiles.map((e, i) => {
         if (data.distance >= e.rangeMin && data.distance <= e.rangeMax) {
           let serviceCharges = e.serviceCharge;
           let creditCardFee = (Number(data.fare) * 5) / 100;
           let totalCharges = serviceCharges + creditCardFee;
-          item.bidFare = (Number(data.bidFare) +  Number(totalCharges)).toFixed(2);
+          item.bidFare = (Number(data.bidFare) + Number(totalCharges)).toFixed(
+            2,
+          );
           console.log(totalCharges, 'total');
-          console.log(item.bidFare,"bidFare")
+          console.log(item.bidFare, 'bidFare');
         }
       });
     }
@@ -570,69 +587,73 @@ const deleteBookingData = () => {
         }
       });
 
-      let flag = driverNotAvailable.some((e,i)=> e == item.id)
+    let flag = driverNotAvailable.some((e, i) => e == item.id);
 
     return (
-     !flag && <View style={styles.card}>
-        <MapViewDirections
-          origin={item.currentLocation}
-          destination={passengerData.pickupCords}
-          apikey={GoogleMapKey.GOOGLE_MAP_KEY}
-          onReady={result => {
-            calculateMinutes(result, item);
-          }}
-        />
-        <View style={styles.innerItemsUpper}>
-          <View style={styles.imgContainer}>
-            <Image
-              source={{uri: item.profilePicture}}
-              resizeMode="cover"
-              style={styles.proPic}
-            />
-            <View>
-              <Text style={styles.vehText}>
-                {item.vehicleDetails.vehicleName}
-              </Text>
-              <Text style={styles.driverNameText}>
-                {item.firstName + item.lastName}
-              </Text>
-              <View style={{flexDirection: 'row'}}>
-                <Text style={[styles.driverNameText, {fontWeight: '800'}]}>
-                  {item.rating}
+      !flag && (
+        <View style={styles.card}>
+          <MapViewDirections
+            origin={item.currentLocation}
+            destination={passengerData.pickupCords}
+            apikey={GoogleMapKey.GOOGLE_MAP_KEY}
+            onReady={result => {
+              calculateMinutes(result, item);
+            }}
+          />
+          <View style={styles.innerItemsUpper}>
+            <View style={styles.imgContainer}>
+              <Image
+                source={{uri: item.profilePicture}}
+                resizeMode="cover"
+                style={styles.proPic}
+              />
+              <View>
+                <Text style={styles.vehText}>
+                  {item.vehicleDetails.vehicleName}
                 </Text>
-                <Icon name="star" size={20} color="yellow" />
+                <Text style={styles.driverNameText}>
+                  {item.firstName + item.lastName}
+                </Text>
+                <View style={{flexDirection: 'row'}}>
+                  <Text style={[styles.driverNameText, {fontWeight: '800'}]}>
+                    {item.rating}
+                  </Text>
+                  <Icon name="star" size={20} color="yellow" />
+                </View>
+              </View>
+            </View>
+            <View style={styles.priceContainer}>
+              <View style={{alignItems: 'flex-end'}}>
+                <Text style={styles.priceText}>
+                  {item.bidFare ? Number(item.bidFare) : item.fare}$
+                </Text>
+                <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                  {item.minutes ?? distanceMinutes} minutes away
+                </Text>
+                <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                  {item.distance ?? distanceDifference} miles away
+                </Text>
               </View>
             </View>
           </View>
-          <View style={styles.priceContainer}>
-            <View style={{alignItems: 'flex-end'}}>
-              <Text style={styles.priceText}>{item.bidFare ? Number(item.bidFare) : item.fare}$</Text>
-              <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
-                {item.minutes ?? distanceMinutes} minutes away
-              </Text>
-              <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
-                {item.distance ?? distanceDifference} miles away
-              </Text>
-            </View>
+
+          <View style={styles.btnContainer}>
+            <CustomButton
+              text="Reject"
+              styleContainer={styles.btn}
+              btnTextStyle={styles.btnTextStyle}
+              bgColor
+              onPress={() => rejectOffer(item)}
+            />
+            <CustomButton
+              text="Accept"
+              styleContainer={styles.btn}
+              btnTextStyle={styles.btnTextStyle}
+              onPress={() => AccecptOffer(item)}
+            />
           </View>
         </View>
-
-        <View style={styles.btnContainer}>
-          <CustomButton
-            text="Reject"
-            styleContainer={styles.btn}
-            btnTextStyle={styles.btnTextStyle}
-            bgColor
-            onPress={() => rejectOffer(item)}
-          />
-          <CustomButton
-            text="Accept"
-            styleContainer={styles.btn}
-            btnTextStyle={styles.btnTextStyle}
-            onPress={() => AccecptOffer(item)}
-          />
-        </View>
-      </View>
+      )
     );
   };
 
@@ -656,7 +677,8 @@ const deleteBookingData = () => {
             alignItems: 'center',
             justifyContent: 'center',
             height: '90%',
-          }}>
+          }}
+        >
           <ActivityIndicator color="black" size={100} />
           <Text style={{color: 'black', marginTop: 10}}>
             {' '}

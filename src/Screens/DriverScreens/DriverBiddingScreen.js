@@ -40,6 +40,7 @@ import {useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
 import {Linking, Platform} from 'react-native';
+import axios from 'axios';
 
 export default function DriverBiddingScreen({navigation}) {
   const route = useRoute();
@@ -84,7 +85,6 @@ export default function DriverBiddingScreen({navigation}) {
   const [selectedDriver, setSelectedDriver] = useState(
     route.params.selectedDriver ?? myDriverData,
   );
-  const [pressInInput, setPressInInput] = useState(false);
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
   const LATITUDE_DELTA = 0.04;
@@ -142,6 +142,8 @@ export default function DriverBiddingScreen({navigation}) {
   }, [loading]);
 
   const getLocationUpdates = () => {
+    console.log(route.params, 'parmas');
+
     if (
       !arrive.pickUpLocation &&
       selectedDriver &&
@@ -154,20 +156,16 @@ export default function DriverBiddingScreen({navigation}) {
     ) {
       const dis = getPreciseDistance(
         {
-          latitude: 24.9180271,
-          longitude: 67.0970916,
+          latitude: driverCurrentLocation.latitude,
+          longitude: driverCurrentLocation.longitude,
         },
         {latitude: pickupCords.latitude, longitude: pickupCords.longitude},
       );
 
-      if (dis < 50) {
+      if (dis < 1000) {
         setArrivePickupLocation(true);
       }
     }
-
-    console.log(selectedDriver, 'selected');
-
-    console.log(driverData, 'driverData');
 
     if (
       !arrive.dropOffLocation &&
@@ -180,8 +178,8 @@ export default function DriverBiddingScreen({navigation}) {
     ) {
       const dis = getPreciseDistance(
         {
-          latitude: 24.9180271,
-          longitude: 67.0970916,
+          latitude: driverCurrentLocation.latitude,
+          longitude: driverCurrentLocation.longitude,
         },
         {
           latitude: dropLocationCords.latitude,
@@ -189,7 +187,7 @@ export default function DriverBiddingScreen({navigation}) {
         },
       );
 
-      if (dis < 50) {
+      if (dis < 1000) {
         setArriveDropOffLocation(true);
       }
     }
@@ -299,8 +297,6 @@ export default function DriverBiddingScreen({navigation}) {
         });
     }
   };
-
-  
 
   const checkRequestStatus = async () => {
     if (!selectedDriver) {
@@ -451,7 +447,40 @@ export default function DriverBiddingScreen({navigation}) {
   const sendArriveMessageToPassenger = async () => {
     setArrive({...arrive, pickUpLocation: true});
     setArrivePickupLocation(false);
+    firestore()
+      .collection('token')
+      .doc(passengerData.id)
+      .get()
+      .then(doc => {
+        let token = doc.data().token;
 
+        if (token) {
+          var data = JSON.stringify({
+            notification: {
+              body: 'click to open the app',
+              title: 'Your driver has arrived',
+            },
+            to: token,
+          });
+          let config = {
+            method: 'post',
+            url: 'https://fcm.googleapis.com/fcm/send',
+            headers: {
+              Authorization:
+                'key=AAAApuKg0tA:APA91bHOO2IbbnnFhrV5s-ZsGTQQR1ltgXcGtL74enNjBwgsC_LlqWXB-Zketf6Eg1uTqPOYF3O4er_XM3QA_RqCjU4uO-znlKzxhXmgSG_1ElMKYiXXh_wZNn5S6c9tkYzURIZIooxA',
+              'Content-Type': 'application/json',
+            },
+            data: data,
+          };
+          axios(config)
+            .then(res => {
+              console.log(res);
+            })
+            .catch(error => {
+              console.log(error);
+            });
+        }
+      });
     firestore()
       .collection('Request')
       .doc(passengerData.id)
@@ -569,10 +598,7 @@ export default function DriverBiddingScreen({navigation}) {
       });
   };
 
-  console.log(endRide, 'endRide');
-
   const DropOffModal = useCallback(() => {
-    console.log(input);
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -584,7 +610,7 @@ export default function DriverBiddingScreen({navigation}) {
           }}
         >
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, {height: input ? '70%' : '50%'}]}>
+            <View style={[styles.modalView, {height: '50%'}]}>
               <Text
                 style={[
                   styles.modalText,
@@ -619,12 +645,11 @@ export default function DriverBiddingScreen({navigation}) {
                   },
                 ]}
               >
-                Bill Amount:{' '}
+                Bill Amount:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   {data.bidFare ?? data.fare}$
                 </Text>
               </Text>
-
               <TouchableOpacity
                 style={[
                   styles.button,
@@ -657,7 +682,6 @@ export default function DriverBiddingScreen({navigation}) {
       reasonForCancelRide: driverReasonForCancelRide,
       date: new Date(),
     };
-
     firestore()
       .collection('Request')
       .doc(passengerData.id)
@@ -920,8 +944,6 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
-  console.log(route.params, 'parmass');
-
   const sendRequest = () => {
     if (!selectedDriver) {
       const Userid = route.params.data.id;
@@ -938,10 +960,6 @@ export default function DriverBiddingScreen({navigation}) {
         );
         return;
       }
-
-      console.log(selectedDriver, 'selected');
-      console.log(myData, 'daattttaaaaaaaaaaaaaaaaaa');
-
       if (
         passengerData &&
         !passengerData.requestStatus &&
@@ -962,13 +980,10 @@ export default function DriverBiddingScreen({navigation}) {
             );
 
             try {
-              console.log(data, 'dataaaaa');
               let driverData = driverData ? driverData : myDriverData;
               let myData = JSON.stringify(data);
               AsyncStorage.setItem('driverBooking', myData);
-            } catch (error) {
-              console.log(error);
-            }
+            } catch (error) {}
 
             firestore()
               .collection('inlinedDriver')
@@ -1014,6 +1029,7 @@ export default function DriverBiddingScreen({navigation}) {
       }
     }
   };
+  route.params.driverArrive = false;
 
   const cancelRideByPassenger = () => {
     firestore()
@@ -1021,8 +1037,6 @@ export default function DriverBiddingScreen({navigation}) {
       .doc(passengerData.id)
       .onSnapshot(doc => {
         let data = doc.data();
-        console.log(data, 'dataaa');
-
         if (data && data.rideCancelByPassenger) {
           firestore()
             .collection('inlinedDriver')
@@ -1178,14 +1192,6 @@ export default function DriverBiddingScreen({navigation}) {
                 setLoading(true);
               });
           }
-          // else if (
-          //   data &&
-          //   data.myDriversData &&
-          //   driverPersonalData.id == data.myDriversData.id &&
-          //   !Array.isArray(data.myDriversData)
-          // ) {
-          //   ToastAndroid.show('You have already Requested', ToastAndroid.SHORT);
-          // }
         });
     }
   };
@@ -1233,17 +1239,27 @@ export default function DriverBiddingScreen({navigation}) {
     });
   };
 
-  const rideStartByDriver = async () => {
-    setStartRide(true);
+  const mapRef = useRef();
 
+  const handleZoom = () => {
+    const region = {
+      latitude: driverCurrentLocation.latitude,
+      longitude: driverCurrentLocation.longitude,
+      latitudeDelta: 0.0001,
+      longitudeDelta: 0.0001,
+    };
+    mapRef.current.animateToRegion(region, 1000);
+  };
+
+  const rideStartByDriver = async () => {
     try {
       await AsyncStorage.setItem('startRide', 'Ride has been started');
+      setStartRide(true);
+      handleZoom();
     } catch (error) {
       console.log(error);
     }
   };
-
-  console.log(myDriverData, 'driver');
 
   const getViewLocation = useCallback(() => {
     return (
@@ -1287,11 +1303,6 @@ export default function DriverBiddingScreen({navigation}) {
     await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
   };
 
-  console.log(selectedDriver, 'selected');
-  console.log(route.params);
-
-  const mapRef = useRef();
-
   return loading ? (
     <View
       style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}
@@ -1323,8 +1334,8 @@ export default function DriverBiddingScreen({navigation}) {
             style={StyleSheet.absoluteFill}
             initialRegion={{
               ...pickupCords,
-              latitudeDelta: 0.005,
-              longitudeDelta: 0.001,
+              latitudeDelta: LATITUDE_DELTA,
+              longitudeDelta: LONGITUDE_DELTA,
             }}
           >
             <Marker
@@ -1396,33 +1407,8 @@ export default function DriverBiddingScreen({navigation}) {
           </MapView>
         )}
 
-        {arrive.pickUpLocation ||
-          (route.params.driverArriveAtPickupLocation &&
-            !startRide &&
-            !route.params.startRide &&
-            selectedDriver && (
-              <TouchableOpacity
-                style={{
-                  position: 'absolute',
-                  bottom: 20,
-                  right: 20,
-                  borderWidth: 1,
-                  borderColor: 'black',
-                  padding: 10,
-                  backgroundColor: Colors.secondary,
-                  borderRadius: 10,
-                  paddingHorizontal: 20,
-                }}
-                onPress={() => rideStartByDriver()}
-              >
-                <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
-                  Start Ride
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-        {
-          (arriveDropOffLocation || route.params.arriveDropOffLocation && (
+        {(arrive.pickUpLocation && !startRide) ||
+          (route.params.pickUpLocation && !route.params.startRide && (
             <TouchableOpacity
               style={{
                 position: 'absolute',
@@ -1435,13 +1421,34 @@ export default function DriverBiddingScreen({navigation}) {
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress={() => rideEndByDriver()}
+              onPress={() => rideStartByDriver()}
             >
               <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
-                End Ride
+                Start Ride
               </Text>
             </TouchableOpacity>
           ))}
+
+        {arriveDropOffLocation && !endRide && (
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              right: 20,
+              borderWidth: 1,
+              borderColor: 'black',
+              padding: 10,
+              backgroundColor: Colors.secondary,
+              borderRadius: 10,
+              paddingHorizontal: 20,
+            }}
+            onPress={() => rideEndByDriver()}
+          >
+            <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
+              End Ride
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{position: 'absolute', right: 10, top: 10}}>
           <Text

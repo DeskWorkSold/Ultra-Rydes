@@ -16,9 +16,11 @@ import COLORS from '../../Constants/Colors';
 import firestore from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/AntDesign';
 export default function SettingsPassenger() {
-  const navigation = useNavigation();
+  
 
   const [DriverData, setDriverData] = useState({});
+
+  const navigation = useNavigation()
 
   useEffect(() => {
     let id = auth().currentUser.uid;
@@ -99,7 +101,7 @@ export default function SettingsPassenger() {
           style={styles.button}
           onPress={() => navigation.navigate('driverRulesAndTermsScreen')}>
           <View>
-            <Text style={styles.text}>Rules and Terms</Text>
+            <Text style={styles.text}> Rules and Terms </Text>
           </View>
           <Icon name="right" size={20} color={COLORS.black} />
         </TouchableOpacity>

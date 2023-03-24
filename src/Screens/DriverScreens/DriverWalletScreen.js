@@ -24,6 +24,7 @@ import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import {Linking} from 'react-native';
 import {ActivityIndicator} from 'react-native-paper';
+import {BASE_URI} from '../../Constants/Base_uri';
 
 const CurrentBalanceScreen = ({navigation}) => {
   const [currentwallet, setCurrentWallet] = useState(null);
@@ -60,7 +61,7 @@ const CurrentBalanceScreen = ({navigation}) => {
             setStripeAccountId(true);
             setStripeId(data);
             axios
-              .post('http://192.168.100.45:3000/api/retrieveAccount', {
+              .post(`${BASE_URI}retrieveAccount`, {
                 id: data,
               })
               .then(res => {
@@ -75,6 +76,7 @@ const CurrentBalanceScreen = ({navigation}) => {
               .catch(error => {
                 console.log(error);
               });
+
           }
         }
       });
@@ -91,13 +93,13 @@ const CurrentBalanceScreen = ({navigation}) => {
       .collection('driverWallet')
       .doc(userId)
       .onSnapshot(querySnapshot => {
+        if(querySnapshot._exists){
         let data = querySnapshot.data().driverWallet;
         setAllData(data);
         let date = new Date();
         let currentMonth = date.getMonth();
         let currentYear = date.getFullYear();
         let currentDate = date.getDate();
-
         setMonthlyWalletData(
           data &&
             data.length > 0 &&
@@ -110,12 +112,13 @@ const CurrentBalanceScreen = ({navigation}) => {
               }
             }),
         );
+      }
       });
   };
 
   useEffect(() => {
     getWalletData();
-  }, [amountWithdrawn]);
+  }, []);
 
   const getAmountWithdrawFromWallet = () => {
     let myDepositData = [];
@@ -224,7 +227,7 @@ const CurrentBalanceScreen = ({navigation}) => {
       let currentWalletAmount = earn.total - withdraw.total;
       currentWalletAmount && setCurrentWallet(currentWalletAmount.toFixed(2));
     }
-  }, [earn, withdraw, amountWithdrawn]);
+  }, [earn, withdraw, amountWithdrawn, allWalletData, allData]);
 
   useEffect(() => {
     if (allData && allData.length > 0) {
@@ -235,30 +238,28 @@ const CurrentBalanceScreen = ({navigation}) => {
       getMonthlyAmountEarnFromWallet();
       getMonthlyAmountWithdrawFromWallet();
     }
-  }, [allData, monthlyWalletData, amountWithdrawn]);
+  }, [allData, monthlyWalletData]);
 
   const checkStripeAccount = () => {
     if (!stripeId) {
       let id = auth().currentUser.uid;
-      axios
-        .post('http://192.168.100.45:3000/api/createAccount', driverData)
-        .then(res => {
-          console.log(res.data, 'res');
-          firestore()
-            .collection('DriverstripeAccount')
-            .doc(id)
-            .set(res.data)
-            .then(() => {
-              ToastAndroid.show(
-                'Your account has been created',
-                ToastAndroid.SHORT,
-              );
-              setOpenCreateAccountModal(true);
-            })
-            .catch(error => {
-              console.log(error);
-            });
-        });
+      axios.post(`${BASE_URI}createAccount`, driverData).then(res => {
+        console.log(res.data, 'res');
+        firestore()
+          .collection('DriverstripeAccount')
+          .doc(id)
+          .set(res.data)
+          .then(() => {
+            ToastAndroid.show(
+              'Your account has been created',
+              ToastAndroid.SHORT,
+            );
+            setOpenCreateAccountModal(true);
+          })
+          .catch(error => {
+            console.log(error);
+          });
+      });
       return;
     }
 
@@ -288,7 +289,7 @@ const CurrentBalanceScreen = ({navigation}) => {
         accountId: stripeId,
       };
       axios
-        .post('http://192.168.100.45:3000/api/tranferPayment', data)
+        .post(`${BASE_URI}tranferPayment`, data)
         .then(res => {
           setLoading(false);
           let data = res.data;
@@ -322,9 +323,7 @@ const CurrentBalanceScreen = ({navigation}) => {
             ToastAndroid.SHORT,
           );
           setAddAmount('');
-          setTimeout(() => {
-            setAmountWithdrawn(!amountWithdrawn);
-          }, 2000);
+          navigation.navigate("AskScreen")
         })
         .catch(error => {
           console.log(error);
@@ -348,10 +347,11 @@ const CurrentBalanceScreen = ({navigation}) => {
       .onSnapshot(querySnapshot => {
         let accountId = querySnapshot.data().id;
         axios
-          .post('http://192.168.100.45:3000/api/accountLink', {id: accountId})
+          .post(`${BASE_URI}accountLink`, {id: accountId})
           .then(res => {
             let data = res.data;
             Linking.openURL(data.data.url);
+            setOpenCreateAccountModal(false)
           })
           .catch(error => {
             console.log(error);

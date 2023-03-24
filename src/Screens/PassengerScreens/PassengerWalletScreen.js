@@ -18,7 +18,7 @@ import {set} from 'react-native-reanimated';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import {ToastAndroid} from 'react-native';
-const CurrentBalanceScreen = ({navigation}) => {
+const CurrentBalanceScreen = ({navigation,route}) => {
   const [currentwallet, setCurrentWallet] = useState(null);
   const [allWalletData, setAllWalletData] = useState(true);
   const [monthlyWalletData, setMonthlyWalletData] = useState([]);
@@ -33,13 +33,19 @@ const CurrentBalanceScreen = ({navigation}) => {
     total: null,
   });
 
+let routeData =  route.params
+console.log(routeData,"data")
+
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
+    console.log(userId,"iddddddddd")
 
     const myWallet = await firestore()
       .collection('wallet')
       .doc(userId)
       .onSnapshot(querySnapshot => {
+        if(querySnapshot.exists)
+        {
         let data = querySnapshot.data().wallet;
         setAllData(data);
         let date = new Date();
@@ -59,12 +65,13 @@ const CurrentBalanceScreen = ({navigation}) => {
               }
             }),
         );
-      });
+      }
+      }); 
   };
 
   useEffect(() => {
     getWalletData();
-  }, []);
+  }, [routeData]);
 
   const getAmountDepositInWallet = () => {
     let myDepositData = [];
@@ -148,11 +155,12 @@ const CurrentBalanceScreen = ({navigation}) => {
   };
 
   useEffect(() => {
-    if (deposit && deposit.total && spent.total) {
-      let currentWalletAmount = deposit.total - spent.total;
+    if (deposit && deposit.total ||  spent.total) {
+      let currentWalletAmount = Number(deposit.total) -Number(spent.total);
+      console.log(currentWalletAmount,"current")
       setCurrentWallet(currentWalletAmount.toFixed(2));
     }
-  }, [deposit, spent]);
+  }, [deposit, spent,routeData,allWalletData]);
 
   useEffect(() => {
     if (allData && allData.length > 0) {
@@ -163,13 +171,14 @@ const CurrentBalanceScreen = ({navigation}) => {
       getMonthlyAmountDepositInWallet();
       getMonthlyAmountSpentFromWallet();
     }
-  }, [allData, monthlyWalletData]);
+  }, [allData, monthlyWalletData,routeData,allWalletData]);
 
   const navigateToPaymentScreen = () => {
     if (!addAmount) {
       ToastAndroid.show('Kindly Enter Deposit Amount', ToastAndroid.SHORT);
     } else {
       navigation.navigate('passengerPaymentMethod', addAmount);
+      setAddAmount(null)
     }
   };
 
@@ -460,6 +469,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                   <TextInput
                     style={[styles.TextInput, {color: COLORS.black}]}
                     placeholder="Enter Deposit Amount"
+                    value={addAmount}
                     keyboardType="numeric"
                     onChangeText={setAddAmount}
                     placeholderTextColor={COLORS.black}

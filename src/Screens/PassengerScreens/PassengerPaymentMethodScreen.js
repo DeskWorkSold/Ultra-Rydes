@@ -20,34 +20,34 @@ function PaymentMethod({navigation, route}) {
     cardHolderName: '',
     cardNumber: null,
     expiryYear: null,
-    expiryMonth : null,
+    expiryMonth: null,
     cvc: null,
   });
 
   let data = route.params;
 
   const [savedCardsData, setSavedCardsData] = useState([
-    {
-      PaymentMethod: 'Credit Card',
-      cardHolderName: 'John R Halton',
-      cardNumber: '5282 3456 7890 1289',
-      cardDate: '09/25',
-      cvc: '1234',
-    },
-    {
-      PaymentMethod: 'Credit Card',
-      cardHolderName: 'John R Halton',
-      cardNumber: '5282 3456 7890 1289',
-      cardDate: '09/25',
-      cvc: '1234',
-    },
-    {
-      PaymentMethod: 'Credit Card',
-      cardHolderName: 'John R Halton',
-      cardNumber: '5282 3456 7890 1289',
-      cardDate: '09/25',
-      cvc: '1234',
-    },
+    // {
+    //   PaymentMethod: 'Credit Card',
+    //   cardHolderName: 'John R Halton',
+    //   cardNumber: '5282 3456 7890 1289',
+    //   cardDate: '09/25',
+    //   cvc: '1234',
+    // },
+    // {
+    //   PaymentMethod: 'Credit Card',
+    //   cardHolderName: 'John R Halton',
+    //   cardNumber: '5282 3456 7890 1289',
+    //   cardDate: '09/25',
+    //   cvc: '1234',
+    // },
+    // {
+    //   PaymentMethod: 'Credit Card',
+    //   cardHolderName: 'John R Halton',
+    //   cardNumber: '5282 3456 7890 1289',
+    //   cardDate: '09/25',
+    //   cvc: '1234',
+    // },
   ]);
 
   const getPassengerSavedCards = () => {
@@ -56,20 +56,19 @@ function PaymentMethod({navigation, route}) {
       .collection('passengerCards')
       .doc(id)
       .onSnapshot(querySnapshot => {
-        if(querySnapshot.exists){
-        let data = querySnapshot.data().savedCards;
-        data =
-          data &&
-          data.length > 0 &&
-          data.map((e, i) => {
-            e.PaymentMethod = 'Credit Card';
-            return e;
-          });
+        if (querySnapshot.exists) {
+          let data = querySnapshot.data().savedCards;
+          data =
+            data &&
+            data.length > 0 &&
+            data.map((e, i) => {
+              e.PaymentMethod = 'Credit Card';
+              return e;
+            });
 
-        setSavedCardsData(data);
-      }
+          setSavedCardsData(data);
+        }
       });
-
   };
 
   useEffect(() => {
@@ -78,7 +77,7 @@ function PaymentMethod({navigation, route}) {
 
   const getCardData = () => {
     let values = Object.values(cardDetail);
-    console.log(values,"bales")
+    console.log(values, 'bales');
     let flag = values.some(e => e == '');
     if (flag) {
       ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
@@ -132,7 +131,21 @@ function PaymentMethod({navigation, route}) {
     );
   };
 
-  console.log(cardDetail, 'details');
+  const routeToCheckOutScreen = () => {
+    console.log(savedCardsData, 'saved');
+
+    let flag = savedCardsData.some((e, i) => e.selected);
+
+    console.log(flag, 'flag');
+    if (!flag) {
+      ToastAndroid.show('Kindly selected card for payment', ToastAndroid.SHORT);
+      return;
+    }
+    navigation.navigate('passengerCheckoutScreen', {
+      cardData: savedCardsData,
+      amount: route.params,
+    });
+  };
 
   return (
     <View style={{height: '100%'}}>
@@ -155,7 +168,8 @@ function PaymentMethod({navigation, route}) {
         )}
         {!savedCardsData || savedCards ? (
           <View
-            style={{flexDirection: 'row', alignItems: 'center', marginTop: 5}}>
+            style={{flexDirection: 'row', alignItems: 'center', marginTop: 5}}
+          >
             <Text
               style={[
                 !savedCards ? styles.text : styles.Heading,
@@ -165,7 +179,8 @@ function PaymentMethod({navigation, route}) {
                   marginLeft: 10,
                   fontWeight: '400',
                 },
-              ]}>
+              ]}
+            >
               {savedCards
                 ? 'Saved Cards'
                 : 'Add a card to proceed payment through credit/debit card'}
@@ -188,7 +203,6 @@ function PaymentMethod({navigation, route}) {
             cardHolderName="Add a new Card"
             cardNumber="XXXX XXXX XXXX XXXX"
             cardDate="9/25"
-
             source={require('../../Assets/Images/masterCard.png')}
           />
         )}
@@ -242,7 +256,7 @@ function PaymentMethod({navigation, route}) {
                 Expiry Month
               </Text>
               <TextInput
-              keyboardType='numeric'
+                keyboardType="numeric"
                 onChangeText={e =>
                   setCardDetail({...cardDetail, expiryMonth: e})
                 }
@@ -264,7 +278,7 @@ function PaymentMethod({navigation, route}) {
                 Expiry Year
               </Text>
               <TextInput
-              keyboardType='numeric'
+                keyboardType="numeric"
                 onChangeText={e =>
                   setCardDetail({...cardDetail, expiryYear: e})
                 }
@@ -310,7 +324,7 @@ function PaymentMethod({navigation, route}) {
                     source={require('../../Assets/Images/masterCard.png')}
                     cardHolderName={e.cardHolderName}
                     cardNumber={e.cardNumber}
-                    cardDate={`${e.expiryMonth}/${e.expiryYear}` }
+                    cardDate={`${e.expiryMonth}/${e.expiryYear}`}
                     selected={e?.selected}
                     onPress={() => getSelectedCard(e, i)}
                   />
@@ -325,7 +339,8 @@ function PaymentMethod({navigation, route}) {
             marginTop: 20,
             marginBottom: 10,
             width: '100%',
-          }}>
+          }}
+        >
           {!savedCards && (
             <CustomButton
               styleContainer={{marginRight: 10, width: '90%'}}
@@ -333,16 +348,11 @@ function PaymentMethod({navigation, route}) {
               onPress={() => getCardData()}
             />
           )}
-          {savedCards && savedCardsData && (
+          {savedCards && savedCardsData && savedCardsData.length>0 && (
             <CustomButton
-              styleContainer={{marginRight: 10, width: '90%', marginTop: 290}}
+              styleContainer={{marginRight: 10, width: '90%', marginTop: Dimensions.get("window").height/2.5}}
               text={'Check Out'}
-              onPress={() =>
-                navigation.navigate('passengerCheckoutScreen', {
-                  cardData: savedCardsData,
-                  amount: route.params,
-                })
-              }
+              onPress={() => routeToCheckOutScreen()}
             />
           )}
         </View>

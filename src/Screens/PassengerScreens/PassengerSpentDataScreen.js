@@ -5,6 +5,7 @@ import Colors from '../../Constants/Colors';
 import Icon from 'react-native-vector-icons/AntDesign';
 import CustomHeader from '../../Components/CustomHeader';
 import {FlatList} from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 function DepositDataScreen({route, navigation}) {
   const [allWalletData, setAllWalletData] = useState(true);
 
@@ -53,6 +54,7 @@ function DepositDataScreen({route, navigation}) {
 
   return (
     <View>
+    <ScrollView>
       <View style={styles.headerContainer}>
         <CustomHeader
           iconname={'arrow-back'}
@@ -106,6 +108,7 @@ function DepositDataScreen({route, navigation}) {
           keyExtractor={(item, i) => i}
         />
       </View>
+      </ScrollView>
     </View>
   );
 }

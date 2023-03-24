@@ -1,6 +1,6 @@
 import {PermissionsAndroid, Platform} from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
-
+import messaging from "@react-native-firebase/messaging"
 export const getCurrentLocation = () =>
   new Promise((resolve, reject) => {
     Geolocation.getCurrentPosition(
@@ -49,3 +49,61 @@ export const locationPermission = () =>
         return reject(error);
       });
   });
+
+
+export const NotificationPermission = (()=>{
+
+  new Promise (async (resolve,reject)=>{
+
+    // const authStatus = await messaging().requestPermission();
+    // const enabled =
+    //   authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    //   authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+  
+    // if (enabled) {
+    //   resolve(enabled)
+    // }else{
+    //   reject("errorr")
+    // }
+
+    
+// messaging().requestPermission().then(() => {
+//   return messaging().getToken();
+// }).then((deviceToken) => {
+//   resolve(deviceToken)
+//   // Use deviceToken for push notifications
+// }).catch((error) => {
+//   reject(error)
+// });
+
+
+
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
+      {
+        title: 'App Notification Permission',
+        message:
+          'Allow App to send notifications',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        // User has accepted permission to receive push notifications
+        // Get the device registration token
+        const registrationToken = await messaging().getToken();
+        console.log('FCM Registration Token:', registrationToken);
+        resolve(registrationToken)
+      } else {
+        // User has rejected permission to receive push notifications
+        console.log('User rejected permission to receive push notifications');
+        reject("User reject permission")
+      }
+    
+
+
+  })
+
+
+})

@@ -1,6 +1,6 @@
 import React from "react"
 import { useState } from "react"
-import { View,Text,TouchableOpacity,StyleSheet } from "react-native"
+import { View,Text,TouchableOpacity,StyleSheet,ScrollView } from "react-native"
 import Colors from "../../Constants/Colors"
 import Icon from 'react-native-vector-icons/AntDesign';
 import CustomHeader from "../../Components/CustomHeader";
@@ -19,6 +19,8 @@ function DepositDataScreen ({route,navigation}) {
     const renderDepositData = ({item, index}) => {
 
         let date = item.date.toDate().toString().slice(0,15)
+
+        if(item && item?.payment){
     
         return (
           <View>
@@ -45,11 +47,13 @@ function DepositDataScreen ({route,navigation}) {
             </TouchableOpacity>
           </View>
         );
+      }
       };
 
 
     return (
         <View>
+        <ScrollView>
               <View style={styles.headerContainer}>
             <CustomHeader
               iconname={'arrow-back'}
@@ -91,6 +95,7 @@ function DepositDataScreen ({route,navigation}) {
             
             />
         </View>
+        </ScrollView>
         </View>
     )
 

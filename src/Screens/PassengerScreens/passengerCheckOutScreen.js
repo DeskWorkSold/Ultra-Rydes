@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
 import CustomCard from '../../Components/customCard';
@@ -10,17 +10,14 @@ import {useStripe} from '@stripe/stripe-react-native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import {ToastAndroid} from 'react-native';
+import {BASE_URI} from '../../Constants/Base_uri';
 
 function PassengerCheckOutScreen({navigation, route}) {
   let data = route.params;
-  const {confirmPayment} = useStripe();
-  const {cardData} = data;
-
-  // stripe.setOptions({
-  //   publishableKey: 'pk_test_51MlBs3BwiLSND57HpBg14bqerhhXFG1x64dp4fXdnYttyEhBzfOljKeoMzDWJchdnmWTF6OClLF1AheuMu3hJ0Zw00xUWGJxXI',
-  // });
 
   const [selectedData, setSelectedData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [reload, setReload] = useState(false);
 
   useEffect(() => {
     data &&
@@ -34,22 +31,31 @@ function PassengerCheckOutScreen({navigation, route}) {
   }, []);
 
   const handlePayPress = async () => {
+    setLoading(true);
     let customerData = {
       cardNumber: selectedData.cardNumber,
-      expiryMonth: selectedData.expiryMonth,
-      expiryYear: selectedData.expiryYear,
+      expiryMonth: Number(selectedData.expiryMonth),
+      expiryYear: Number(selectedData.expiryYear),
       cvc: selectedData.cvc,
       amount: Number(data.amount),
     };
     axios
-      .post('http:192.168.18.121:3000/api/dopayment', customerData)
+      .post(`${BASE_URI}dopayment`, customerData)
       .then(res => {
+        setLoading(false);
         let data = res.data;
+        console.log(typeof data.amount);
+        let {result, status} = data;
+        if (!status) {
+          ToastAndroid.show(data.message, ToastAndroid.SHORT);
+          return;
+        }
         let walletData = {
-          payment: data.amount / 100,
+          payment: result.amount / 100,
           fare: 0,
-          wallet: data.amount / 100,
+          wallet: result.amount / 100,
           date: new Date(),
+          tip: 0,
         };
         let id = auth().currentUser.uid;
         firestore()
@@ -62,6 +68,7 @@ function PassengerCheckOutScreen({navigation, route}) {
             {merge: true},
           )
           .then(() => {
+            navigation.navigate('AskScreen');
             ToastAndroid.show(
               'Amount Successfully Deposit in your wallet',
               ToastAndroid.SHORT,
@@ -72,6 +79,7 @@ function PassengerCheckOutScreen({navigation, route}) {
           });
       })
       .catch(error => {
+        setLoading(false);
         ToastAndroid.show('error', ToastAndroid.SHORT);
       });
   };
@@ -150,7 +158,13 @@ function PassengerCheckOutScreen({navigation, route}) {
       >
         <CustomButton
           styleContainer={{marginRight: 10, width: '90%'}}
-          text={'Pay Amount'}
+          text={
+            loading ? (
+              <ActivityIndicator size="large" color={Colors.secondary} />
+            ) : (
+              'Pay Amount'
+            )
+          }
           onPress={handlePayPress}
         />
       </View>

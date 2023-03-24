@@ -166,14 +166,6 @@ function PassengerHistory({navigation}) {
               : item.passengerData.fare}
             $
           </Text>
-          <Text
-            style={[
-              styles.text,
-              {paddingTop: 5, marginBottom: 5, fontSize: 14},
-            ]}
-          >
-            Payment: {item.payment}$
-          </Text>
         </TouchableOpacity>
       </View>
     );

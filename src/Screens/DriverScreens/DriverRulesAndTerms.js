@@ -11,10 +11,10 @@ function DriverRulesAndTerms({navigation}) {
     <View>
       <View style={styles.headerContainer}>
         <CustomHeader
-          iconname={'menu'}
+          iconname={'arrow-back'}
           color={COLORS.white}
           onPress={() => {
-            navigation.toggleDrawer();
+            navigation.goBack();
           }}
           source={require('../../Assets/Images/URWhiteLogo.png')}
         />
