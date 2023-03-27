@@ -123,7 +123,6 @@ export default function DriverBiddingScreen({navigation}) {
     if (!selectedDriver) {
       gettingFormattedAddress();
       getDriverUid();
-
       getDriverData();
       route.params &&
         route.params.selectedDriver &&
@@ -142,13 +141,12 @@ export default function DriverBiddingScreen({navigation}) {
   }, [loading]);
 
   const getLocationUpdates = () => {
-    console.log(route.params, 'parmas');
-
     if (
       !arrive.pickUpLocation &&
       selectedDriver &&
       driverCurrentLocation &&
       !route.params.driverArrive &&
+      !data.driverArriveAtPickupLocation &&
       driverCurrentLocation.latitude &&
       driverCurrentLocation.longitude &&
       pickupCords.latitude &&
@@ -173,6 +171,7 @@ export default function DriverBiddingScreen({navigation}) {
       selectedDriver &&
       driverCurrentLocation.latitude &&
       driverCurrentLocation.longitude &&
+      !data?.driverArriveAtDropoffLocation &&
       pickupCords.latitude &&
       pickupCords.longitude
     ) {
@@ -198,7 +197,7 @@ export default function DriverBiddingScreen({navigation}) {
         setDriverCurrentLocation({
           ...driverCurrentLocation,
           latitude: latitude,
-          longitude: longitude,
+          longitude:longitude,
           heading: heading,
         });
       })
@@ -543,12 +542,15 @@ export default function DriverBiddingScreen({navigation}) {
     let uid = auth().currentUser.uid;
 
     let walletData = {
-      fare: data.bidFare ? data.bidFare : data.fare,
+      fare: selectedDriver?.bidFare
+        ? selectedDriver?.bidFare
+        : data.bidFare
+        ? data.bidFare
+        : data.fare,
       withdraw: 0,
       date: new Date(),
       remainingWallet: Number(data.bidFare ?? data.fare) - 0,
     };
-
     firestore()
       .collection('driverWallet')
       .doc(uid)
@@ -567,6 +569,10 @@ export default function DriverBiddingScreen({navigation}) {
       .catch(error => {
         console.log(error);
       });
+
+      firestore().collection("Request").doc(route.params?.data?.id?route.params?.data?.id :route.params?.data?.passengerData.id ).update({
+        bookingStatus : "complete"
+      })
 
     firestore()
       .collection('inlinedDriver')
@@ -598,6 +604,8 @@ export default function DriverBiddingScreen({navigation}) {
       });
   };
 
+  console.log(arriveDropOffLocation, 'droplocationsarrive');
+
   const DropOffModal = useCallback(() => {
     return (
       <View style={styles.centeredView}>
@@ -610,7 +618,7 @@ export default function DriverBiddingScreen({navigation}) {
           }}
         >
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, {height: '50%'}]}>
+            <View style={[styles.modalView, {height: '40%'}]}>
               <Text
                 style={[
                   styles.modalText,
@@ -647,7 +655,7 @@ export default function DriverBiddingScreen({navigation}) {
               >
                 Bill Amount:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  {data.bidFare ?? data.fare}$
+                  {data?.myDriversData?.bidFare ?? data.fare}$
                 </Text>
               </Text>
               <TouchableOpacity
@@ -944,6 +952,8 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
+  console.log(selectedDriver, 'selected');
+
   const sendRequest = () => {
     if (!selectedDriver) {
       const Userid = route.params.data.id;
@@ -978,10 +988,12 @@ export default function DriverBiddingScreen({navigation}) {
               'You have accepted customer Request',
               ToastAndroid.SHORT,
             );
-
             try {
               let driverData = driverData ? driverData : myDriverData;
-              let myData = JSON.stringify(data);
+              let myData = data;
+              myData.driverData = driverData;
+              myData = JSON.stringify(myData);
+
               AsyncStorage.setItem('driverBooking', myData);
             } catch (error) {}
 
@@ -1303,6 +1315,8 @@ export default function DriverBiddingScreen({navigation}) {
     await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
   };
 
+  console.log(arrive.dropOffLocation,"START")
+
   return loading ? (
     <View
       style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}
@@ -1406,29 +1420,30 @@ export default function DriverBiddingScreen({navigation}) {
             )}
           </MapView>
         )}
-
-        {(arrive.pickUpLocation && !startRide) ||
-          (route.params.pickUpLocation && !route.params.startRide && (
-            <TouchableOpacity
-              style={{
-                position: 'absolute',
-                bottom: 20,
-                right: 20,
-                borderWidth: 1,
-                borderColor: 'black',
-                padding: 10,
-                backgroundColor: Colors.secondary,
-                borderRadius: 10,
-                paddingHorizontal: 20,
-              }}
-              onPress={() => rideStartByDriver()}
-            >
-              <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
-                Start Ride
-              </Text>
-            </TouchableOpacity>
-          ))}
-
+        {((arrive.pickUpLocation && !startRide) ||
+          (route.params?.driverArrive && !route.params.startRide) ||
+          (data.driverArriveAtPickupLocation &&
+            !route.params?.startRide &&
+            !startRide)) && (
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              right: 20,
+              borderWidth: 1,
+              borderColor: 'black',
+              padding: 10,
+              backgroundColor: Colors.secondary,
+              borderRadius: 10,
+              paddingHorizontal: 20,
+            }}
+            onPress={() => rideStartByDriver()}
+          >
+            <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
+              Start Ride
+            </Text>
+          </TouchableOpacity>
+        )}
         {arriveDropOffLocation && !endRide && (
           <TouchableOpacity
             style={{
@@ -1568,10 +1583,12 @@ export default function DriverBiddingScreen({navigation}) {
                     ? 'Customer Bid:'
                     : 'Recomended Fare:'
                 } ${
-                  passengerData.bidFare > 0
+                  selectedDriver?.bidFare
+                    ? selectedDriver?.bidFare
+                    : passengerData.bidFare > 0
                     ? passengerData.bidFare
-                    : data.bidFare
-                    ? data.bidFare
+                    : selectedDriver?.bidFare
+                    ? selectedDriver?.bidFare
                     : passengerData.fare
                 }$`}
               />
@@ -1588,7 +1605,7 @@ export default function DriverBiddingScreen({navigation}) {
                   value={`Your Bid ${
                     driverBidFare
                       ? driverBidFare
-                      : route.params.selectedDriver.bidFare
+                      : route.params?.selectedDriver?.bidFare
                   }$`}
                 />
               )}
@@ -1641,6 +1658,7 @@ export default function DriverBiddingScreen({navigation}) {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   btnContainer: {
     marginTop: 5,

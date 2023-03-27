@@ -42,7 +42,8 @@ export default function PassengerFindRide({navigation, route}) {
             data &&
             data.bidFare &&
             data.myDriversData &&
-            !Array.isArray(data.myDriversData)
+            !Array.isArray(data.myDriversData) &&
+            data.myDriversData?.requestStatus !== "rejected"
           ) {
             setDriverData([data.myDriversData]);
           } else if (
@@ -445,7 +446,6 @@ export default function PassengerFindRide({navigation, route}) {
     if (request && !passengerData.bidFare) {
       interval = setInterval(() => {
         setDriverNotAvailable([...driverNotAvailable, selectedDriver.id]);
-
         setRequest(false);
         ToastAndroid.show(
           'This driver is not available right now',
@@ -457,6 +457,7 @@ export default function PassengerFindRide({navigation, route}) {
     }
     
     if(passengerData.bidFare){
+      setRequest(true)
       return () => clearInterval(interval);
     }
   }, [request, selectedDriver,route.params]);

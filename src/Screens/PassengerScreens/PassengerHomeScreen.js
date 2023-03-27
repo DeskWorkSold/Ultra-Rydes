@@ -244,45 +244,6 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const getNotificationPermission = async () => {
-    //   let token = await NotificationPermission()
-    // console.log(token,"tokeeen")
-
-    //   const fcmToken = await messaging().getToken();
-    // const notification = {
-    //   title: 'Your ride has arrived',
-    //   body: 'Your driver has arrived at your location.',
-    // };
-    // const message = {
-    //   notification,
-    //   token: fcmToken,
-    //   android: {
-    //     priority: 'high',
-    //     notification: {
-    //       sound: 'default',
-    //       tag: 'my-tag',
-    //       click_action: 'FLUTTER_NOTIFICATION_CLICK',
-    //     },
-    //   },
-    //   apns: {
-    //     payload: {
-    //       aps: {
-    //         sound: 'default',
-    //       },
-    //     },
-    //   },
-    //   webpush: {
-    //     headers: {
-    //       TTL: '86400',
-    //     },
-    //   },
-    //   // Add the server key below
-    //   data: {
-    //     serverKey: 'AAAApuKg0tA:APA91bHOO2IbbnnFhrV5s-ZsGTQQR1ltgXcGtL74enNjBwgsC_LlqWXB-Zketf6Eg1uTqPOYF3O4er_XM3QA_RqCjU4uO-znlKzxhXmgSG_1ElMKYiXXh_wZNn5S6c9tkYzURIZIooxA',
-    //   },
-    // };
-    // console.log(message,"message")
-
-    // await messaging().send(message);
 
     let id = auth().currentUser.uid;
 
@@ -299,6 +260,7 @@ export default function PassengerHomeScreen({navigation}) {
                   .doc(id)
                   .set({
                     token: fcmToken,
+                    create_date: new Date(),
                   })
                   .then(() => {
                     console.log('token succssfully saved');
@@ -324,7 +286,7 @@ export default function PassengerHomeScreen({navigation}) {
   useEffect(() => {
     const interval = setInterval(() => {
       getDriverLocationUpdates();
-    }, 5000);
+    }, 15000);
 
     return () => clearInterval(interval);
   });
@@ -335,7 +297,7 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   let data =
-    route.params && route.params.data ? route.params.data : route.params;
+    route.params && route.params?.data ? route.params.data : route.params;
 
   useEffect(() => {
     data &&
@@ -396,9 +358,6 @@ export default function PassengerHomeScreen({navigation}) {
     }
   }, [route.params]);
 
-  console.log(selectedDriver, 'selected');
-  console.log(data, 'data');
-
   useEffect(() => {
     if (data) {
       setRouteData(data);
@@ -437,8 +396,6 @@ export default function PassengerHomeScreen({navigation}) {
       AsyncStorage.setItem('passengerBooking', myData);
     }
   }, [data, routeData]);
-
-  console.log(selectedDriver, 'selected');
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -526,9 +483,6 @@ export default function PassengerHomeScreen({navigation}) {
       },
     });
   };
-
-  console.log(wallet, 'wallet');
-
   const getPickUpAndDropOffAddress = () => {
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
     Geocoder.from(pickupCords.latitude, pickupCords.longitude)
@@ -562,7 +516,10 @@ export default function PassengerHomeScreen({navigation}) {
       ToastAndroid.show('Kindly select Car type', ToastAndroid.SHORT);
       return;
     }
-    if (bidFare && bidFare > (bidFare * 110) / 100) {
+
+    console.log((bidFare*110)/100)
+    console.log(wallet,"wallet")
+    if (bidFare && wallet < ((bidFare * 110) / 100)) {
       ToastAndroid.show(
         "You don't have enough wallet amount",
         ToastAndroid.SHORT,
@@ -735,7 +692,7 @@ export default function PassengerHomeScreen({navigation}) {
     });
   };
 
-  const changeDropLocation = location => {
+  const changeDropLocation = async location => {
     setLocation({
       ...location,
       dropLocationCords: {
@@ -910,6 +867,7 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const bookingComplete = () => {
+    let id = auth().currentUser.uid
     if (!feedBack) {
       ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
     } else {
@@ -964,6 +922,10 @@ export default function PassengerHomeScreen({navigation}) {
           console.log(error);
         });
 
+        firestore().collection("Request").doc(id).update({
+          bookingStatus:"complete"
+        })
+        
       let myData = {
         booking: 'complete',
         passengerData: route.params.passengerData,

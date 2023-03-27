@@ -26,16 +26,17 @@ export default function AskScreen({navigation}) {
   const getDriverBookingData = async () => {
     try {
       let data = await AsyncStorage.getItem('driverBooking');
+      console.log(data, 'dataaaaaaaaa');
       let checkDriverArrive = await AsyncStorage.getItem(
         'ArrivedAtpickUpLocation',
       );
       let startRide = await AsyncStorage.getItem('startRide');
       let endRide = await AsyncStorage.getItem('EndRide');
 
-        console.log(data,"dataaaa")
+      console.log(checkDriverArrive, 'check');
 
       data = JSON.parse(data);
-     if (data && Object.keys(data).length > 0) {
+      if (data && Object.keys(data).length > 0) {
         navigation.navigate('DriverRoutes', {
           screen: 'DriverBiddingScreen',
           params: {
@@ -51,9 +52,8 @@ export default function AskScreen({navigation}) {
             selectedDriver: data.myDriversData
               ? data.myDriversData
               : data.driverData,
-
-            driverArrive: checkDriverArrive ? true : false,
             startRide: startRide ? true : false,
+            driverArrive: checkDriverArrive ? true : false,
             endRide: endRide ? true : false,
           },
         });
@@ -62,7 +62,6 @@ export default function AskScreen({navigation}) {
       console.log(error, 'error');
     }
   };
-
   useEffect(() => {
     const uid = auth().currentUser.uid;
     firestore()
@@ -80,7 +79,6 @@ export default function AskScreen({navigation}) {
           data.filter((e, i) => {
             return !e.acknowledged;
           });
-
         if (data && data.length > 0) {
           setWarningData(data);
         }
@@ -139,18 +137,21 @@ export default function AskScreen({navigation}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={warningData && warningData.length > 0}>
+          visible={warningData && warningData.length > 0}
+        >
           <View style={styles.centeredView}>
             <View style={[styles.modalView, {height: '60%'}]}>
               <View>
                 <Icon size={80} color="white" name="warning" />
               </View>
               <Text
-                style={[styles.modalText, {fontSize: 24, fontWeight: '900'}]}>
+                style={[styles.modalText, {fontSize: 24, fontWeight: '900'}]}
+              >
                 Warning!
               </Text>
               <Text
-                style={[styles.modalText, {fontSize: 16, fontWeight: '900'}]}>
+                style={[styles.modalText, {fontSize: 16, fontWeight: '900'}]}
+              >
                 Your car has been recently given the lowest rating either your
                 car is dirty or it has got some mechanical issues you are
                 directed to fix it before taking another ride..
@@ -160,12 +161,11 @@ export default function AskScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => hideModal()}>
+                onPress={() => hideModal()}
+              >
                 <Text
-                  style={[
-                    styles.textStyle1,
-                    {backgroundColor: Colors.primary},
-                  ]}>
+                  style={[styles.textStyle1, {backgroundColor: Colors.primary}]}
+                >
                   confirm
                 </Text>
               </TouchableOpacity>
@@ -198,9 +198,94 @@ export default function AskScreen({navigation}) {
     }
   };
 
+  const checkPassengerRequestToDriver = async () => {
+    let id = auth().currentUser.uid;
+    let passengerRequestData = await firestore()
+      .collection('Request')
+      .doc(id)
+      .get()
+      .then(async doc => {
+        if (doc._exists) {
+          let data = doc.data();
+
+          if (
+            data &&
+            data.bookingStatus !== 'complete' &&
+            !data.rideCancelByPassenger &&
+            !data.rideCancelByDriver &&
+            data.requestStatus == 'accepted' &&
+            data.driverData
+          ) {
+
+            let checkDriverArrive = await AsyncStorage.getItem('driverArrive');
+
+            navigation.navigate('PassengerRoutes', {
+              screen: 'PassengerHomeScreen',
+              params: {
+                passengerData: data.passengerData,
+                driverData: data.driverData,
+                driverArriveAtPickupLocation: checkDriverArrive ? true : false,
+              },
+            });
+          }
+        }
+      });
+  };
+
+  const checkDriverRequestToPassenger = async () => {
+    let id = auth().currentUser.uid;
+
+    let driverRequestToPassenger = await firestore()
+      .collection('Request')
+      .get()
+      .then(doc => {
+        doc.forEach(async querySnapshot => {
+          let data = querySnapshot._data;
+          console.log(data, 'dataaa');
+
+          if (
+            data &&
+            data?.myDriversData &&
+            data?.myDriversData?.id == id &&
+            data.myDriversData.requestStatus == 'accepted' &&
+            data.bookingStatus !== 'complete' &&
+            !data.rideCancelByPassenger &&
+            !data.rideCancelByDriver
+          ) {
+            let checkDriverArrive = await AsyncStorage.getItem(
+              'ArrivedAtpickUpLocation',
+            );
+            let startRide = await AsyncStorage.getItem('startRide');
+            let endRide = await AsyncStorage.getItem('EndRide');
+
+            navigation.navigate('DriverRoutes', {
+              screen: 'DriverBiddingScreen',
+              params: {
+                data: data,
+                passengerState: {
+                  pickupCords: data.passengerData
+                    ? data.passengerData.pickupCords
+                    : data.pickupCords,
+                  dropLocationCords: data.passengerData
+                    ? data.passengerData.dropLocationCords
+                    : data.dropLocationCords,
+                },
+                selectedDriver: data?.myDriversData,
+                startRide: startRide ? true : false,
+                driverArrive: checkDriverArrive ? true : false,
+                endRide: endRide ? true : false,
+              },
+            });
+          }
+        });
+      });
+  };
+
   useEffect(() => {
     getDriverBookingData();
     getPassengerBookingData();
+    checkPassengerRequestToDriver();
+    checkDriverRequestToPassenger();
   }, []);
 
   const passengerModeHandler = async () => {

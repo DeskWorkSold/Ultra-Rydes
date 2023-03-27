@@ -76,7 +76,6 @@ const CurrentBalanceScreen = ({navigation}) => {
               .catch(error => {
                 console.log(error);
               });
-
           }
         }
       });
@@ -93,26 +92,26 @@ const CurrentBalanceScreen = ({navigation}) => {
       .collection('driverWallet')
       .doc(userId)
       .onSnapshot(querySnapshot => {
-        if(querySnapshot._exists){
-        let data = querySnapshot.data().driverWallet;
-        setAllData(data);
-        let date = new Date();
-        let currentMonth = date.getMonth();
-        let currentYear = date.getFullYear();
-        let currentDate = date.getDate();
-        setMonthlyWalletData(
-          data &&
-            data.length > 0 &&
-            data.filter((e, i) => {
-              let walletDate = e.date.toDate();
-              let walletMonth = walletDate.getMonth();
-              let walletYear = walletDate.getFullYear();
-              if (walletMonth == currentMonth && walletYear == currentYear) {
-                return e;
-              }
-            }),
-        );
-      }
+        if (querySnapshot._exists) {
+          let data = querySnapshot.data().driverWallet;
+          setAllData(data);
+          let date = new Date();
+          let currentMonth = date.getMonth();
+          let currentYear = date.getFullYear();
+          let currentDate = date.getDate();
+          setMonthlyWalletData(
+            data &&
+              data.length > 0 &&
+              data.filter((e, i) => {
+                let walletDate = e.date.toDate();
+                let walletMonth = walletDate.getMonth();
+                let walletYear = walletDate.getFullYear();
+                if (walletMonth == currentMonth && walletYear == currentYear) {
+                  return e;
+                }
+              }),
+          );
+        }
       });
   };
 
@@ -163,6 +162,8 @@ const CurrentBalanceScreen = ({navigation}) => {
 
     mySpents && setEarn({...earn, total: mySpents});
   };
+
+  console.log(earn, 'earn');
 
   const getMonthlyAmountWithdrawFromWallet = () => {
     let myDepositData = [];
@@ -224,6 +225,7 @@ const CurrentBalanceScreen = ({navigation}) => {
 
   useEffect(() => {
     if ((earn && earn.total) || withdraw.total) {
+      console.log(earn.total, 'total');
       let currentWalletAmount = earn.total - withdraw.total;
       currentWalletAmount && setCurrentWallet(currentWalletAmount.toFixed(2));
     }
@@ -323,7 +325,7 @@ const CurrentBalanceScreen = ({navigation}) => {
             ToastAndroid.SHORT,
           );
           setAddAmount('');
-          navigation.navigate("AskScreen")
+          navigation.navigate('AskScreen');
         })
         .catch(error => {
           console.log(error);
@@ -351,7 +353,7 @@ const CurrentBalanceScreen = ({navigation}) => {
           .then(res => {
             let data = res.data;
             Linking.openURL(data.data.url);
-            setOpenCreateAccountModal(false)
+            setOpenCreateAccountModal(false);
           })
           .catch(error => {
             console.log(error);
@@ -398,6 +400,8 @@ const CurrentBalanceScreen = ({navigation}) => {
       </View>
     );
   }, [openCreateAccountModal]);
+
+  console.log(currentwallet, 'wallet');
 
   return (
     <SafeAreaView>
