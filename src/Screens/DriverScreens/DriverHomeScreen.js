@@ -24,7 +24,6 @@ import {useCallback} from 'react';
 export default function DriverHomeScreen({navigation, route}) {
   let reload = route.params;
 
-
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
       latitude: 24.863,
@@ -119,12 +118,9 @@ export default function DriverHomeScreen({navigation, route}) {
       console.log(error, 'error');
     }
   };
-
-
-  useEffect(()=>{
-    getDriverBookingData()
-  },[])
-
+  useEffect(() => {
+    getDriverBookingData();
+  }, []);
   const getRequestFromPassengers = () => {
     if (!inlinedDrivers) {
       if (driverStatus == 'online' && driverData.currentLocation) {
@@ -135,12 +131,12 @@ export default function DriverHomeScreen({navigation, route}) {
           .then(querySnapshot => {
             querySnapshot.forEach(documentSnapshot => {
               let data = documentSnapshot.data();
-              console.log(data, 'data');
-              if (data.requestStatus == 'accepted') {
+
+              if (data?.requestStatus == 'accepted') {
                 setPassengerBookingData([]);
               }
 
-              if (!data.requestStatus) {
+              if (!data?.requestStatus) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -371,24 +367,28 @@ export default function DriverHomeScreen({navigation, route}) {
           }
         }
       });
- 
+
       return (
         <TouchableOpacity
           style={styles.listItemContainer}
           key={item.passengerData ? item.passengerData.id : item.id}
           onPress={() => {
-            navigation.navigate("DriverRoutes",{screen:'DriverBiddingScreen' , params:{ 
-              data : items,
-              passengerState: {
-                pickupCords: item.passengerData
-                  ? item.passengerData.pickupCords
-                  : item.pickupCords,
-                dropLocationCords: item.passengerData
-                  ? item.passengerData.dropLocationCords
-                  : item.dropLocationCords,
+            navigation.navigate('DriverRoutes', {
+              screen: 'DriverBiddingScreen',
+              params: {
+                data: items,
+                passengerState: {
+                  pickupCords: item.passengerData
+                    ? item.passengerData.pickupCords
+                    : item.pickupCords,
+                  dropLocationCords: item.passengerData
+                    ? item.passengerData.dropLocationCords
+                    : item.dropLocationCords,
+                },
               },
-            }});
-          }}>
+            });
+          }}
+        >
           <Text style={styles.itemTextStyle}>
             Pickup Cords:
             <Text style={styles.itemLocStyle}>
@@ -433,16 +433,11 @@ export default function DriverHomeScreen({navigation, route}) {
           <View style={styles.headerContainer}>
             <CustomHeader
               iconname={'menu'}
-              
               color={Colors.white}
-              
               onPress={() => {
                 navigation.toggleDrawer();
               }}
               source={require('../../Assets/Images/URWhiteLogo.png')}
-              
-              
-              
             />
           </View>
           <View style={styles.statusContainer}>
@@ -485,7 +480,8 @@ export default function DriverHomeScreen({navigation, route}) {
                 height: '70%',
                 alignItems: 'center',
                 justifyContent: 'center',
-              }}>
+              }}
+            >
               <Text
                 style={{
                   color: 'black',
@@ -493,7 +489,8 @@ export default function DriverHomeScreen({navigation, route}) {
                   fontWeight: '700',
                   width: '95%',
                   textAlign: 'center',
-                }}>
+                }}
+              >
                 No Request Wait for passenger Request
               </Text>
             </View>

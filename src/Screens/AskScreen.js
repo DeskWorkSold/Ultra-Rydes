@@ -49,9 +49,9 @@ export default function AskScreen({navigation}) {
                 ? data.passengerData.dropLocationCords
                 : data.dropLocationCords,
             },
-            selectedDriver: data.myDriversData
-              ? data.myDriversData
-              : data.driverData,
+            selectedDriver: data?.myDriversData
+              ? data?.myDriversData
+              : data?.driverData,
             startRide: startRide ? true : false,
             driverArrive: checkDriverArrive ? true : false,
             endRide: endRide ? true : false,
@@ -104,6 +104,7 @@ export default function AskScreen({navigation}) {
 
             let myData = warningData[0];
             myData.acknowledged = true;
+
 
             let mergeData = [...data, myData];
 
@@ -187,8 +188,8 @@ export default function AskScreen({navigation}) {
         navigation.navigate('PassengerRoutes', {
           screen: 'PassengerHomeScreen',
           params: {
-            passengerData: data.passengerData ? data.passengerData : data,
-            driverData: data.driverData ? data.driverData : data.myDriversData,
+            passengerData: data?.passengerData ? data?.passengerData : data,
+            driverData: data?.driverData ? data?.driverData : data?.myDriversData,
             driverArriveAtPickupLocation: checkDriverArrive ? true : false,
           },
         });
@@ -214,9 +215,8 @@ export default function AskScreen({navigation}) {
             !data.rideCancelByPassenger &&
             !data.rideCancelByDriver &&
             data.requestStatus == 'accepted' &&
-            data.driverData
+            data?.driverData
           ) {
-
             let checkDriverArrive = await AsyncStorage.getItem('driverArrive');
 
             navigation.navigate('PassengerRoutes', {
@@ -240,17 +240,17 @@ export default function AskScreen({navigation}) {
       .get()
       .then(doc => {
         doc.forEach(async querySnapshot => {
-          let data = querySnapshot._data;
+          let data = querySnapshot?._data;
           console.log(data, 'dataaa');
 
           if (
             data &&
             data?.myDriversData &&
             data?.myDriversData?.id == id &&
-            data.myDriversData.requestStatus == 'accepted' &&
-            data.bookingStatus !== 'complete' &&
-            !data.rideCancelByPassenger &&
-            !data.rideCancelByDriver
+            data?.myDriversData.requestStatus == 'accepted' &&
+            data?.bookingStatus !== 'complete' &&
+            !data?.rideCancelByPassenger &&
+            !data?.rideCancelByDriver
           ) {
             let checkDriverArrive = await AsyncStorage.getItem(
               'ArrivedAtpickUpLocation',

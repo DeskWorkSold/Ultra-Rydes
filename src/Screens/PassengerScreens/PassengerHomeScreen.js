@@ -170,11 +170,11 @@ export default function PassengerHomeScreen({navigation}) {
         .collection('Request')
         .doc(data.passengerData.id)
         .onSnapshot(querySnapshot => {
-          let myData = querySnapshot.data();
-          if ((myData && myData.myDriversData) || myData.driverData) {
-            let myDriversData = myData.myDriversData
-              ? myData.myDriversData
-              : myData.driverData;
+          let myData = querySnapshot?.data();
+          if ((myData && myData?.myDriversData) || myData?.driverData) {
+            let myDriversData = myData?.myDriversData
+              ? myData?.myDriversData
+              : myData?.driverData;
 
             if (
               !driverArrive.pickupLocation &&
@@ -244,7 +244,6 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const getNotificationPermission = async () => {
-
     let id = auth().currentUser.uid;
 
     messaging()
@@ -517,9 +516,9 @@ export default function PassengerHomeScreen({navigation}) {
       return;
     }
 
-    console.log((bidFare*110)/100)
-    console.log(wallet,"wallet")
-    if (bidFare && wallet < ((bidFare * 110) / 100)) {
+    console.log((bidFare * 110) / 100);
+    console.log(wallet, 'wallet');
+    if (bidFare && wallet < (bidFare * 110) / 100) {
       ToastAndroid.show(
         "You don't have enough wallet amount",
         ToastAndroid.SHORT,
@@ -867,7 +866,7 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const bookingComplete = () => {
-    let id = auth().currentUser.uid
+    let id = auth().currentUser.uid;
     if (!feedBack) {
       ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
     } else {
@@ -922,10 +921,10 @@ export default function PassengerHomeScreen({navigation}) {
           console.log(error);
         });
 
-        firestore().collection("Request").doc(id).update({
-          bookingStatus:"complete"
-        })
-        
+      firestore().collection('Request').doc(id).update({
+        bookingStatus: 'complete',
+      });
+
       let myData = {
         booking: 'complete',
         passengerData: route.params.passengerData,
