@@ -19,6 +19,7 @@ import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Icon from 'react-native-vector-icons/AntDesign';
 import {BackHandler} from 'react-native';
+import auth from '@react-native-firebase/auth';
 
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
@@ -29,6 +30,7 @@ export default function PassengerFindRide({navigation, route}) {
   const [distance, setDistance] = useState([]);
   const [inlineDriver, setInlineDriver] = useState([]);
   const [driverNotAvailable, setDriverNotAvailable] = useState([]);
+  const [loader, setLoader] = useState(false);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -43,7 +45,7 @@ export default function PassengerFindRide({navigation, route}) {
             data.bidFare &&
             data.myDriversData &&
             !Array.isArray(data.myDriversData) &&
-            data.myDriversData?.requestStatus !== "rejected"
+            data.myDriversData?.requestStatus !== 'rejected'
           ) {
             setDriverData([data.myDriversData]);
           } else if (
@@ -70,9 +72,29 @@ export default function PassengerFindRide({navigation, route}) {
 
   useEffect(() => {
     if (passengerData && !passengerData.bidFare && !request) {
+      driverData && driverData.length == 0 ? setLoader(true) : '';
       let interval = setInterval(() => {
-        getDriverData();
-      }, 30000);
+        let rejectedDriver = false;
+        let id = auth().currentUser.uid;
+
+        firestore()
+          .collection('Request')
+          .doc(id)
+          .get()
+          .then(doc => {
+            if (doc._exists) {
+              let data = doc?.data();
+              rejectedDriver = data?.rejectedDriversId;
+            }
+          })
+          .then(() => {
+            setLoader(false);
+            getDriverData(rejectedDriver);
+          })
+          .catch(error => {
+            setLoader(false);
+          });
+      }, 10000);
       return () => clearInterval(interval);
     } else {
       setDriverData([]);
@@ -188,7 +210,7 @@ export default function PassengerFindRide({navigation, route}) {
     }
   }, [request, selectedDriver]);
 
-  const getDriverData = async () => {
+  const getDriverData = async rejectedDriver => {
     /// GET ALL DRIVERS
     const Driver = await firestore()
       .collection('Drivers')
@@ -205,8 +227,6 @@ export default function PassengerFindRide({navigation, route}) {
             driverNotAvailable.some((e, i) => {
               return e == myDriverData.id;
             });
-          console.log(driverRequestedButNotRespond, myDriverData.id, 'idddddd');
-          console.log(driverNotAvailable, 'notAvailable');
 
           let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
             return e.carName;
@@ -235,25 +255,36 @@ export default function PassengerFindRide({navigation, route}) {
               },
             );
             mileDistance = (dis / 1609.34).toFixed(2);
+            myDriverData.distance = mileDistance;
+            
+            const speed = 10; // meters per second
+            myDriverData.minutes = Math.round(dis / speed / 60);
+          
           }
 
           let isInlined =
             inlineDriver &&
             inlineDriver.filter((e, i) => {
-              console.log(e, 'eeee');
+              
               if (e == myDriverData.id) {
                 return 'true';
               }
             });
-
           isInlined = isInlined[0];
+
+          let flag2 = false;
+          flag2 =
+            rejectedDriver &&
+            rejectedDriver.length > 0 &&
+            rejectedDriver?.some((e, i) => e == myDriverData?.id);
           if (!driverRequestedButNotRespond) {
             if (
               myDriverData.status == 'online' &&
               mileDistance <= 3 &&
               flag &&
               !isInlined &&
-              !driverRequestedButNotRespond
+              !driverRequestedButNotRespond &&
+              !flag2
             ) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
@@ -263,6 +294,7 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance > 3 &&
               mileDistance < 5 &&
               flag &&
+              !flag2 &&
               !isInlined &&
               !driverRequestedButNotRespond
             ) {
@@ -274,6 +306,7 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance < 10 &&
               mileDistance > 5 &&
               flag &&
+              !flag2 &&
               !isInlined &&
               !driverRequestedButNotRespond
             ) {
@@ -286,6 +319,7 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance > 10 &&
               flag &&
               !isInlined &&
+              !flag2 &&
               !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
@@ -296,6 +330,7 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance < 20 &&
               mileDistance > 15 &&
               flag &&
+              !flag2 &&
               !isInlined &&
               !driverRequestedButNotRespond
             ) {
@@ -307,6 +342,7 @@ export default function PassengerFindRide({navigation, route}) {
               mileDistance < 25 &&
               mileDistance > 20 &&
               !isInlined &&
+              !flag2 &&
               !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
@@ -375,7 +411,7 @@ export default function PassengerFindRide({navigation, route}) {
               });
           });
       } else {
-        console.log('HELLO2');
+        
         mySelectedDriver =
           driverData &&
           driverData.map((e, i) => {
@@ -395,8 +431,6 @@ export default function PassengerFindRide({navigation, route}) {
           });
 
         let selectedDriverData = mySelectedDriver.filter((e, i) => e.selected);
-
-        console.log(selectedDriverData, 'selected');
 
         firestore()
           .collection('Request')
@@ -437,7 +471,6 @@ export default function PassengerFindRide({navigation, route}) {
 
   useEffect(() => {
     if (!passengerData.bidFare) {
-      getDriverData();
     }
   }, [driverNotAvailable]);
 
@@ -455,12 +488,12 @@ export default function PassengerFindRide({navigation, route}) {
 
       return () => clearInterval(interval);
     }
-    
-    if(passengerData.bidFare){
-      setRequest(true)
+
+    if (passengerData.bidFare) {
+      setRequest(true);
       return () => clearInterval(interval);
     }
-  }, [request, selectedDriver,route.params]);
+  }, [request, selectedDriver, route.params]);
 
   const rejectOffer = rejectedDriver => {
     if (rejectedDriver && !passengerData.bidFare) {
@@ -541,8 +574,7 @@ export default function PassengerFindRide({navigation, route}) {
   };
 
   const calculateMinutes = (result, item) => {
-    console.log(result, 'result');
-
+    
     let duration = Math.ceil(result.duration);
     setMinutes([...minutes, duration]);
     item.minutes = Math.ceil(result.duration);
@@ -565,42 +597,40 @@ export default function PassengerFindRide({navigation, route}) {
           item.bidFare = (Number(data.bidFare) + Number(totalCharges)).toFixed(
             2,
           );
-          console.log(totalCharges, 'total');
-          console.log(item.bidFare, 'bidFare');
         }
       });
     }
-    let distanceMinutes =
-      minutes &&
-      minutes.length > 0 &&
-      minutes.map((e, i) => {
-        if (index == i) {
-          return e;
-        }
-      });
+    // let distanceMinutes =
+    //   minutes &&
+    //   minutes.length > 0 &&
+    //   minutes.map((e, i) => {
+    //     if (index == i) {
+    //       return e;
+    //     }
+    //   });
 
-    let distanceDifference =
-      distance &&
-      distance.length > 0 &&
-      distance.map((e, i) => {
-        if (i == index) {
-          return e;
-        }
-      });
+    // let distanceDifference =
+    //   distance &&
+    //   distance.length > 0 &&
+    //   distance.map((e, i) => {
+    //     if (i == index) {
+    //       return e;
+    //     }
+    //   });
 
     let flag = driverNotAvailable.some((e, i) => e == item.id);
 
     return (
       !flag && (
         <View style={styles.card}>
-          <MapViewDirections
+          {/* <MapViewDirections
             origin={item.currentLocation}
             destination={passengerData.pickupCords}
             apikey={GoogleMapKey.GOOGLE_MAP_KEY}
             onReady={result => {
               calculateMinutes(result, item);
             }}
-          />
+          /> */}
           <View style={styles.innerItemsUpper}>
             <View style={styles.imgContainer}>
               <Image
@@ -629,10 +659,10 @@ export default function PassengerFindRide({navigation, route}) {
                   ${item.bidFare ? Number(item.bidFare) : item.fare}
                 </Text>
                 <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
-                  {item.minutes ?? distanceMinutes} minutes away
+                  {item.minutes} minutes away
                 </Text>
                 <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
-                  {item.distance ?? distanceDifference} miles away
+                  {item.distance} miles away
                 </Text>
               </View>
             </View>
@@ -658,12 +688,11 @@ export default function PassengerFindRide({navigation, route}) {
     );
   };
 
-  console.log(driverData);
-
+  
   return (
     <View>
       {(driverData && driverData.length > 0 && passengerData.bidFare) ||
-      !request ? (
+      (!request && !loader) ? (
         <View>
           <FlatList
             data={driverData}

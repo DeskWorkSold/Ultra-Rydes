@@ -97,6 +97,7 @@ export default function DriverBiddingScreen({navigation}) {
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
   const [driverBidFare, setDriverBidFare] = useState(false);
   const [driverPersonalData, setDriverPersonalData] = useState({});
+  const [rejectLoader, setRejectLoader] = useState(false);
 
   const [myDriverData, setMyDriverData] = useState(
     data && route.params.selectedDriver ? route.params.selectedDriver : [],
@@ -177,6 +178,7 @@ export default function DriverBiddingScreen({navigation}) {
 
     if (
       !arrive.dropOffLocation &&
+      data?.driverArriveAtPickupLocation &&
       driverCurrentLocation &&
       selectedDriver &&
       driverCurrentLocation.latitude &&
@@ -247,8 +249,26 @@ export default function DriverBiddingScreen({navigation}) {
       );
 
       return () => backHandler.remove();
+    } else if (!selectedDriver && !loading) {
+      const backAction = () => {
+        Alert.alert('Hold on!', 'You have to either accept the offer or reject it', [
+          {
+            text: 'Cancel',
+            onPress: () => null,
+            style: 'cancel',
+          },
+        ]);
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
+
+      return () => backHandler.remove();
     }
-  }, [selectedDriver, loading]);
+  }, [selectedDriver, loading, route.params]);
 
   const sendDriverLocationToPassenger = () => {
     if (
@@ -1349,10 +1369,95 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
-  // console.log(data,"dataaaa")
-  // console.log(startRide,"start")
+  const rejectRequest = async () => {
+    setRejectLoader(true);
+    if (data && data.bidFare) {
+      let rejectedDrivers = [];
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .get()
+        .then(doc => {
+          if (doc._exists) {
+            let data = doc.data();
 
-  console.log(route.params, 'patamsss');
+            if (data?.rejectedDrivers && !Array.isArray(data.rejectedDrivers)) {
+              rejectedDrivers.push(data.rejectedDrivers);
+            }
+            if (data?.rejectedDrivers && Array.isArray(data.rejectedDrivers)) {
+              rejectedDrivers = data.rejectedDrivers;
+            }
+          }
+        });
+      let id = auth().currentUser.uid;
+
+      rejectedDrivers = [...rejectedDrivers, id];
+
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .update({
+          rejectedDrivers: rejectedDrivers,
+        })
+        .then(() => {
+          setTimeout(() => {
+            setRejectLoader(false);
+            ToastAndroid.show(
+              'You have successfully rejected the request',
+              ToastAndroid.SHORT,
+            );
+            navigation.navigate("AskScreen");
+          }, 2000);
+        })
+        .catch(error => {
+          setRejectLoader(false);
+          console.log(error);
+        });
+    } else {
+      let id = auth().currentUser.uid;
+      let rejectedDrivers = [];
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .get()
+        .then(doc => {
+          if (doc._exists) {
+            let data = doc.data();
+
+            if (
+              data?.rejectedDrivers &&
+              !Array.isArray(data?.rejectedDrivers)
+            ) {
+              rejectedDrivers.push(data.rejectedDrivers);
+            }
+            if (data?.rejectedDrivers && Array.isArray(data.rejectedDrivers)) {
+              rejectedDrivers = data.rejectedDrivers;
+            }
+          }
+        });
+      rejectedDrivers = [...rejectedDrivers, id];
+
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .update({
+          requestStatus: 'rejected',
+          rejectedDriversId: rejectedDrivers,
+        })
+        .then(() => {
+          setTimeout(() => {
+            setRejectLoader(false);
+            ToastAndroid.show(
+              'Your have succesfully rejected the request',
+              ToastAndroid.SHORT,
+            );
+          }, 1000);
+          setTimeout(() => {
+            navigation.navigate("AskScreen");
+          }, 2000);
+        });
+    }
+  };
 
   return loading ? (
     <View
@@ -1457,21 +1562,24 @@ export default function DriverBiddingScreen({navigation}) {
           </MapView>
         )}
 
-        {selectedDriver && driverCurrentLocation.latitude && driverCurrentLocation.longitude && Object.keys(selectedDriver).length > 0 && (
-          <View>
-            <CustomButton
-              text={'Open waze'}
-              onPress={openWaze}
-              styleContainer={{
-                width: 120,
-                padding: 3,
-                marginHorizontal: 8,
-                marginTop: 20,
-              }}
-              btnTextStyle={{fontSize: 14}}
-            />
-          </View>
-        )}
+        {selectedDriver &&
+          driverCurrentLocation.latitude &&
+          driverCurrentLocation.longitude &&
+          Object.keys(selectedDriver).length > 0 && (
+            <View>
+              <CustomButton
+                text={'Open waze'}
+                onPress={openWaze}
+                styleContainer={{
+                  width: 120,
+                  padding: 3,
+                  marginHorizontal: 8,
+                  marginTop: 20,
+                }}
+                btnTextStyle={{fontSize: 14}}
+              />
+            </View>
+          )}
 
         {((arrive.pickUpLocation && !startRide) ||
           (route.params?.driverArrive && !route.params.startRide) ||
@@ -1702,8 +1810,31 @@ export default function DriverBiddingScreen({navigation}) {
 
               {/* </ScrollView> */}
               {!selectedDriver && (
-                <View style={styles.btnContainer}>
-                  <CustomButton text="Request" onPress={sendRequest} />
+                <View
+                  style={[
+                    styles.btnContainer,
+                    {flexDirection: 'row', justifyContent: 'space-between'},
+                  ]}
+                >
+                  <CustomButton
+                    text="Accept"
+                    onPress={sendRequest}
+                    styleContainer={{width: '49%'}}
+                  />
+                  <CustomButton
+                    text={
+                      rejectLoader ? (
+                        <ActivityIndicator
+                          size={'large'}
+                          color={Colors.black}
+                        />
+                      ) : (
+                        'Reject'
+                      )
+                    }
+                    onPress={rejectRequest}
+                    styleContainer={{width: '49%'}}
+                  />
                 </View>
               )}
             </KeyboardAvoidingView>

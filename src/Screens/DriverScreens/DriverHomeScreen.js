@@ -344,12 +344,15 @@ export default function DriverHomeScreen({navigation, route}) {
                       driverData.vehicleDetails.vehicleCategory;
                   }
 
+                  let id = auth().currentUser.uid
+                  let flag2 = data?.rejectedDrivers?.some((e,i)=>e == id )
+              
                   if (
                     data &&
                     data.passengerData &&
                     driverData.id == data.driverData.id &&
                     !data.requestStatus &&
-                    !checkRejectStatus
+                    !checkRejectStatus && !flag2
                   ) {
                     requestData.push(data);
                   } else {
@@ -360,7 +363,7 @@ export default function DriverHomeScreen({navigation, route}) {
                       mileDistance < 25 &&
                       flag &&
                       !matchUid &&
-                      !checkRejectStatus
+                      !checkRejectStatus && !flag2
                     ) {
                       requestData.push(data);
                     }
