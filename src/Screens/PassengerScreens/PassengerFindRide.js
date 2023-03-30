@@ -466,7 +466,7 @@ export default function PassengerFindRide({navigation, route}) {
     if (rejectedDriver && !passengerData.bidFare) {
       setDriverData(
         driverData.filter((e, i) => {
-          return e.cnic !== rejectedDriver.cnic;
+          return e.id !== rejectedDriver.id;
         }),
       );
     } else if (rejectedDriver && passengerData.bidFare) {
@@ -626,7 +626,7 @@ export default function PassengerFindRide({navigation, route}) {
             <View style={styles.priceContainer}>
               <View style={{alignItems: 'flex-end'}}>
                 <Text style={styles.priceText}>
-                  {item.bidFare ? Number(item.bidFare) : item.fare}$
+                  ${item.bidFare ? Number(item.bidFare) : item.fare}
                 </Text>
                 <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
                   {item.minutes ?? distanceMinutes} minutes away
@@ -669,7 +669,7 @@ export default function PassengerFindRide({navigation, route}) {
             data={driverData}
             renderItem={rideRequests}
             showsHorizontalScrollIndicator={false}
-            keyExtractor={item => `key-${item.cnic}`}
+            keyExtractor={item => `key-${item.id}`}
           />
         </View>
       ) : (

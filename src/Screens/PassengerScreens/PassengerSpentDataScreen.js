@@ -36,7 +36,7 @@ function DepositDataScreen({route, navigation}) {
                 {paddingTop: 5, marginBottom: 5, fontSize: 14},
               ]}>
               Fare:{' '}
-              <Text style={{color: Colors.secondary}}> {item.fare}$ </Text>
+              <Text style={{color: Colors.secondary}}> ${item.fare} </Text>
             </Text>
             <Text
               style={[
@@ -44,7 +44,7 @@ function DepositDataScreen({route, navigation}) {
                 {paddingTop: 5, marginBottom: 5, fontSize: 14},
               ]}>
               Tip:{' '}
-              <Text style={{color: Colors.secondary}}> {item.tip}$ </Text>
+              <Text style={{color: Colors.secondary}}> ${item.tip} </Text>
             </Text>
           </TouchableOpacity>
         </View>

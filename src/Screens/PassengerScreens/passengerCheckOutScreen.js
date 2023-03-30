@@ -117,7 +117,7 @@ function PassengerCheckOutScreen({navigation, route}) {
       >
         <Text style={styles.text}>Deposit Amount</Text>
         <Text style={[styles.text, {color: Colors.secondary}]}>
-          {data.amount}$
+          ${data.amount}
         </Text>
       </View>
       <View
@@ -145,7 +145,7 @@ function PassengerCheckOutScreen({navigation, route}) {
       >
         <Text style={styles.text}>Total Deposit</Text>
         <Text style={[styles.text, {color: Colors.secondary, fontSize: 16}]}>
-          {data.amount}$
+          ${data.amount}
         </Text>
       </View>
       <View

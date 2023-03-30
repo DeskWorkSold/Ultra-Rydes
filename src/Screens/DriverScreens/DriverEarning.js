@@ -38,7 +38,7 @@ function DriverEarningScreen({route, navigation}) {
               ]}
             >
               Earning:
-              <Text style={{color: Colors.secondary}}> {item.fare}$ </Text>
+              <Text style={{color: Colors.secondary}}> ${item.fare} </Text>
             </Text>
             <Text
               style={[
@@ -49,7 +49,7 @@ function DriverEarningScreen({route, navigation}) {
               Tip from Customer:
               <Text style={{color: Colors.secondary}}>
                 {' '}
-                {item?.tip ? item?.tip : 0}${' '}
+                ${item?.tip ? item?.tip : 0}{' '}
               </Text>
             </Text>
           </TouchableOpacity>

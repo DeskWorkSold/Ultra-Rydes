@@ -998,14 +998,14 @@ export default function PassengerHomeScreen({navigation}) {
               >
                 Your Bill Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  {route.params.passengerData.bidFare ??
+                  ${route.params.passengerData.bidFare ??
                     route.params.passengerData.fare}
-                  $
+                  
                 </Text>
               </Text>
 
               <TextInput
-                placeholder="Enter Tip Amount $"
+                placeholder="Enter Tip Amount"
                 placeholderTextColor={Colors.black}
                 keyboardType={'number-pad'}
                 style={{
@@ -1744,14 +1744,16 @@ export default function PassengerHomeScreen({navigation}) {
                       selectedDriver &&
                       Object.keys(selectedDriver).length > 0 &&
                       !selectedDriver.bidFare
-                        ? `${selectedDriver.fare}$ `
+                        ? `$${selectedDriver.fare} `
                         : selectedDriver &&
                           Object.keys(selectedDriver).length > 0 &&
                           selectedDriver.bidFare
-                        ? `${selectedDriver.bidFare}$`
+                        ? `$${selectedDriver.bidFare}`
                         : bidFare
-                        ? bidFare
+                        ? `$${bidFare}`
                         : fare
+                        ? `$${fare}`
+                        : ''
                     }
                     onChangeText={setFare}
                     selectionColor={Colors.black}
@@ -1775,7 +1777,7 @@ export default function PassengerHomeScreen({navigation}) {
                           ? 'Bid Fare'
                           : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
-                          {selectedDriver &&
+                          ${selectedDriver &&
                           Object.keys(selectedDriver).length > 0 &&
                           !selectedDriver.bidFare
                             ? selectedDriver.fare
@@ -1785,7 +1787,7 @@ export default function PassengerHomeScreen({navigation}) {
                             : bidFare
                             ? bidFare
                             : fare}
-                          ${' '}
+                          {' '}
                         </Text>
                         Distance:
                         <Text style={styles.valueStyle}>{distance} miles </Text>
@@ -1797,7 +1799,7 @@ export default function PassengerHomeScreen({navigation}) {
                     </View>
                   ) : null}
 
-                  {fare && !data && (
+                  {fare && !data && distance > 3 && (
                     <TouchableOpacity
                       onPress={() => showBidFareModal()}
                       style={{

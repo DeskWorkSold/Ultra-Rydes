@@ -44,7 +44,7 @@ function DriverWithdrawScreen ({route, navigation}) {
             ]}
           >
             Withdraw:
-            <Text style={{color: Colors.secondary}}> {item.withdraw}$ </Text>
+            <Text style={{color: Colors.secondary}}> ${item.withdraw} </Text>
           </Text>
         </TouchableOpacity>
       </View>

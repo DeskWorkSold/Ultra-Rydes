@@ -355,8 +355,8 @@ export default function DriverDetailScreen({navigation}) {
       address == '' ||
       city == '' ||
       profilePicture == '' ||
-      cnicFrontImg == '' ||
-      cnicBackImg == '' ||
+      // cnicFrontImg == '' ||
+      // cnicBackImg == '' ||
       licenseFrontImg == '' ||
       licenseBackImg == ''
     ) {
@@ -386,7 +386,7 @@ export default function DriverDetailScreen({navigation}) {
         return false;
       }
       if (cnic == '') {
-        setToastMsg('Cnic cannot be empty');
+        setToastMsg('Driving licence number cannot be empty');
         setCnicError(true);
         return false;
       }
@@ -424,14 +424,14 @@ export default function DriverDetailScreen({navigation}) {
         setToastMsg('Please set Profile Picture');
         return false;
       }
-      if (cnicFrontImg == '') {
-        setToastMsg('Please upload Cnic front Picture');
-        return false;
-      }
-      if (cnicBackImg == '') {
-        setToastMsg('Please upload Cnic back Picture');
-        return false;
-      }
+      // if (cnicFrontImg == '') {
+      //   setToastMsg('Please upload Cnic front Picture');
+      //   return false;
+      // }
+      // if (cnicBackImg == '') {
+      //   setToastMsg('Please upload Cnic back Picture');
+      //   return false;
+      // }
       if (licenseFrontImg == '') {
         setToastMsg('Please upload license front Picture');
         return false;
@@ -445,14 +445,14 @@ export default function DriverDetailScreen({navigation}) {
         setLoading(true);
         const CurrentUser = auth().currentUser;
         const reference = storage().ref(profilePicture);
-        const cnicReferenceFront = storage().ref(cnicFrontImg);
-        const cnicReferenceBack = storage().ref(cnicBackImg);
+        // const cnicReferenceFront = storage().ref(cnicFrontImg);
+        // const cnicReferenceBack = storage().ref(cnicBackImg);
         const licenseReferenceFront = storage().ref(licenseFrontImg);
         const licenseReferenceBack = storage().ref(licenseBackImg);
         const pathToFile = profilePicture;
         await reference.putFile(pathToFile);
-        await cnicReferenceFront.putFile(cnicFrontImg);
-        await cnicReferenceBack.putFile(cnicBackImg);
+        // await cnicReferenceFront.putFile(cnicFrontImg);
+        // await cnicReferenceBack.putFile(cnicBackImg);
         await licenseReferenceFront.putFile(licenseFrontImg);
         await licenseReferenceBack.putFile(licenseBackImg);
         firestore()
@@ -464,12 +464,12 @@ export default function DriverDetailScreen({navigation}) {
             lastName: lastName,
             dateOfBirth: dateOfBirth,
             Email: Email,
-            cnic: cnic,
+            DLNumber: cnic,
             address: address,
             city: city,
             phoneNumber: phoneNumber,
-            cnicFrontImg: cnicFrontImg,
-            cnicBackImg: cnicBackImg,
+            // cnicFrontImg: cnicFrontImg,
+            // cnicBackImg: cnicBackImg,
             licenseFrontImg: licenseFrontImg,
             licenseBackImg: licenseBackImg,
             id: CurrentUser.uid,
@@ -580,7 +580,7 @@ export default function DriverDetailScreen({navigation}) {
                   />
                   <TextInput
                     style={styles.fieldStyles}
-                    label="Cnic"
+                    label="Driving Licence"
                     value={cnic}
                     error={CnicError}
                     onChangeText={setCinic}
@@ -637,9 +637,9 @@ export default function DriverDetailScreen({navigation}) {
                   />
                 </View>
                 <View style={styles.picsContainer}>
-                  <Text style={styles.picsHeadingStyle}>Cnic Pictures</Text>
-                  <View style={styles.picItemContainer}>
-                    <TouchableOpacity
+                  {/* <Text style={styles.picsHeadingStyle}>Cnic Pictures</Text>
+                  <View style={styles.picItemContainer}> */}
+                    {/* <TouchableOpacity
                       onPress={cnicFrontShowModal}
                       style={styles.itemContainer}>
                       <Image
@@ -662,8 +662,8 @@ export default function DriverDetailScreen({navigation}) {
                         }
                       />
                       <Text style={styles.itemTextStyle}>Back</Text>
-                    </TouchableOpacity>
-                  </View>
+                    </TouchableOpacity> */}
+                  {/* </View> */}
                 </View>
                 <View style={styles.picsContainer}>
                   <Text style={styles.picsHeadingStyle}>License Pictures</Text>

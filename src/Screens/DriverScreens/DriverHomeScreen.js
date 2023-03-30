@@ -20,6 +20,10 @@ import Geolocation from 'react-native-geolocation-service';
 import {getPreciseDistance} from 'geolib';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useCallback} from 'react';
+import Sound from 'react-native-sound';
+import tone from '../../../assets/my_sound.mp3';
+import mytone from '../../Assets/my_sound.mp3';
+import {create} from 'react-test-renderer';
 
 export default function DriverHomeScreen({navigation, route}) {
   let reload = route.params;
@@ -45,10 +49,128 @@ export default function DriverHomeScreen({navigation, route}) {
   const [driverStatus, setDriverStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [passengerBookingData, setPassengerBookingData] = useState([]);
+  const [requestIds, setRequestIds] = useState([]);
   const [inlinedDrivers, setInlinedDrivers] = useState(false);
-  const [checkData, setCheckData] = useState([]);
-
   const [watchState, setWatchState] = useState(null);
+  const [ding, setDing] = useState('');
+
+  Sound.setCategory('Playback');
+
+  useEffect(() => {
+    let createSound = new Sound(mytone, error => {
+      if (error) {
+        console.log('failed to load the sound', error);
+        return;
+      }
+      // if loaded successfully
+      console.log(
+        'duration in seconds: ' +
+          createSound.getDuration() +
+          'number of channels: ' +
+          createSound.getNumberOfChannels(),
+        setDing(createSound),
+        // playPause()
+      );
+    });
+  }, [passengerBookingData]);
+
+  useEffect(() => {
+    if (passengerBookingData.length < requestIds.length) {
+      console.log('hello');
+      setRequestIds(
+        passengerBookingData &&
+          passengerBookingData.length > 0 &&
+          passengerBookingData.map((e, i) => {
+            if (e?.passengerData) {
+              return e.passengerData.id;
+            } else {
+              return e?.id;
+            }
+          }),
+      );
+    }
+
+    if (ding && Object.keys(ding).length > 0) {
+      ding.setVolume(1);
+      playPause();
+      return () => {
+        ding.release();
+      };
+    }
+  }, [passengerBookingData, ding]);
+
+  const playPause = () => {
+    let passengerBookingDataId =
+      passengerBookingData.length > 0 &&
+      passengerBookingData.map((e, i) => {
+        return e?.passengerData ? e.passengerData.id : e.id;
+      });
+
+    let newRequest = [];
+
+    if (requestIds && requestIds.length > 0) {
+      passengerBookingDataId &&
+        passengerBookingDataId.length > 0 &&
+        passengerBookingDataId.forEach((e, i) => {
+          let newId =
+            requestIds &&
+            requestIds.length > 0 &&
+            requestIds.every((j, ind) => {
+              if (e !== j) {
+                return e;
+              }
+            });
+          newId && newRequest.push(newId);
+        });
+    }
+
+    if (
+      passengerBookingData &&
+      passengerBookingData.length > 0 &&
+      requestIds.length > 0 &&
+      newRequest &&
+      newRequest.length > 0
+    ) {
+      ding.play(success => {
+        if (success) {
+          console.log('successfully finished playing');
+          setRequestIds(
+            passengerBookingData &&
+              passengerBookingData.length > 0 &&
+              passengerBookingData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
+          );
+        } else {
+          console.log('playback failed due to audio decoding errors');
+        }
+      });
+    }
+    if (requestIds.length == 0 && passengerBookingData.length > 0) {
+      ding.play(success => {
+        if (success) {
+          console.log('successfully finished playing');
+          setRequestIds(
+            passengerBookingData &&
+              passengerBookingData.length > 0 &&
+              passengerBookingData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
+          );
+        } else {
+          console.log('playback failed due to audio decoding errors');
+        }
+      });
+    }
+  };
 
   var watchId;
   const getLocationUpdates = async () => {
@@ -118,6 +240,7 @@ export default function DriverHomeScreen({navigation, route}) {
       console.log(error, 'error');
     }
   };
+
   useEffect(() => {
     getDriverBookingData();
   }, []);
@@ -132,9 +255,9 @@ export default function DriverHomeScreen({navigation, route}) {
             querySnapshot.forEach(documentSnapshot => {
               let data = documentSnapshot.data();
 
-              if (data?.requestStatus == 'accepted') {
-                setPassengerBookingData([]);
-              }
+              // if (data?.requestStatus == 'accepted') {
+              //   setPassengerBookingData([]);
+              // }
 
               if (!data?.requestStatus) {
                 let dis = getPreciseDistance(
@@ -224,7 +347,7 @@ export default function DriverHomeScreen({navigation, route}) {
                   if (
                     data &&
                     data.passengerData &&
-                    driverData.cnic == data.driverData.cnic &&
+                    driverData.id == data.driverData.id &&
                     !data.requestStatus &&
                     !checkRejectStatus
                   ) {
@@ -241,17 +364,16 @@ export default function DriverHomeScreen({navigation, route}) {
                     ) {
                       requestData.push(data);
                     }
-                    console.log(requestData, 'request');
                   }
                 }
               }
             });
+
             setPassengerBookingData(requestData);
+
             setLoading(false);
           });
       }
-    } else {
-      setPassengerBookingData([]);
     }
   };
 
@@ -285,7 +407,7 @@ export default function DriverHomeScreen({navigation, route}) {
       .get()
       .then(doc => {
         let data = doc.data();
-        if (data.inlined) {
+        if (data?.inlined) {
           setInlinedDrivers(true);
         }
       });
@@ -408,12 +530,12 @@ export default function DriverHomeScreen({navigation, route}) {
           <Text style={styles.itemTextStyle}>
             Fare:
             <Text style={styles.itemLocStyle}>
-              {item.passengerData ? item.passengerData.fare : item.fare}$
+              ${item.passengerData ? item.passengerData.fare : item.fare}
             </Text>
           </Text>
           {items && items.bidFare > 0 && (
             <Text style={styles.itemTextStyle}>
-              Bid Fare:<Text style={styles.itemLocStyle}>{items.bidFare}$</Text>
+              Bid Fare:<Text style={styles.itemLocStyle}>${items.bidFare}</Text>
             </Text>
           )}
         </TouchableOpacity>

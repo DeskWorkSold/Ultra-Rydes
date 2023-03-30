@@ -15,7 +15,7 @@ import {ScrollView} from 'react-native-gesture-handler';
 function DriverHistorySingleDataScreen({navigation, route}) {
   const [driverProfilePicUrl, setDriverProfilePicUrl] = useState('');
   const [passengerProfilePicUrl, setPassengerProfilePicUrl] = useState('');
-  console.log(route.params, 'route');
+
   const ref = useRef();
   const mapRef = useRef();
   let data = route.params.item;
@@ -232,7 +232,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                   payment:{' '}
                   <Text style={{color: Colors.secondary, fontSize: 16}}>
                     {' '}
-                    {data.payment}${' '}
+                    ${data.payment}{' '}
                   </Text>
                 </Text>
               )}
@@ -242,7 +242,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                 Fare:{' '}
                 <Text style={{color: Colors.secondary, fontSize: 16}}>
                   {' '}
-                  {fare ? fare : data.driverData.fare}${' '}
+                  ${fare ? fare : data.driverData.fare}{' '}
                 </Text>
               </Text>
             </View>

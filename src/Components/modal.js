@@ -24,22 +24,22 @@ const AppModal = (Prop) => {
         }}>
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <View style={{flexDirection:"row",justifyContent:"space-around",width:"100%",marginBottom:20,alignItems:"center"}} >
+            <View style={{flexDirection:"row",justifyContent:"center",width:"100%",marginBottom:20,alignItems:"center"}} >
                 <TouchableOpacity onPress={() => setSelected({...selected,bidWithMinimumDeduction:selected.bidWithMinimumDeduction?false:true,bidWithMaximumDeduction:false,bidWithMidDeduction:false}) } style={{borderWidth:1,borderColor:"white",borderRadius:10,padding:20,paddingHorizontal:10,backgroundColor:selected.bidWithMinimumDeduction? "green" : "white",width:"30%"}} >
                     <Text style={{color:"black",fontSize:18,fontWeight:"600",textAlign:"center"}} >
-                        { state =="driver" ? ( fare * (103/100)).toFixed(2)  : ( fare * (97/100)).toFixed(2)}$
+                        ${ state =="driver" ? ( fare * (103/100)).toFixed(2)  : ( fare * (97/100)).toFixed(2)}
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setSelected({...selected,bidWithMidDeduction:selected.bidWithMidDeduction?false:true,bidWithMaximumDeduction:false,bidWithMinimumDeduction:false  }) }  style={{borderWidth:1,borderColor:"white",borderRadius:10,padding:20,paddingHorizontal:10,backgroundColor:selected.bidWithMidDeduction? "green" : "white",width:"30%"}} >
+                <TouchableOpacity onPress={() => setSelected({...selected,bidWithMidDeduction:selected.bidWithMidDeduction?false:true,bidWithMaximumDeduction:false,bidWithMinimumDeduction:false  }) }  style={{borderWidth:1,borderColor:"white",borderRadius:10,padding:20,paddingHorizontal:10,backgroundColor:selected.bidWithMidDeduction? "green" : "white",width:"30%",marginLeft:10}} >
                     <Text style={{color:"black",fontSize:18,fontWeight:"600"}} >
-                        {state =="driver" ? ( fare * (106/100)).toFixed(2)  : (fare * (94/100)).toFixed(2)}$
+                        ${state =="driver" ? ( fare * (106/100)).toFixed(2)  : (fare * (94/100)).toFixed(2)}
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setSelected({...selected,bidWithMaximumDeduction:selected.bidWithMaximumDeduction?false:true,bidWithMidDeduction:false,bidWithMinimumDeduction:false}) } style={{borderWidth:1,borderColor:"white",borderRadius:10,padding:20,paddingHorizontal:10,backgroundColor:selected.bidWithMaximumDeduction? "green" : "white",width:"30%"}} >
+                {/* <TouchableOpacity onPress={() => setSelected({...selected,bidWithMaximumDeduction:selected.bidWithMaximumDeduction?false:true,bidWithMidDeduction:false,bidWithMinimumDeduction:false}) } style={{borderWidth:1,borderColor:"white",borderRadius:10,padding:20,paddingHorizontal:10,backgroundColor:selected.bidWithMaximumDeduction? "green" : "white",width:"30%"}} >
                     <Text style={{color:"black",fontSize:18,fontWeight:"600"}} >
                         {state =="driver" ? ( fare * (110/100)).toFixed(2)  :(fare * (90/100)).toFixed(2)}$
                     </Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 </View>
            
           <Pressable

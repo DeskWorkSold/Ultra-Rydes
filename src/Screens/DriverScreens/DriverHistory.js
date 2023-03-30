@@ -34,13 +34,15 @@ function DriverHistory({navigation}) {
     },
   ]);
 
-  const getBookingData = () => {
+  const getBookingData = async () => {
     setLoading(true);
     const id = auth().currentUser.uid;
 
-    firestore()
+   await firestore()
       .collection('Booking')
       .onSnapshot(querySnapshot => {
+        console.log(querySnapshot,"querySnap")
+        if(querySnapshot._exists){
         let driverBookingData = [];
         querySnapshot.forEach(documentSnapshot => {
           let data = documentSnapshot.data().bookingData;
@@ -48,22 +50,27 @@ function DriverHistory({navigation}) {
           data &&
             data.length > 0 &&
             data.map((e, i) => {
-              console.log(e, 'eeee');
+              
               if (e.driverData && e.driverData.id == id) {
                 driverBookingData.push(e);
               }
             });
         });
-        console.log(driverBookingData, 'bookingData');
+        
         setBookingData(driverBookingData);
         setLoading(false);
+        }
+        else{
+          setLoading(false)
+        }        
+
       });
-    setLoading(false);
+    
   };
 
-  const getCancelRidesData = () => {
+  const getCancelRidesData = async () => {
     setLoading(true);
-    firestore()
+    await firestore()
       .collection('RideCancel')
       .get()
       .then(doc => {
@@ -91,8 +98,6 @@ function DriverHistory({navigation}) {
     getBookingData();
     getCancelRidesData();
   }, []);
-
-  console.log(cancelledBookingData, 'cancell');
 
   const activateTab = index => {
     setCurrentTab(
@@ -170,12 +175,12 @@ function DriverHistory({navigation}) {
           </Text>
           <Text style={[styles.text, {paddingTop: 5, fontSize: 14}]}>
             Fare:{' '}
-            {fare
+            ${fare
               ? fare
               : item.passengerData.bidFare
               ? item.passengerData.bidFare
               : item.passengerData.fare}
-            $
+            
           </Text>
           <Text
             style={[
@@ -183,7 +188,7 @@ function DriverHistory({navigation}) {
               {paddingTop: 5, marginBottom: 5, fontSize: 14},
             ]}
           >
-            Payment: {item.payment}$
+            Payment: ${item.payment}
           </Text>
         </TouchableOpacity>
       </View>
@@ -249,12 +254,13 @@ function DriverHistory({navigation}) {
             ]}
           >
             Fare:{' '}
-            {fare
+            
+            ${fare
               ? fare
               : item.passengerData.bidFare
               ? item.passengerData.bidFare
               : item.passengerData.fare}
-            $
+            
           </Text>
         </TouchableOpacity>
       </View>
@@ -264,7 +270,7 @@ function DriverHistory({navigation}) {
   const firstRoute = useCallback(() => {
     return (
       <View style={{marginVertical: 20}}>
-        {!bookingData && bookingData.length == 0 ? (
+        {bookingData && bookingData.length == 0 ? (
           <View
             style={{
               alignItems: 'center',
@@ -299,7 +305,7 @@ function DriverHistory({navigation}) {
   const secondeRoute = useCallback(() => {
     return (
       <View style={{marginVertical: 20}}>
-        {!cancelledBookingData && cancelledBookingData.length == 0 ? (
+        {cancelledBookingData && cancelledBookingData.length == 0 ? (
           <View
             style={{
               alignItems: 'center',

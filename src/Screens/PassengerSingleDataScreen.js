@@ -236,7 +236,7 @@ function PassengerHistorySingleData({navigation, route}) {
                   payment:{' '}
                   <Text style={{color: Colors.secondary, fontSize: 14}}>
                     {' '}
-                    {data.payment}${' '}
+                    ${data.payment}{' '}
                   </Text>
                 </Text>
               )}
@@ -246,7 +246,7 @@ function PassengerHistorySingleData({navigation, route}) {
                 Fare:{' '}
                 <Text style={{color: Colors.secondary, fontSize: 14}}>
                   {' '}
-                  {fare ? fare : data.driverData.fare}${' '}
+                  ${fare ? fare : data.driverData.fare}{' '}
                 </Text>
               </Text>
             </View>

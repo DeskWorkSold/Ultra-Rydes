@@ -40,7 +40,7 @@ function DepositDataScreen ({route,navigation}) {
                   styles.text,
                   {paddingTop: 5, marginBottom: 5, fontSize: 14},
                 ]}>
-                Deposit: <Text style={{color:Colors.secondary}} > {item.payment}$ </Text>
+                Deposit: <Text style={{color:Colors.secondary}} > ${item.payment} </Text>
               </Text>
               
               

@@ -128,7 +128,7 @@ export default function DriverBiddingScreen({navigation}) {
         route.params.selectedDriver &&
         setSelectedDriver(route.params.selectedDriver);
     }
-  }, []);
+  }, [data]);
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -141,6 +141,16 @@ export default function DriverBiddingScreen({navigation}) {
   }, [loading]);
 
   const getLocationUpdates = () => {
+    // let myDriverArrived;
+    // firestore().collection("Request").doc(passengerData?.id??data.id).get().then(doc=>{
+    //   let data = doc.data()
+    //   if(data && Object.keys(data).length>0){
+    //     console.log(data,"dataaa")
+    //         myDriverArrived = data.driverArriveAtPickupLocation
+    //   }
+    // })
+    // console.log(myDriverArrived,"arriver")
+
     if (
       !arrive.pickUpLocation &&
       selectedDriver &&
@@ -197,7 +207,7 @@ export default function DriverBiddingScreen({navigation}) {
         setDriverCurrentLocation({
           ...driverCurrentLocation,
           latitude: latitude,
-          longitude:longitude,
+          longitude: longitude,
           heading: heading,
         });
       })
@@ -570,9 +580,16 @@ export default function DriverBiddingScreen({navigation}) {
         console.log(error);
       });
 
-      firestore().collection("Request").doc(route.params?.data?.id?route.params?.data?.id :route.params?.data?.passengerData.id ).update({
-        bookingStatus : "complete"
-      })
+    firestore()
+      .collection('Request')
+      .doc(
+        route.params?.data?.id
+          ? route.params?.data?.id
+          : route.params?.data?.passengerData.id,
+      )
+      .update({
+        bookingStatus: 'complete',
+      });
 
     firestore()
       .collection('inlinedDriver')
@@ -603,8 +620,6 @@ export default function DriverBiddingScreen({navigation}) {
         console.log(error);
       });
   };
-
-  console.log(arriveDropOffLocation, 'droplocationsarrive');
 
   const DropOffModal = useCallback(() => {
     return (
@@ -655,7 +670,7 @@ export default function DriverBiddingScreen({navigation}) {
               >
                 Bill Amount:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  {data?.myDriversData?.bidFare ?? data.fare}$
+                  ${data?.myDriversData?.bidFare ?? data.fare}
                 </Text>
               </Text>
               <TouchableOpacity
@@ -951,8 +966,6 @@ export default function DriverBiddingScreen({navigation}) {
         .catch(error => console.warn(error));
     }
   };
-
-  console.log(selectedDriver, 'selected');
 
   const sendRequest = () => {
     if (!selectedDriver) {
@@ -1302,7 +1315,13 @@ export default function DriverBiddingScreen({navigation}) {
         }}
       />
     );
-  }, [selectedDriver, myDriverData, driverCurrentLocation]);
+  }, [
+    selectedDriver,
+    myDriverData,
+    driverCurrentLocation,
+    route,
+    passengerState,
+  ]);
 
   const cancelRideByDriver = () => {
     setCancelRide(true);
@@ -1315,7 +1334,25 @@ export default function DriverBiddingScreen({navigation}) {
     await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
   };
 
-  console.log(arrive.dropOffLocation,"START")
+  const openWaze = () => {
+    if (
+      data?.driverArriveAtPickupLocation ||
+      arrivePickUpLocation ||
+      route.params.driverArrive
+    ) {
+      const url = `https://www.waze.com/ul?ll=${dropLocationCords.latitude},${dropLocationCords.longitude}&navigate=yes&zoom=17&from=${driverCurrentLocation.latitude},${driverCurrentLocation.longitude}`;
+      Linking.openURL(url);
+      return;
+    } else {
+      const url = `https://www.waze.com/ul?ll=${pickupCords.latitude},${pickupCords.longitude}&navigate=yes&zoom=17&from=${driverCurrentLocation.latitude},${driverCurrentLocation.longitude}`;
+      Linking.openURL(url);
+    }
+  };
+
+  // console.log(data,"dataaaa")
+  // console.log(startRide,"start")
+
+  console.log(route.params, 'patamsss');
 
   return loading ? (
     <View
@@ -1357,7 +1394,6 @@ export default function DriverBiddingScreen({navigation}) {
               title="pickup Location"
               description={passengerData.pickupAddress}
             />
-
             {Object.keys(dropLocationCords).length > 0 && (
               <Marker
                 coordinate={dropLocationCords}
@@ -1420,9 +1456,26 @@ export default function DriverBiddingScreen({navigation}) {
             )}
           </MapView>
         )}
+
+        {selectedDriver && driverCurrentLocation.latitude && driverCurrentLocation.longitude && Object.keys(selectedDriver).length > 0 && (
+          <View>
+            <CustomButton
+              text={'Open waze'}
+              onPress={openWaze}
+              styleContainer={{
+                width: 120,
+                padding: 3,
+                marginHorizontal: 8,
+                marginTop: 20,
+              }}
+              btnTextStyle={{fontSize: 14}}
+            />
+          </View>
+        )}
+
         {((arrive.pickUpLocation && !startRide) ||
           (route.params?.driverArrive && !route.params.startRide) ||
-          (data.driverArriveAtPickupLocation &&
+          (data?.driverArriveAtPickupLocation &&
             !route.params?.startRide &&
             !startRide)) && (
           <TouchableOpacity
@@ -1477,7 +1530,8 @@ export default function DriverBiddingScreen({navigation}) {
             Duration:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
-            route.params.driverArrive
+            route.params.driverArrive ||
+            data?.driverArriveAtPickupLocation
               ? passengerData.minutes
               : Math.ceil(minutesAndDistanceDifference.minutes)}{' '}
             Minutes
@@ -1493,7 +1547,8 @@ export default function DriverBiddingScreen({navigation}) {
             Distance:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
-            route.params.driverArrive
+            route.params.driverArrive ||
+            data?.driverArriveAtPickupLocation
               ? passengerData.distance
               : (minutesAndDistanceDifference.distance * 0.621371).toFixed(
                   2,
@@ -1582,7 +1637,7 @@ export default function DriverBiddingScreen({navigation}) {
                   passengerData.bidFare > 0
                     ? 'Customer Bid:'
                     : 'Recomended Fare:'
-                } ${
+                } $${
                   selectedDriver?.bidFare
                     ? selectedDriver?.bidFare
                     : passengerData.bidFare > 0
@@ -1590,7 +1645,7 @@ export default function DriverBiddingScreen({navigation}) {
                     : selectedDriver?.bidFare
                     ? selectedDriver?.bidFare
                     : passengerData.fare
-                }$`}
+                }`}
               />
               {driverBidFare && (
                 <TextInput
@@ -1602,14 +1657,14 @@ export default function DriverBiddingScreen({navigation}) {
                   keyboardType="numeric"
                   editable={false}
                   onChangeText={setDriverBidFare}
-                  value={`Your Bid ${
+                  value={`Your Bid: $${
                     driverBidFare
                       ? driverBidFare
                       : route.params?.selectedDriver?.bidFare
-                  }$`}
+                  }`}
                 />
               )}
-              {passengerData.bidFare > 0 && !selectedDriver && (
+              {/* {passengerData.bidFare > 0 && !selectedDriver && (
                 <TouchableOpacity
                   onPress={() => setAppearBiddingOption(true)}
                   style={{
@@ -1631,7 +1686,7 @@ export default function DriverBiddingScreen({navigation}) {
                     Bid Fare
                   </Text>
                 </TouchableOpacity>
-              )}
+              )} */}
               {appearBiddingOption && (
                 <AppModal
                   modalVisible={appearBiddingOption}

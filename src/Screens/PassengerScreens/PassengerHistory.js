@@ -159,12 +159,12 @@ function PassengerHistory({navigation}) {
           </Text>
           <Text style={[styles.text, {paddingTop: 5, fontSize: 14}]}>
             Fare:{' '}
-            {fare
+            ${fare
               ? fare
               : item.passengerData.bidFare
               ? item.passengerData.bidFare
               : item.passengerData.fare}
-            $
+            
           </Text>
         </TouchableOpacity>
       </View>
@@ -234,12 +234,12 @@ function PassengerHistory({navigation}) {
             ]}
           >
             Fare:{' '}
-            {fare
+            ${fare
               ? fare
               : item.passengerData.bidFare
               ? item.passengerData.bidFare
               : item.passengerData.fare}
-            $
+            
           </Text>
         </TouchableOpacity>
       </View>
@@ -249,7 +249,7 @@ function PassengerHistory({navigation}) {
   const firstRoute = useCallback(() => {
     return (
       <View style={{marginVertical: 20}}>
-        {!bookingData && bookingData.length == 0 ? (
+        {bookingData && bookingData.length == 0 ? (
           <View
             style={{
               alignItems: 'center',
@@ -284,7 +284,7 @@ function PassengerHistory({navigation}) {
   const secondeRoute = useCallback(() => {
     return (
       <View style={{marginVertical: 20, flex: 1}}>
-        {!cancelledBookingData && cancelledBookingData.length == 0 ? (
+        {cancelledBookingData && cancelledBookingData.length == 0 ? (
           <View
             style={{
               alignItems: 'center',

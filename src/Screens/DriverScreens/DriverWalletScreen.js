@@ -48,10 +48,10 @@ const CurrentBalanceScreen = ({navigation}) => {
     total: null,
   });
 
-  const getAccountId = () => {
+  const getAccountId = async () => {
     let id = auth().currentUser.uid;
-
-    firestore()
+    setLoading(true);
+    await firestore()
       .collection('DriverstripeAccount')
       .doc(id)
       .onSnapshot(querySnapshot => {
@@ -71,12 +71,16 @@ const CurrentBalanceScreen = ({navigation}) => {
 
                 if (transfers == 'active' && card_payments == 'active') {
                   setStripeVerifiedAccount(true);
+                  setLoading(false);
                 }
               })
               .catch(error => {
+                setLoading(false);
                 console.log(error);
               });
           }
+        } else {
+          setLoading(false);
         }
       });
   };
@@ -162,8 +166,6 @@ const CurrentBalanceScreen = ({navigation}) => {
 
     mySpents && setEarn({...earn, total: mySpents});
   };
-
-  console.log(earn, 'earn');
 
   const getMonthlyAmountWithdrawFromWallet = () => {
     let myDepositData = [];

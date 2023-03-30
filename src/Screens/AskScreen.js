@@ -33,9 +33,12 @@ export default function AskScreen({navigation}) {
       let startRide = await AsyncStorage.getItem('startRide');
       let endRide = await AsyncStorage.getItem('EndRide');
 
-      console.log(checkDriverArrive, 'check');
+        
 
       data = JSON.parse(data);
+      if(checkDriverArrive){
+      data.driverArriveAtPickupLocation = true
+    }
       if (data && Object.keys(data).length > 0) {
         navigation.navigate('DriverRoutes', {
           screen: 'DriverBiddingScreen',
