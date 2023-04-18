@@ -18,7 +18,7 @@ import {set} from 'react-native-reanimated';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import {ToastAndroid} from 'react-native';
-const CurrentBalanceScreen = ({navigation,route}) => {
+const CurrentBalanceScreen = ({navigation, route}) => {
   const [currentwallet, setCurrentWallet] = useState(null);
   const [allWalletData, setAllWalletData] = useState(true);
   const [monthlyWalletData, setMonthlyWalletData] = useState([]);
@@ -33,40 +33,39 @@ const CurrentBalanceScreen = ({navigation,route}) => {
     total: null,
   });
 
-let routeData =  route.params
-console.log(routeData,"data")
+  let routeData = route.params;
+  console.log(routeData, 'data');
 
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
-    console.log(userId,"iddddddddd")
+    console.log(userId, 'iddddddddd');
 
     const myWallet = await firestore()
       .collection('wallet')
       .doc(userId)
       .onSnapshot(querySnapshot => {
-        if(querySnapshot.exists)
-        {
-        let data = querySnapshot.data().wallet;
-        setAllData(data);
-        let date = new Date();
-        let currentMonth = date.getMonth();
-        let currentYear = date.getFullYear();
-        let currentDate = date.getDate();
+        if (querySnapshot.exists) {
+          let data = querySnapshot.data().wallet;
+          setAllData(data);
+          let date = new Date();
+          let currentMonth = date.getMonth();
+          let currentYear = date.getFullYear();
+          let currentDate = date.getDate();
 
-        setMonthlyWalletData(
-          data &&
-            data.length > 0 &&
-            data.filter((e, i) => {
-              let walletDate = e.date.toDate();
-              let walletMonth = walletDate.getMonth();
-              let walletYear = walletDate.getFullYear();
-              if (walletMonth == currentMonth && walletYear == currentYear) {
-                return e;
-              }
-            }),
-        );
-      }
-      }); 
+          setMonthlyWalletData(
+            data &&
+              data.length > 0 &&
+              data.filter((e, i) => {
+                let walletDate = e.date.toDate();
+                let walletMonth = walletDate.getMonth();
+                let walletYear = walletDate.getFullYear();
+                if (walletMonth == currentMonth && walletYear == currentYear) {
+                  return e;
+                }
+              }),
+          );
+        }
+      });
   };
 
   useEffect(() => {
@@ -98,8 +97,13 @@ console.log(routeData,"data")
     allData &&
       allData.length > 0 &&
       allData.map((e, i) => {
-        if (e && e.fare) {
-          mySpentData.push(Number(e.fare) + Number(e.tip));
+        console.log(e, 'eee');
+        if ((e && e.fare) || e.cancellationCharges) {
+          mySpentData.push(
+            Number(e?.fare ?? 0) +
+              Number(e?.tip ?? 0) +
+              Number(e?.cancellationCharges ? e.cancellationCharges : 0),
+          );
         }
       });
     console.log(mySpentData, 'spentData');
@@ -155,12 +159,12 @@ console.log(routeData,"data")
   };
 
   useEffect(() => {
-    if (deposit && deposit.total ||  spent.total) {
-      let currentWalletAmount = Number(deposit.total) -Number(spent.total);
-      console.log(currentWalletAmount,"current")
+    if ((deposit && deposit.total) || spent.total) {
+      let currentWalletAmount = Number(deposit.total) - Number(spent.total);
+      console.log(currentWalletAmount, 'current');
       setCurrentWallet(currentWalletAmount.toFixed(2));
     }
-  }, [deposit, spent,routeData,allWalletData]);
+  }, [deposit, spent, routeData, allWalletData]);
 
   useEffect(() => {
     if (allData && allData.length > 0) {
@@ -171,20 +175,14 @@ console.log(routeData,"data")
       getMonthlyAmountDepositInWallet();
       getMonthlyAmountSpentFromWallet();
     }
-  }, [allData, monthlyWalletData,routeData,allWalletData]);
+  }, [allData, monthlyWalletData, routeData, allWalletData]);
 
   const navigateToPaymentScreen = () => {
-    if (!addAmount) {
-      ToastAndroid.show('Kindly Enter Deposit Amount', ToastAndroid.SHORT);
-    } else {
-      navigation.navigate('passengerPaymentMethod', addAmount);
-      setAddAmount(null)
-    }
+    navigation.navigate('passengerPaymentMethod', addAmount);
   };
 
   return (
-    <SafeAreaView>
-      <StatusBar backgroundColor={COLORS.black} />
+    <SafeAreaView style={{flex: 1}}>
       <ScrollView
         style={{height: '100%', backgroundColor: COLORS.white}}
         vertical
@@ -268,7 +266,7 @@ console.log(routeData,"data")
                     color: COLORS.black,
                   }}
                 >
-                  ${currentwallet}
+                  ${currentwallet ?? 0}
                 </Text>
               </View>
             </View>
@@ -374,7 +372,10 @@ console.log(routeData,"data")
                       textAlign: 'center',
                     }}
                   >
-                    ${allWalletData ? deposit.total : deposit.monthly}
+                    $
+                    {allWalletData
+                      ? deposit?.total?.toFixed(2) ?? 0
+                      : deposit?.monthly?.toFixed(2) ?? 0}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -432,7 +433,10 @@ console.log(routeData,"data")
                       textAlign: 'center',
                     }}
                   >
-                    ${allWalletData ? spent.total : spent.monthly.toFixed(2)}
+                    $
+                    {allWalletData
+                      ? spent.total?.toFixed(2) ?? 0
+                      : spent?.monthly?.toFixed(2) ?? 0}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -443,56 +447,25 @@ console.log(routeData,"data")
                 paddingHorizontal: 25,
                 paddingVertical: 20,
               }}
-            >
-              <View
-                style={{
-                  paddingBottom: 5,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 17,
-                    fontWeight: 'bold',
-                    color: COLORS.black,
-                  }}
-                >
-                  Add Balance
-                </Text>
-              </View>
-            </View>
-            <View style={{alignItems: 'center'}}>
-              <View>
-                <View>
-                  <Text style={{color: COLORS.black}}>Amount</Text>
-                </View>
-                <View style={styles.NumberInput}>
-                  <TextInput
-                    style={[styles.TextInput, {color: COLORS.black}]}
-                    placeholder="Enter Deposit Amount"
-                    value={addAmount}
-                    keyboardType="numeric"
-                    onChangeText={setAddAmount}
-                    placeholderTextColor={COLORS.black}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-
-          <View
-            style={{
-              paddingTop: 20,
-              alignItems: 'center',
-            }}
-          >
-            <CustomButton
-              onPress={navigateToPaymentScreen}
-              text={'Add Amount'}
-              btnTextStyle={{color: COLORS.white}}
-            />
+            ></View>
           </View>
         </View>
       </ScrollView>
+      <View
+        style={{
+          paddingTop: 20,
+          alignItems: 'center',
+          position: 'absolute',
+          bottom: 60,
+          width: '100%',
+        }}
+      >
+        <CustomButton
+          onPress={navigateToPaymentScreen}
+          text={'Add Card'}
+          btnTextStyle={{color: COLORS.white}}
+        />
+      </View>
     </SafeAreaView>
   );
 };

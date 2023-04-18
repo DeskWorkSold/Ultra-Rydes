@@ -32,6 +32,7 @@ export default function DriverVehicleAdd() {
                     catName.push({ label: item.carName, value: item.carName });
                 });
                 setMyCategories(catName);
+                
             });
     }
     const [myCategories, setMyCategories] = useState([])

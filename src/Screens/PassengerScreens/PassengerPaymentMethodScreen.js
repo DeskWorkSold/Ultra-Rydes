@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import CustomButton from '../../Components/CustomButton';
@@ -12,9 +12,11 @@ import {ToastAndroid} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import {useEffect} from 'react';
+import {load} from 'npm';
 
 function PaymentMethod({navigation, route}) {
   const [savedCards, setSavedCards] = React.useState(true);
+  const [loader, setLoader] = React.useState(false);
 
   const [cardDetail, setCardDetail] = useState({
     cardHolderName: '',
@@ -76,6 +78,7 @@ function PaymentMethod({navigation, route}) {
   }, []);
 
   const getCardData = () => {
+    setLoader(true);
     let values = Object.values(cardDetail);
     console.log(values, 'bales');
     let flag = values.some(e => e == '');
@@ -99,6 +102,7 @@ function PaymentMethod({navigation, route}) {
           {merge: true},
         )
         .then(() => {
+          setLoader(false);
           ToastAndroid.show(
             'Card has been successfully added',
             ToastAndroid.SHORT,
@@ -106,10 +110,13 @@ function PaymentMethod({navigation, route}) {
           setSavedCards(true);
         })
         .catch(error => {
+          setLoader(false);
           console.log(error);
         });
     }
   };
+
+  console.log(savedCardsData, 'saved');
 
   const getSelectedCard = (selectedCard, ind) => {
     setSavedCardsData(
@@ -119,32 +126,50 @@ function PaymentMethod({navigation, route}) {
           if (ind == i) {
             return {
               ...e,
-              selected: e.selected ? false : true,
+              default: true,
             };
           } else {
             return {
               ...e,
-              selected: false,
+              default: false,
             };
           }
         }),
     );
   };
 
-  const routeToCheckOutScreen = () => {
-    console.log(savedCardsData, 'saved');
-
-    let flag = savedCardsData.some((e, i) => e.selected);
+  const routeToCheckOutScreen = async () => {
+    let flag = savedCardsData.some((e, i) => e.default);
 
     console.log(flag, 'flag');
     if (!flag) {
-      ToastAndroid.show('Kindly selected card for payment', ToastAndroid.SHORT);
+      ToastAndroid.show('Kindly select card', ToastAndroid.SHORT);
       return;
     }
-    navigation.navigate('passengerCheckoutScreen', {
-      cardData: savedCardsData,
-      amount: route.params,
-    });
+
+    console.log(savedCards, 'saved');
+
+    setLoader(true);
+
+    let id = auth().currentUser.uid;
+    firestore()
+      .collection('passengerCards')
+      .doc(id)
+      .set({savedCards: savedCardsData})
+      .then(res => {
+        ToastAndroid.show(
+          'This card has been successfully set to default',
+          ToastAndroid.SHORT,
+        );
+        setLoader(false);
+      })
+      .catch(error => {
+        ToastAndroid.show(
+          'Internal Server Error Unsuccessfull to set card to default',
+          ToastAndroid.SHORT,
+        );
+        setLoader(false);
+      });
   };
 
   return (
@@ -236,6 +261,7 @@ function PaymentMethod({navigation, route}) {
               </Text>
               <TextInput
                 placeholder="Enter card number..."
+                keyboardType="number-pad"
                 onChangeText={e =>
                   setCardDetail({...cardDetail, cardNumber: e})
                 }
@@ -299,6 +325,7 @@ function PaymentMethod({navigation, route}) {
               <Text style={[styles.text, {textAlign: 'left'}]}>CVC</Text>
               <TextInput
                 placeholder="Enter cvc..."
+                keyboardType="number-pad"
                 onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
                 placeholderTextColor={Colors.black}
                 style={{
@@ -325,7 +352,7 @@ function PaymentMethod({navigation, route}) {
                     cardHolderName={e.cardHolderName}
                     cardNumber={e.cardNumber}
                     cardDate={`${e.expiryMonth}/${e.expiryYear}`}
-                    selected={e?.selected}
+                    selected={e?.default}
                     onPress={() => getSelectedCard(e, i)}
                   />
                 );
@@ -344,14 +371,30 @@ function PaymentMethod({navigation, route}) {
           {!savedCards && (
             <CustomButton
               styleContainer={{marginRight: 10, width: '90%'}}
-              text={'Add card'}
+              text={
+                loader ? (
+                  <ActivityIndicator size={'large'} color={Colors.black} />
+                ) : (
+                  'Add card'
+                )
+              }
               onPress={() => getCardData()}
             />
           )}
-          {savedCards && savedCardsData && savedCardsData.length>0 && (
+          {savedCards && savedCardsData && savedCardsData.length > 0 && (
             <CustomButton
-              styleContainer={{marginRight: 10, width: '90%', marginTop: Dimensions.get("window").height/2.5}}
-              text={'Check Out'}
+              styleContainer={{
+                marginRight: 10,
+                width: '90%',
+                marginTop: Dimensions.get('window').height / 2.5,
+              }}
+              text={
+                loader ? (
+                  <ActivityIndicator size={'large'} color={Colors.black} />
+                ) : (
+                  'Make Default'
+                )
+              }
               onPress={() => routeToCheckOutScreen()}
             />
           )}

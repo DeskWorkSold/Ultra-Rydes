@@ -18,7 +18,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal} from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
 
-export default function AskScreen({navigation}) {
+export default function AskScreen({navigation, route}) {
+  let email = route.params;
+
   const [loading, setLoading] = useState();
   const {height} = useWindowDimensions();
   const [warningData, setWarningData] = useState([]);
@@ -26,19 +28,16 @@ export default function AskScreen({navigation}) {
   const getDriverBookingData = async () => {
     try {
       let data = await AsyncStorage.getItem('driverBooking');
-      console.log(data, 'dataaaaaaaaa');
       let checkDriverArrive = await AsyncStorage.getItem(
         'ArrivedAtpickUpLocation',
       );
       let startRide = await AsyncStorage.getItem('startRide');
       let endRide = await AsyncStorage.getItem('EndRide');
 
-        
-
       data = JSON.parse(data);
-      if(checkDriverArrive){
-      data.driverArriveAtPickupLocation = true
-    }
+      if (checkDriverArrive) {
+        data.driverArriveAtPickupLocation = true;
+      }
       if (data && Object.keys(data).length > 0) {
         navigation.navigate('DriverRoutes', {
           screen: 'DriverBiddingScreen',
@@ -71,7 +70,6 @@ export default function AskScreen({navigation}) {
       .collection('warning')
       .doc(uid)
       .onSnapshot(querySnapshot => {
-        console.log(querySnapshot, 'query');
         let data = querySnapshot.data();
         if (data) {
           data = data.warningToDriver;
@@ -96,10 +94,8 @@ export default function AskScreen({navigation}) {
       .doc(uid)
       .get()
       .then(doc => {
-        console.log(doc, 'doc');
         if (doc.exists) {
           let data = doc.data().warningToDriver;
-          console.log(data, 'dataaaaa');
           if (data && data.length > 0) {
             data = data.filter((e, i) => {
               return e.acknowledged;
@@ -108,10 +104,7 @@ export default function AskScreen({navigation}) {
             let myData = warningData[0];
             myData.acknowledged = true;
 
-
             let mergeData = [...data, myData];
-
-            console.log(mergeData, 'dataaa ');
 
             firestore()
               .collection('warning')
@@ -184,7 +177,6 @@ export default function AskScreen({navigation}) {
     try {
       let data = await AsyncStorage.getItem('passengerBooking');
       data = JSON.parse(data);
-      console.log(data, 'datasss');
       let checkDriverArrive = await AsyncStorage.getItem('driverArrive');
 
       if (data && Object.keys(data).length > 0) {
@@ -192,7 +184,9 @@ export default function AskScreen({navigation}) {
           screen: 'PassengerHomeScreen',
           params: {
             passengerData: data?.passengerData ? data?.passengerData : data,
-            driverData: data?.driverData ? data?.driverData : data?.myDriversData,
+            driverData: data?.driverData
+              ? data?.driverData
+              : data?.myDriversData,
             driverArriveAtPickupLocation: checkDriverArrive ? true : false,
           },
         });
@@ -244,7 +238,6 @@ export default function AskScreen({navigation}) {
       .then(doc => {
         doc.forEach(async querySnapshot => {
           let data = querySnapshot?._data;
-          console.log(data, 'dataaa');
 
           if (
             data &&
@@ -299,10 +292,17 @@ export default function AskScreen({navigation}) {
         .doc(CurrentUser.uid)
         .onSnapshot(documentSnapshot => {
           const checkEmpty = documentSnapshot.data();
+          console.log(checkEmpty, 'empty');
           if (checkEmpty == null) {
             setLoading(false);
             navigation.navigate('PassengerDetailScreen', {
               uid: CurrentUser.uid,
+              email: email,
+            });
+          } else if (!checkEmpty?.paymentCardAdd) {
+            navigation.navigate('AddCardScreen', {
+              uid: CurrentUser.uid,
+              email: email,
             });
           } else {
             setLoading(false);
@@ -325,7 +325,10 @@ export default function AskScreen({navigation}) {
           const checkEmpty = documentSnapshot.data();
           if (checkEmpty == null) {
             setLoading(false);
-            navigation.navigate('DriverDetailScreen', {uid: CurrentUser.uid});
+            navigation.navigate('DriverDetailScreen', {
+              uid: CurrentUser.uid,
+              email: email,
+            });
           } else if (!checkEmpty.vehicleDetails) {
             setLoading(false);
             navigation.navigate('DriverRoutes', {screen: 'DriverVehicleAdd'});

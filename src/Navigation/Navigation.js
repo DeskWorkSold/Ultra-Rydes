@@ -54,6 +54,7 @@ import DriverWithdrawScreen from '../Screens/DriverScreens/DriverWithdraw';
 import DriverEarningScreen from '../Screens/DriverScreens/DriverEarning';
 import PredefinedPlaces from '../Screens/PassengerScreens/addPlaces';
 import PassengerDefinedPlaces from '../Screens/PassengerScreens/passengerDefinedPlacesScreen';
+import AddCard from '../Screens/PassengerScreens/addCardScreen';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
@@ -128,7 +129,6 @@ function PassengerRoutes() {
           headerShown: false,
         }}
       />
-      
     </Drawer.Navigator>
   );
 }
@@ -136,7 +136,8 @@ function DriverRoutes() {
   return (
     <Drawer.Navigator
       drawerContent={props => <DrawerContentDriver {...props} />}
-      screenOptions={{headerShown: false}}>
+      screenOptions={{headerShown: false}}
+    >
       <Drawer.Screen
         name="DriverHomeScreen"
         component={DriverHomeScreen}
@@ -241,6 +242,7 @@ export default function Navigation() {
           name="PassengerDetailScreen"
           component={PassengerDetailScreen}
         />
+        <Stack.Screen name="AddCardScreen" component={AddCard} />
         <Stack.Screen
           name="DriverDetailScreen"
           component={DriverDetailScreen}
@@ -306,10 +308,7 @@ export default function Navigation() {
           name="driverRulesAndTermsDetailScreen"
           component={DriverRulesAndTermsDetail}
         />
-        <Stack.Screen
-          name="driverFaqDetail"
-          component={DriverFaqDetail}
-        />
+        <Stack.Screen name="driverFaqDetail" component={DriverFaqDetail} />
         <Stack.Screen
           name="driverWithdrawScreen"
           component={DriverWithdrawScreen}

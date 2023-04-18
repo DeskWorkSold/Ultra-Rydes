@@ -251,13 +251,17 @@ export default function DriverBiddingScreen({navigation}) {
       return () => backHandler.remove();
     } else if (!selectedDriver && !loading) {
       const backAction = () => {
-        Alert.alert('Hold on!', 'You have to either accept the offer or reject it', [
-          {
-            text: 'Cancel',
-            onPress: () => null,
-            style: 'cancel',
-          },
-        ]);
+        Alert.alert(
+          'Hold on!',
+          'You have to either accept the offer or reject it',
+          [
+            {
+              text: 'Cancel',
+              onPress: () => null,
+              style: 'cancel',
+            },
+          ],
+        );
         return true;
       };
 
@@ -1312,9 +1316,9 @@ export default function DriverBiddingScreen({navigation}) {
         origin={
           driverCurrentLocation && Object.keys(driverCurrentLocation).length > 0
             ? driverCurrentLocation
-            : myDriverData.currentLocation
-            ? myDriverData.currentLocation
-            : driverData.currentLocation
+            : myDriverData?.currentLocation
+            ? myDriverData?.currentLocation
+            : driverData?.currentLocation
         }
         destination={pickupCords}
         apikey={GoogleMapKey.GOOGLE_MAP_KEY}
@@ -1335,18 +1339,10 @@ export default function DriverBiddingScreen({navigation}) {
         }}
       />
     );
-  }, [
-    selectedDriver,
-    myDriverData,
-    driverCurrentLocation,
-    route,
-    passengerState,
-  ]);
-
+  }, [selectedDriver, myDriverData, driverCurrentLocation]);
   const cancelRideByDriver = () => {
     setCancelRide(true);
   };
-
   const rideEndByDriver = async () => {
     setEndRide(true);
     setArriveDropOffLocation(false);
@@ -1357,18 +1353,16 @@ export default function DriverBiddingScreen({navigation}) {
   const openWaze = () => {
     if (
       data?.driverArriveAtPickupLocation ||
-      arrivePickUpLocation ||
+      arrive.pickUpLocation ||
       route.params.driverArrive
     ) {
       const url = `https://www.waze.com/ul?ll=${dropLocationCords.latitude},${dropLocationCords.longitude}&navigate=yes&zoom=17&from=${driverCurrentLocation.latitude},${driverCurrentLocation.longitude}`;
       Linking.openURL(url);
-      return;
     } else {
       const url = `https://www.waze.com/ul?ll=${pickupCords.latitude},${pickupCords.longitude}&navigate=yes&zoom=17&from=${driverCurrentLocation.latitude},${driverCurrentLocation.longitude}`;
       Linking.openURL(url);
     }
   };
-
   const rejectRequest = async () => {
     setRejectLoader(true);
     if (data && data.bidFare) {
@@ -1390,9 +1384,7 @@ export default function DriverBiddingScreen({navigation}) {
           }
         });
       let id = auth().currentUser.uid;
-
       rejectedDrivers = [...rejectedDrivers, id];
-
       await firestore()
         .collection('Request')
         .doc(data?.passengerData ? data.passengerData?.id : data.id)
@@ -1406,7 +1398,7 @@ export default function DriverBiddingScreen({navigation}) {
               'You have successfully rejected the request',
               ToastAndroid.SHORT,
             );
-            navigation.navigate("AskScreen");
+            navigation.navigate('AskScreen');
           }, 2000);
         })
         .catch(error => {
@@ -1453,7 +1445,7 @@ export default function DriverBiddingScreen({navigation}) {
             );
           }, 1000);
           setTimeout(() => {
-            navigation.navigate("AskScreen");
+            navigation.navigate('AskScreen');
           }, 2000);
         });
     }

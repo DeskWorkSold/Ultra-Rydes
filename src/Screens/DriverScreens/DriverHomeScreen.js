@@ -23,7 +23,6 @@ import {useCallback} from 'react';
 import Sound from 'react-native-sound';
 import tone from '../../../assets/my_sound.mp3';
 import mytone from '../../Assets/my_sound.mp3';
-import {create} from 'react-test-renderer';
 
 export default function DriverHomeScreen({navigation, route}) {
   let reload = route.params;
@@ -71,12 +70,14 @@ export default function DriverHomeScreen({navigation, route}) {
         setDing(createSound),
         // playPause()
       );
+      //   console.log(passengerBookingData.length, "" , requestIds.length)
+      //   if(passengerBookingData.length>requestIds.length){
+      // }
     });
   }, [passengerBookingData]);
 
   useEffect(() => {
     if (passengerBookingData.length < requestIds.length) {
-      console.log('hello');
       setRequestIds(
         passengerBookingData &&
           passengerBookingData.length > 0 &&
@@ -131,20 +132,25 @@ export default function DriverHomeScreen({navigation, route}) {
       newRequest &&
       newRequest.length > 0
     ) {
+      ding.setNumberOfLoops(2);
+
       ding.play(success => {
         if (success) {
           console.log('successfully finished playing');
-          setRequestIds(
-            passengerBookingData &&
-              passengerBookingData.length > 0 &&
-              passengerBookingData.map((e, i) => {
-                if (e?.passengerData) {
-                  return e.passengerData.id;
-                } else {
-                  return e.id;
-                }
-              }),
-          );
+
+          setTimeout(() => {
+            setRequestIds(
+              passengerBookingData &&
+                passengerBookingData.length > 0 &&
+                passengerBookingData.map((e, i) => {
+                  if (e?.passengerData) {
+                    return e.passengerData.id;
+                  } else {
+                    return e.id;
+                  }
+                }),
+            );
+          }, 30000);
         } else {
           console.log('playback failed due to audio decoding errors');
         }
@@ -154,17 +160,20 @@ export default function DriverHomeScreen({navigation, route}) {
       ding.play(success => {
         if (success) {
           console.log('successfully finished playing');
-          setRequestIds(
-            passengerBookingData &&
-              passengerBookingData.length > 0 &&
-              passengerBookingData.map((e, i) => {
-                if (e?.passengerData) {
-                  return e.passengerData.id;
-                } else {
-                  return e.id;
-                }
-              }),
-          );
+
+          setTimeout(() => {
+            setRequestIds(
+              passengerBookingData &&
+                passengerBookingData.length > 0 &&
+                passengerBookingData.map((e, i) => {
+                  if (e?.passengerData) {
+                    return e.passengerData.id;
+                  } else {
+                    return e.id;
+                  }
+                }),
+            );
+          }, 30000);
         } else {
           console.log('playback failed due to audio decoding errors');
         }
@@ -344,15 +353,16 @@ export default function DriverHomeScreen({navigation, route}) {
                       driverData.vehicleDetails.vehicleCategory;
                   }
 
-                  let id = auth().currentUser.uid
-                  let flag2 = data?.rejectedDrivers?.some((e,i)=>e == id )
-              
+                  let id = auth().currentUser.uid;
+                  let flag2 = data?.rejectedDrivers?.some((e, i) => e == id);
+
                   if (
                     data &&
                     data.passengerData &&
                     driverData.id == data.driverData.id &&
                     !data.requestStatus &&
-                    !checkRejectStatus && !flag2
+                    !checkRejectStatus &&
+                    !flag2
                   ) {
                     requestData.push(data);
                   } else {
@@ -363,7 +373,8 @@ export default function DriverHomeScreen({navigation, route}) {
                       mileDistance < 25 &&
                       flag &&
                       !matchUid &&
-                      !checkRejectStatus && !flag2
+                      !checkRejectStatus &&
+                      !flag2
                     ) {
                       requestData.push(data);
                     }

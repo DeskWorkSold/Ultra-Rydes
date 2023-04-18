@@ -43,6 +43,7 @@ import {useCallback} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useRoute} from '@react-navigation/native';
 import {Linking} from 'react-native';
+import {BASE_URI} from '../../Constants/Base_uri';
 import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';
 export default function PassengerHomeScreen({navigation}) {
@@ -156,6 +157,8 @@ export default function PassengerHomeScreen({navigation}) {
     details: '',
   });
 
+  const [buttonLoader, setButtonLoader] = useState(false);
+
   useEffect(() => {
     if (!selectedDriver && !route.params) {
       getLiveLocation();
@@ -193,7 +196,8 @@ export default function PassengerHomeScreen({navigation}) {
               !driverArrive.dropoffLocation &&
               !driverArriveAtdropoffLocation &&
               myData &&
-              myData.driverArriveAtDropoffLocation
+              myData.driverArriveAtDropoffLocation &&
+              myData?.confirmByPassenger
             ) {
               setDriverArriveAtdropoffLocation(true);
             }
@@ -272,7 +276,7 @@ export default function PassengerHomeScreen({navigation}) {
               }
             });
         } else {
-          console.log('no');
+          console.log('Permission Denied');
         }
       });
   };
@@ -389,7 +393,6 @@ export default function PassengerHomeScreen({navigation}) {
         setSelectedLocation(data.driverData.currentLocation);
       }
     }
-
     if (data) {
       let myData = JSON.stringify(data);
       AsyncStorage.setItem('passengerBooking', myData);
@@ -516,22 +519,20 @@ export default function PassengerHomeScreen({navigation}) {
       return;
     }
 
-    console.log((bidFare * 110) / 100);
-    console.log(wallet, 'wallet');
-    if (bidFare && wallet < (bidFare * 110) / 100) {
-      ToastAndroid.show(
-        "You don't have enough wallet amount",
-        ToastAndroid.SHORT,
-      );
-      return false;
-    }
-    if (fare && fare > wallet) {
-      ToastAndroid.show(
-        "You don't have enough wallet amount",
-        ToastAndroid.SHORT,
-      );
-      return false;
-    }
+    // if (bidFare && wallet < (bidFare * 110) / 100) {
+    //   ToastAndroid.show(
+    //     "You don't have enough wallet amount",
+    //     ToastAndroid.SHORT,
+    //   );
+    //   return false;
+    // }
+    // if (fare && fare > wallet) {
+    //   ToastAndroid.show(
+    //     "You don't have enough wallet amount",
+    //     ToastAndroid.SHORT,
+    //   );
+    //   return false;
+    // }
 
     if (!bidFare && !data) {
       let id = auth().currentUser.uid;
@@ -662,6 +663,11 @@ export default function PassengerHomeScreen({navigation}) {
     let serviceCharges = '';
     let Tfare = '';
     let distanceMinus = '';
+
+    if (myDistance < 1) {
+      myDistance = Math.ceil(myDistance);
+    }
+
     dummyDataCat.map(cat => {
       if (cat.carName == category) {
         cat.carMiles.map(miles => {
@@ -673,6 +679,7 @@ export default function PassengerHomeScreen({navigation}) {
             distanceMinus = myDistance - 3;
             let addCharge = baseCharge;
             myfare = miles.mileCharge * distanceMinus + addCharge;
+
             serviceCharges =
               (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
             Tfare = myfare + serviceCharges;
@@ -752,13 +759,159 @@ export default function PassengerHomeScreen({navigation}) {
     }
   };
 
+  const handlePayPress = async () => {
+    setButtonLoader(true);
+    let id = auth().currentUser.uid;
+
+    let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
+    let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
+
+    if (tip.includes('%')) {
+      let tipPercent = tip.slice(0, 2);
+      tipPercent = Number(tipPercent);
+      tip = (Number(rideFare) * tipPercent) / 100;
+    } else {
+      tip = Number(tip).toFixed(2);
+    }
+    let totalCharges = (Number(rideFare) + tip).toFixed(2);
+    if (wallet > totalCharges) {
+      firestore()
+        .collection('Request')
+        .doc(id)
+        .update({
+          confirmByPassenger: true,
+        })
+        .then(() => {
+          setButtonLoader(false);
+          setDriverArrive({
+            ...driverArrive,
+            pickupLocation: false,
+          });
+          setDriverArriveAtPickUpLocation(true);
+          ToastAndroid.show(
+            'You have succesfully confirm driver request',
+            ToastAndroid.SHORT,
+          );
+        })
+        .catch(error => {
+          setButtonLoader(false);
+          ToastAndroid.show(error.message, ToastAndroid.SHORT);
+        });
+      return;
+    } else if (wallet < totalCharges) {
+      let differenceAmount = Number(totalCharges) - Number(wallet);
+
+      firestore()
+        .collection('passengerCards')
+        .doc(id)
+        .get()
+        .then(doc => {
+          let myData = doc.data();
+
+          let savedCards = myData?.savedCards;
+
+          savedCards =
+            savedCards &&
+            savedCards.length > 0 &&
+            savedCards.filter((e, i) => {
+              return e.default;
+            });
+
+          // let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
+          // let rideFare =
+          //   data?.passengerData?.bidFare ?? data?.passengerData?.fare;
+
+          // if (tip.includes('%')) {
+          //   let tipPercent = tip.slice(0, 2);
+          //   tipPercent = Number(tipPercent);
+          //   tip = (rideFare * tipPercent) / 100;
+          // } else {
+          //   tip = Number(tip);
+          // }
+
+          // let totalCharges = (Number(rideFare) + tip).toFixed(2);
+
+          let customerData = {
+            cardNumber: savedCards[0].cardNumber,
+            expiryMonth: Number(savedCards[0].expiryMonth),
+            expiryYear: Number(savedCards[0].expiryYear),
+            cvc: savedCards[0].cvc,
+            amount: Number(differenceAmount).toFixed(2),
+          };
+
+          axios
+            .post(`${BASE_URI}dopayment`, customerData)
+            .then(res => {
+              let data = res.data;
+              console.log(typeof data.amount);
+              let {result, status} = data;
+              if (!status) {
+                ToastAndroid.show(data.message, ToastAndroid.SHORT);
+                return;
+              }
+              let walletData = {
+                payment: result.amount / 100,
+                fare: 0,
+                wallet: result.amount / 100,
+                date: new Date(),
+                tip: 0,
+              };
+              let id = auth().currentUser.uid;
+              firestore()
+                .collection('wallet')
+                .doc(id)
+                .set(
+                  {
+                    wallet: firestore.FieldValue.arrayUnion(walletData),
+                  },
+                  {merge: true},
+                )
+                .then(() => {
+                  firestore()
+                    .collection('Request')
+                    .doc(id)
+                    .update({
+                      confirmByPassenger: true,
+                    })
+                    .then(() => {
+                      setButtonLoader(false);
+                      setDriverArrive({
+                        ...driverArrive,
+                        pickupLocation: false,
+                      });
+                      setDriverArriveAtPickUpLocation(true);
+                      ToastAndroid.show(
+                        'You have succesfully confirm driver request',
+                        ToastAndroid.SHORT,
+                      );
+                    })
+                    .catch(error => {
+                      setButtonLoader(false);
+                      ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                    });
+                })
+                .catch(error => {
+                  setButtonLoader(false);
+                  console.log(error);
+                  ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                });
+            })
+            .catch(error => {
+              setButtonLoader(false);
+              console.log(error, 'error');
+              ToastAndroid.show('error occurs', ToastAndroid.SHORT);
+            });
+        });
+    }
+  };
+
   const ArriveModal = useCallback(() => {
     return (
       <View style={styles.centeredView}>
         <Modal
           animationType="slide"
           transparent={true}
-          visible={driverArrive.pickupLocation}
+          visible={driverArrive.pickupLocation && !driverArriveAtPickUpLocation}
           onRequestClose={() => {
             setDriverArrive({
               ...driverArrive,
@@ -779,20 +932,27 @@ export default function PassengerHomeScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => hideModal()}
+                onPress={() => handlePayPress()}
               >
-                <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
-                >
-                  confirm
-                </Text>
+                {buttonLoader ? (
+                  <ActivityIndicator size={'large'} color={Colors.black} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.textStyle,
+                      {backgroundColor: Colors.primary},
+                    ]}
+                  >
+                    confirm
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
       </View>
     );
-  }, [driverArrive]);
+  }, [driverArrive, buttonLoader, driverArriveAtPickUpLocation]);
 
   const getDriverRating = ind => {
     setDriverRatingStar(ind + 1);
@@ -801,21 +961,56 @@ export default function PassengerHomeScreen({navigation}) {
     setCarRatingStar(ind + 1);
   };
 
-  const confirmationByPassenger = () => {
+  const confirmationByPassenger = (rideFare, tip) => {
     if (carRatingStar && driverRatingStar) {
-      setDriverArrive({
-        ...driverArrive,
-        dropoffLocation: true,
-      });
-      setDriverArriveAtdropoffLocation(false);
-      setShowFeedBackModal(true);
+      // console.log(tip,"tip")
+      // let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
+      // let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
 
+      // if (tip.includes('%')) {
+      //   let tipPercent = tip?.slice(0, 2);
+      //   tipPercent = Number(tipPercent);
+      //   tip = (rideFare * tipPercent) / 100;
+      // } else {
+      //   tip = Number(tip);
+      // }
+
+      let remainingWallet = Number(rideFare) + Number(tip);
+
+      let walletData = {
+        payment: 0,
+        fare: rideFare,
+        wallet: -remainingWallet,
+        date: new Date(),
+        tip: tip,
+      };
+      let id = auth().currentUser.uid;
       firestore()
-        .collection('Request')
-        .doc(route.params.passengerData.id)
-        .onSnapshot(querySnapshot => {
-          let data = querySnapshot.data();
-          setBookingData(data);
+        .collection('wallet')
+        .doc(id)
+        .set(
+          {
+            wallet: firestore.FieldValue.arrayUnion(walletData),
+          },
+          {merge: true},
+        )
+        .then(() => {
+          setDriverArrive({
+            ...driverArrive,
+            dropoffLocation: true,
+          });
+          setDriverArriveAtdropoffLocation(false);
+          setShowFeedBackModal(true);
+          firestore()
+            .collection('Request')
+            .doc(route.params.passengerData.id)
+            .onSnapshot(querySnapshot => {
+              let data = querySnapshot.data();
+              setBookingData(data);
+            });
+        })
+        .catch(error => {
+          ToastAndroid.show(`${error.message}`, ToastAndroid.SHORT);
         });
     }
 
@@ -870,40 +1065,51 @@ export default function PassengerHomeScreen({navigation}) {
     if (!feedBack) {
       ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
     } else {
-      let id = auth().currentUser.uid;
-      let totalFare =
-        data.passengerData && data.passengerData.bidFare
-          ? data.passengerData.bidFare
-          : data.passengerData.fare;
-      let remainingWallet = 0 - Number(totalFare) - tipAmount;
-      let sendWalletData = {
-        fare: totalFare,
-        wallet: remainingWallet.toFixed(2),
-        tip: tipAmount,
-        date: new Date(),
-      };
-      firestore()
-        .collection('wallet')
-        .doc(id)
-        .set(
-          {
-            wallet: firestore.FieldValue.arrayUnion(sendWalletData),
-          },
-          {merge: true},
-        )
-        .then(() => {
-          console.log('wallet successfully updated');
-        })
-        .catch(error => {
-          console.log(error);
-        });
+      // let id = auth().currentUser.uid;
+      // let totalFare =
+      //   data.passengerData && data.passengerData.bidFare
+      //     ? data.passengerData.bidFare
+      //     : data.passengerData.fare;
+      // let remainingWallet = 0 - Number(totalFare) - tipAmount;
+      // let sendWalletData = {
+      //   fare: totalFare,
+      //   wallet: remainingWallet.toFixed(2),
+      //   tip: tipAmount,
+      //   date: new Date(),
+      // };
+      // firestore()
+      //   .collection('wallet')
+      //   .doc(id)
+      //   .set(
+      //     {
+      //       wallet: firestore.FieldValue.arrayUnion(sendWalletData),
+      //     },
+      //     {merge: true},
+      //   )
+      //   .then(() => {
+      //     console.log('wallet successfully updated');
+      //   })
+      //   .catch(error => {
+      //     console.log(error);
+      //   });
+
+      let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
+      let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
+
+      if (tip.includes('%')) {
+        let tipPercent = tip.slice(0, 2);
+        tipPercent = Number(tipPercent);
+        tip = (rideFare * tipPercent) / 100;
+      } else {
+        tip = Number(tip);
+      }
 
       let driverWallet = {
-        tip: tipAmount,
+        tip: tip,
         fare: 0,
         date: new Date(),
         withdraw: 0,
-        remainingWallet: tipAmount,
+        remainingWallet: tip,
       };
       firestore()
         .collection('driverWallet')
@@ -931,7 +1137,7 @@ export default function PassengerHomeScreen({navigation}) {
         driverData: route.params.driverData,
         carRating: carRatingStar,
         driverRating: driverRatingStar,
-        tip: tipAmount,
+        tip: tip,
         feedBack: feedBack,
         date: new Date(),
       };
@@ -945,7 +1151,6 @@ export default function PassengerHomeScreen({navigation}) {
           {merge: true},
         )
         .then(() => {
-          console.log('data successfully submit');
           ToastAndroid.show('Thanks for your feedBack', ToastAndroid.SHORT);
           navigation.navigate('AskScreen');
           AsyncStorage.removeItem('passengerBooking');
@@ -958,6 +1163,19 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const dropOffModal = useCallback(() => {
+    let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
+    let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
+
+    if (tip.includes('%')) {
+      let tipPercent = tip.slice(0, 2);
+      tipPercent = Number(tipPercent);
+      tip = (rideFare * tipPercent) / 100;
+    } else {
+      tip = Number(tip);
+    }
+
+    let totalCharges = (Number(rideFare) + tip).toFixed(2);
+
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -966,7 +1184,7 @@ export default function PassengerHomeScreen({navigation}) {
           visible={driverArriveAtdropoffLocation && !showFeedBackModal}
         >
           <View style={[styles.centeredView]}>
-            <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
+            <View style={[styles.modalView, {width: '90%', height: '70%'}]}>
               <Text style={[styles.modalText, {fontSize: 26}]}>
                 Congratulations!
               </Text>
@@ -996,28 +1214,49 @@ export default function PassengerHomeScreen({navigation}) {
                   },
                 ]}
               >
-                Your Bill Amount:{' '}
+                Your Fare Amount:{' '}
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  ${route.params.passengerData.bidFare ??
+                  $
+                  {route.params.passengerData.bidFare ??
                     route.params.passengerData.fare}
-                  
                 </Text>
               </Text>
-
-              <TextInput
-                placeholder="Enter Tip Amount"
-                placeholderTextColor={Colors.black}
-                keyboardType={'number-pad'}
-                style={{
-                  backgroundColor: Colors.white,
-                  width: '50%',
-                  textAlign: 'center',
-                  borderRadius: 10,
-                  marginBottom: 5,
-                  color: Colors.black,
-                }}
-                onChangeText={setTipAmount}
-              />
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 5,
+                    fontWeight: '500',
+                    fontSize: 14,
+                    alignSelf: 'flex-start',
+                  },
+                ]}
+              >
+                Your Tip Amount:{' '}
+                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  ${tip.toFixed(2)}
+                </Text>
+              </Text>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 5,
+                    fontWeight: '500',
+                    fontSize: 14,
+                    alignSelf: 'flex-start',
+                  },
+                ]}
+              >
+                Total Charges:
+                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  ${totalCharges}
+                </Text>
+              </Text>
 
               <Text
                 style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}
@@ -1080,7 +1319,7 @@ export default function PassengerHomeScreen({navigation}) {
                   styles.button,
                   {marginBottom: 5, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => confirmationByPassenger()}
+                onPress={() => confirmationByPassenger(rideFare, tip)}
               >
                 <Text
                   style={[styles.textStyle, {backgroundColor: Colors.primary}]}
@@ -1215,44 +1454,74 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const cancelBookingByPassenger = passengerReasonForCancelRide => {
-    let cancelRide = {
-      passengerData: route.params.passengerData,
-      driverData: route.params.driverData,
-      rideCancelByPassenger: true,
-      reasonForCancelRide: passengerReasonForCancelRide,
+    let fare = data.passengerData.bidFare ?? data.passengerData.fare;
+
+    let deductedAmount = ((Number(fare) * 5) / 100).toFixed(2);
+
+    console.log(deductedAmount, 'deducted');
+
+    let walletData = {
+      payment: 0,
+      fare: 0,
+      wallet: -deductedAmount,
       date: new Date(),
+      tip: 0,
+      cancellationCharges: deductedAmount,
     };
     firestore()
-      .collection('Request')
+      .collection('wallet')
       .doc(route.params.passengerData.id)
-      .update({
-        rideCancelByPassenger: true,
-      })
+      .set(
+        {
+          wallet: firestore.FieldValue.arrayUnion(walletData),
+        },
+        {merge: true},
+      )
       .then(() => {
+        let cancelRide = {
+          passengerData: route.params.passengerData,
+          driverData: route.params.driverData,
+          rideCancelByPassenger: true,
+          reasonForCancelRide: passengerReasonForCancelRide,
+          date: new Date(),
+        };
         firestore()
-          .collection('RideCancel')
+          .collection('Request')
           .doc(route.params.passengerData.id)
-          .set(
-            {
-              cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
-            },
-            {merge: true},
-          )
+          .update({
+            rideCancelByPassenger: true,
+          })
           .then(() => {
-            AsyncStorage.removeItem('passengerBooking');
-            AsyncStorage.removeItem('driverArrive');
-            ToastAndroid.show(
-              'Your ride has been succesfully cancelled',
-              ToastAndroid.SHORT,
-            );
-            navigation.navigate('AskScreen');
+            firestore()
+              .collection('RideCancel')
+              .doc(route.params.passengerData.id)
+              .set(
+                {
+                  cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
+                },
+                {merge: true},
+              )
+              .then(() => {
+                AsyncStorage.removeItem('passengerBooking');
+                AsyncStorage.removeItem('driverArrive');
+                ToastAndroid.show(
+                  'Your ride has been succesfully cancelled',
+                  ToastAndroid.SHORT,
+                );
+                navigation.navigate('AskScreen');
+              })
+              .catch(error => {
+                ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                console.log(error);
+              });
           })
           .catch(error => {
-            console.log(error);
+            ToastAndroid.show(error.message, ToastAndroid.SHORT);
+            console.log(error, 'error');
           });
       })
       .catch(error => {
-        console.log(error, 'error');
+        ToastAndroid.show(error.message, ToastAndroid.SHORT);
       });
   };
 
@@ -1605,10 +1874,11 @@ export default function PassengerHomeScreen({navigation}) {
                       destination={location.dropLocationCords}
                       apikey={GoogleMapKey.GOOGLE_MAP_KEY}
                       strokeColor={Colors.black}
-                      strokeWidth={3}
+                      strokeWidth={5}
                       optimizeWayPoints={true}
                       mode="DRIVING"
                       onReady={result => {
+                        console.log(result, 'result');
                         setResult(result);
                         !route.params && calculateDistance(result);
                         mapRef.current.fitToCoordinates(result.coordinates, {
@@ -1777,7 +2047,8 @@ export default function PassengerHomeScreen({navigation}) {
                           ? 'Bid Fare'
                           : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
-                          ${selectedDriver &&
+                          $
+                          {selectedDriver &&
                           Object.keys(selectedDriver).length > 0 &&
                           !selectedDriver.bidFare
                             ? selectedDriver.fare
@@ -1786,8 +2057,7 @@ export default function PassengerHomeScreen({navigation}) {
                             ? selectedDriver.bidFare
                             : bidFare
                             ? bidFare
-                            : fare}
-                          {' '}
+                            : fare}{' '}
                         </Text>
                         Distance:
                         <Text style={styles.valueStyle}>{distance} miles </Text>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ImageBackground, Text, StyleSheet, View, TouchableOpacity, ScrollView, KeyboardAvoidingView, ToastAndroid } from 'react-native'
+import { ImageBackground, Text, StyleSheet, View, TouchableOpacity, ScrollView, KeyboardAvoidingView, ToastAndroid, ActivityIndicator } from 'react-native'
 import CustomButton from '../Components/CustomButton'
 import CustomHeader from '../Components/CustomHeader'
 import Colors from '../Constants/Colors'
@@ -15,6 +15,7 @@ export default function EmailSignUpScreen({ navigation }) {
     const [confirmPasswordError, setConfirmPasswordError] = useState(false);
     const [secureEntryPassword, setSecureEntryPassword] = useState(true);
     const [secureEntryConfirmPassword, setSecureEntryConfirmPassword] = useState(true);
+    const [loading,setLoading] = useState(false)
     const [message, setMessage] = useState('');
     const togglePassword = () => {
         setSecureEntryPassword(!secureEntryPassword);
@@ -24,14 +25,17 @@ export default function EmailSignUpScreen({ navigation }) {
     }
     const signUpHandler = async () => {
         try {
+            setLoading(true)
             const isUserCreated = await auth().createUserWithEmailAndPassword(email, password);
             console.log(isUserCreated)
+            setLoading(false)
             ToastAndroid.show('User Registered Successfully Login to continue', ToastAndroid.LONG);
             setMessage('');
             navigation.navigate('EmailSignInScreen')
         }
         catch (err) {
             console.log(err);
+            setLoading(false)
             setMessage(err.message);
             ToastAndroid.show(message, ToastAndroid.SHORT);
         }
@@ -39,7 +43,7 @@ export default function EmailSignUpScreen({ navigation }) {
     }
     const signUpValidation = () => {
         const strongRegex = new RegExp("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$");
-        if (!strongRegex.test(email)) {
+        if (!email) {
             setEmailError(true)
             ToastAndroid.show("Please Enter Valid Email", ToastAndroid.SHORT);
             return false;
@@ -143,7 +147,7 @@ export default function EmailSignUpScreen({ navigation }) {
                         </View>
                     </KeyboardAvoidingView>
                     <View style={styles.btnContainer}>
-                        <CustomButton text="Sign Up" onPress={signUpValidation} />
+                        <CustomButton text= {loading ? <ActivityIndicator size={"large"} color={Colors.secondary} /> : "Sign Up"} onPress={signUpValidation} />
                     </View>
                     <View style={styles.bottomText}><Text style={styles.textStyle}>Already have an Account?</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('EmailSignInScreen')}>

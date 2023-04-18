@@ -5,7 +5,7 @@ import Colors from '../../Constants/Colors';
 import Icon from 'react-native-vector-icons/AntDesign';
 import CustomHeader from '../../Components/CustomHeader';
 import {FlatList} from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import {ScrollView} from 'react-native-gesture-handler';
 function DepositDataScreen({route, navigation}) {
   const [allWalletData, setAllWalletData] = useState(true);
 
@@ -14,9 +14,9 @@ function DepositDataScreen({route, navigation}) {
   let {allData, monthlyData} = data;
 
   const renderDepositData = ({item, index}) => {
-    let date = item.date.toDate().toString().slice(0, 15);
+    let date = item?.date?.toDate().toString().slice(0, 15);
 
-    if (item && item.fare) {
+    if ((item && item?.fare) || item?.cancellationCharges) {
       return (
         <View>
           <TouchableOpacity
@@ -27,14 +27,16 @@ function DepositDataScreen({route, navigation}) {
               paddingVertical: 5,
               borderBottomWidth: 1,
               borderColor: Colors.primary,
-            }}>
+            }}
+          >
             {/* Date is mentioned Here */}
             <Text style={[styles.text, {marginTop: 5}]}>{date}</Text>
             <Text
               style={[
                 styles.text,
                 {paddingTop: 5, marginBottom: 5, fontSize: 14},
-              ]}>
+              ]}
+            >
               Fare:{' '}
               <Text style={{color: Colors.secondary}}> ${item.fare} </Text>
             </Text>
@@ -42,10 +44,31 @@ function DepositDataScreen({route, navigation}) {
               style={[
                 styles.text,
                 {paddingTop: 5, marginBottom: 5, fontSize: 14},
-              ]}>
+              ]}
+            >
               Tip:{' '}
-              <Text style={{color: Colors.secondary}}> ${item.tip} </Text>
+              <Text style={{color: Colors.secondary}}>
+                {' '}
+                ${item.tip ? Number(item?.tip).toFixed(2) : 0}
+              </Text>
             </Text>
+            {item.cancellationCharges && (
+              <Text
+                style={[
+                  styles.text,
+                  {paddingTop: 5, marginBottom: 5, fontSize: 14},
+                ]}
+              >
+                Cancellation Charges:{' '}
+                <Text style={{color: Colors.secondary}}>
+                  {' '}
+                  $
+                  {item.cancellationCharges
+                    ? Number(item?.cancellationCharges).toFixed(2)
+                    : 0}
+                </Text>
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       );
@@ -54,60 +77,64 @@ function DepositDataScreen({route, navigation}) {
 
   return (
     <View>
-    <ScrollView>
-      <View style={styles.headerContainer}>
-        <CustomHeader
-          iconname={'arrow-back'}
-          color={Colors.white}
-          onPress={() => {
-            navigation.goBack();
-          }}
-          source={require('../../Assets/Images/URWhiteLogo.png')}
-        />
-      </View>
-      <View>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            borderBottomColor: Colors.black,
-            borderBottomWidth: 3,
-          }}>
-          <Text
-            style={{
-              color: Colors.secondary,
-              fontSize: 32,
-              padding: 20,
-              fontWeight: '600',
-            }}>
-            Spents Details
-          </Text>
-
-          <TouchableOpacity
+      <ScrollView>
+        <View style={styles.headerContainer}>
+          <CustomHeader
+            iconname={'arrow-back'}
+            color={Colors.white}
+            onPress={() => {
+              navigation.goBack();
+            }}
+            source={require('../../Assets/Images/URWhiteLogo.png')}
+          />
+        </View>
+        <View>
+          <View
             style={{
               flexDirection: 'row',
+              justifyContent: 'space-around',
               alignItems: 'center',
+              borderBottomColor: Colors.black,
+              borderBottomWidth: 3,
             }}
-            onPress={() => setAllWalletData(allWalletData ? false : true)}>
+          >
             <Text
               style={{
-                color: Colors.black,
-                paddingRight: 5,
-              }}>
-              {allWalletData ? 'All Data' : 'This Month'}
+                color: Colors.secondary,
+                fontSize: 32,
+                padding: 20,
+                fontWeight: '600',
+              }}
+            >
+              Spents Details
             </Text>
-            <TouchableOpacity>
-              <Icon name="down" color={Colors.secondary} />
+
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+              onPress={() => setAllWalletData(allWalletData ? false : true)}
+            >
+              <Text
+                style={{
+                  color: Colors.black,
+                  paddingRight: 5,
+                }}
+              >
+                {allWalletData ? 'All Data' : 'This Month'}
+              </Text>
+              <TouchableOpacity>
+                <Icon name="down" color={Colors.secondary} />
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
+          </View>
+          <FlatList
+            data={allWalletData ? allData : monthlyData}
+            renderItem={renderDepositData}
+            keyExtractor={(item, i) => i}
+          />
         </View>
-        <FlatList
-          data={allWalletData ? allData : monthlyData}
-          renderItem={renderDepositData}
-          keyExtractor={(item, i) => i}
-        />
-      </View>
       </ScrollView>
     </View>
   );

@@ -327,13 +327,17 @@ export default function DriverDetailScreen({navigation}) {
 
   useEffect(() => {
     let minutes = new Date().getMinutes();
-
+    let userEmail = auth().currentUser?.email
+    userEmail && setEmail(userEmail)
     if (minutes <= 15 || minutes >= 45) {
       setRating(5);
     } else {
       setRating(4.9);
     }
   }, []);
+
+
+
 
   //docments upload functions end
   const strongRegex = new RegExp(
@@ -346,7 +350,7 @@ export default function DriverDetailScreen({navigation}) {
       lastName == '' ||
       dateOfBirth == '' ||
       Email == '' ||
-      !strongRegex.test(Email) ||
+      // !strongRegex.test(Email) ||
       !strongRegexphone.test(phoneNumber) ||
       phoneNumber == '' ||
       phoneNumber.length < 10 ||
@@ -380,11 +384,11 @@ export default function DriverDetailScreen({navigation}) {
         setEmailError(true);
         return false;
       }
-      if (!strongRegex.test(Email)) {
-        setEmailError(true);
-        setToastMsg('Please Enter Valid Email');
-        return false;
-      }
+      // if (!strongRegex.test(Email)) {
+      //   setEmailError(true);
+      //   setToastMsg('Please Enter Valid Email');
+      //   return false;
+      // }
       if (cnic == '') {
         setToastMsg('Driving licence number cannot be empty');
         setCnicError(true);
@@ -568,6 +572,7 @@ export default function DriverDetailScreen({navigation}) {
                     style={styles.fieldStyles}
                     label="Email"
                     value={Email}
+                    editable={false}
                     error={EmailError}
                     onChangeText={setEmail}
                     selectionColor={Colors.black}
@@ -598,7 +603,6 @@ export default function DriverDetailScreen({navigation}) {
                     value={address}
                     error={addressError}
                     onChangeText={setAddress}
-                    selectionColor={Colors.black}
                     underlineColor={Colors.black}
                     activeOutlineColor={Colors.fontColor}
                     activeUnderlineColor={Colors.fontColor}
