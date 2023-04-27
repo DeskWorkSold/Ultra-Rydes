@@ -10,6 +10,7 @@ import {
   ToastAndroid,
   PermissionsAndroid,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
@@ -42,7 +43,8 @@ export default function PassengerDetailScreen({navigation}) {
   const [open, setOpen] = useState(false);
   const [close, setClose] = useState(false);
   const [value, setValue] = useState('');
-
+  const [loading, setLoading] = useState(false);
+  const [loginFromEmail, setLoginFromEmail] = useState(false);
   //Date picker
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [Date, setDate] = useState('');
@@ -57,6 +59,8 @@ export default function PassengerDetailScreen({navigation}) {
   useEffect(() => {
     let userEmail = auth().currentUser?.email;
     userEmail && setEmail(userEmail);
+
+    userEmail && setLoginFromEmail(true);
   }, []);
 
   const handleConfirm = date => {
@@ -72,7 +76,6 @@ export default function PassengerDetailScreen({navigation}) {
   };
   const [visible1, setVisible1] = useState(false);
   const showModal1 = () => {
-    console.log('pressed');
     setVisible1(true);
   };
   const hideModal1 = () => setVisible1(false);
@@ -85,11 +88,11 @@ export default function PassengerDetailScreen({navigation}) {
   };
 
   const openCamera = async () => {
-    console.log('pressed');
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.CAMERA,
     );
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      hideModal1();
       const result = await ImagePicker.launchCamera(options);
       if (result.didCancel) {
         hideModal1();
@@ -113,6 +116,7 @@ export default function PassengerDetailScreen({navigation}) {
     console.log(profilePicture);
   };
   const openGallery = async () => {
+    hideModal1();
     const result = await ImagePicker.launchImageLibrary(options);
     if (result.didCancel) {
       hideModal1();
@@ -141,7 +145,8 @@ export default function PassengerDetailScreen({navigation}) {
       dateOfBirth == '' ||
       Email == '' ||
       !mobileNumber ||
-      !tip
+      !tip ||
+      (tip == 'Custom' && !value)
     ) {
       if (firstName == '') {
         ToastAndroid.show('First Name cannot be empty', ToastAndroid.SHORT);
@@ -168,7 +173,12 @@ export default function PassengerDetailScreen({navigation}) {
         setMobileNumberError(true);
         return false;
       }
-      if (!tip) {
+      if (!tip && !value) {
+        ToastAndroid.show('Tip cannot be less then 1$', ToastAndroid.SHORT);
+        setTipError(true);
+        return false;
+      }
+      if (tip == 'Custom' && !value) {
         ToastAndroid.show('Tip cannot be less then 1$', ToastAndroid.SHORT);
         setTipError(true);
         return false;
@@ -183,18 +193,15 @@ export default function PassengerDetailScreen({navigation}) {
       //     return false;
       // }
     } else {
+      setLoading(true);
+      let number = mobileNumber.replace(/\s/g, '');
       try {
         const CurrentUser = auth().currentUser;
-
         if (profilePicture.length > 0) {
           const reference = storage().ref(profilePicture);
           const pathToFile = profilePicture;
           await reference.putFile(pathToFile);
         }
-
-
-        
-
         firestore()
           .collection('Passengers')
           .doc(CurrentUser.uid)
@@ -204,19 +211,32 @@ export default function PassengerDetailScreen({navigation}) {
             lastName: lastName,
             dateOfBirth: dateOfBirth,
             Email: Email,
-            tipOffered : tip
+            tipOffered: value ? value : tip,
+            mobileNumber: number,
           })
           .then(() => {
+            setLoading(false);
             console.log('User added!');
+            navigation.navigate('AddCardScreen');
+          })
+          .catch(error => {
+            console.log(error);
           });
-        navigation.navigate('AddCardScreen');
       } catch (err) {
         console.log(err);
       }
     }
   };
 
-  console.log(tip, 'top');
+  const handlePhoneNumberChange = text => {
+    // Remove all non-numeric characters from the input
+
+    // Format the phone number as +1 (123) 456-7890
+    if (text.length === 2) {
+      text += ' ';
+    }
+    setMobileNumber(text);
+  };
 
   const [item, setItem] = useState([
     {
@@ -310,11 +330,11 @@ export default function PassengerDetailScreen({navigation}) {
             />
             <TextInput
               style={styles.fieldStyles}
-              label="Mobile Number"
+              placeholder="+1 XXXXXXXXXX"
               keyboardType="phone-pad"
               value={mobileNumber}
               error={mobileNumberError}
-              onChangeText={setMobileNumber}
+              onChangeText={handlePhoneNumberChange}
               selectionColor={Colors.black}
               underlineColor={Colors.black}
               activeOutlineColor={Colors.fontColor}
@@ -328,7 +348,7 @@ export default function PassengerDetailScreen({navigation}) {
               style={styles.fieldStyles}
               label="Email"
               value={Email}
-              editable={false}
+              editable={loginFromEmail ? false : true}
               error={EmailError}
               onChangeText={setEmail}
               selectionColor={Colors.black}
@@ -365,14 +385,14 @@ export default function PassengerDetailScreen({navigation}) {
                 placeholder="Select Tip"
               />
             </View>
-            {value == 'Custom' && (
+            {tip == 'Custom' && (
               <TextInput
                 style={styles.fieldStyles}
                 keyboardType="numeric"
-                value={tip}
                 editable={true}
+                value={value}
                 error={tipError}
-                onChangeText={setTip}
+                onChangeText={setValue}
                 selectionColor={Colors.black}
                 underlineColor={Colors.black}
                 activeOutlineColor={Colors.fontColor}
@@ -385,8 +405,17 @@ export default function PassengerDetailScreen({navigation}) {
             )}
           </View>
 
-          <View style={styles.btnContainer}>
-            <CustomButton text="Next" onPress={askScreenHandler} />
+          <View style={[styles.btnContainer, {marginBottom: 20}]}>
+            <CustomButton
+              text={
+                loading ? (
+                  <ActivityIndicator size={'small'} color={'black'} />
+                ) : (
+                  'Next'
+                )
+              }
+              onPress={askScreenHandler}
+            />
           </View>
         </KeyboardAvoidingView>
       </View>

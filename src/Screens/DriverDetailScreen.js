@@ -24,7 +24,6 @@ import firestore from '@react-native-firebase/firestore';
 import * as ImagePicker from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 
-
 export default function DriverDetailScreen({navigation}) {
   const {height, width} = useWindowDimensions();
   const [loading, setLoading] = useState(false);
@@ -46,6 +45,7 @@ export default function DriverDetailScreen({navigation}) {
   const [addressError, setAddressError] = useState(false);
   const [cityError, setCityError] = useState(false);
   const [phoneNumberError, setPhoneNumberError] = useState(false);
+  const [loginFromEmail, setLoginFromEmail] = useState(false);
   //error fields end
   //Date picker
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -88,6 +88,7 @@ export default function DriverDetailScreen({navigation}) {
       PermissionsAndroid.PERMISSIONS.CAMERA,
     );
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      hideModal1();
       const result = await ImagePicker.launchCamera(options);
       if (result.didCancel) {
         hideModal1();
@@ -109,6 +110,7 @@ export default function DriverDetailScreen({navigation}) {
     setprofilePicture('');
   };
   const openGallery = async () => {
+    hideModal1();
     const result = await ImagePicker.launchImageLibrary(options);
     if (result.didCancel) {
       hideModal1();
@@ -238,6 +240,7 @@ export default function DriverDetailScreen({navigation}) {
       PermissionsAndroid.PERMISSIONS.CAMERA,
     );
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      licenseFrontHideModal();
       const result = await ImagePicker.launchCamera(options);
       if (result.didCancel) {
         licenseFrontHideModal();
@@ -260,6 +263,7 @@ export default function DriverDetailScreen({navigation}) {
     setLicenseFrontImg('');
   };
   const licenseFrontOpenGallery = async () => {
+    licenseFrontHideModal();
     const result = await ImagePicker.launchImageLibrary(options);
     if (result.didCancel) {
       licenseFrontHideModal();
@@ -286,6 +290,7 @@ export default function DriverDetailScreen({navigation}) {
       PermissionsAndroid.PERMISSIONS.CAMERA,
     );
     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+      licenseBackHideModal();
       const result = await ImagePicker.launchCamera(options);
       if (result.didCancel) {
         licenseBackHideModal();
@@ -308,6 +313,7 @@ export default function DriverDetailScreen({navigation}) {
     setLicenseBackImg('');
   };
   const licenseBackOpenGallery = async () => {
+    licenseBackHideModal();
     const result = await ImagePicker.launchImageLibrary(options);
     if (result.didCancel) {
       licenseBackHideModal();
@@ -327,17 +333,17 @@ export default function DriverDetailScreen({navigation}) {
 
   useEffect(() => {
     let minutes = new Date().getMinutes();
-    let userEmail = auth().currentUser?.email
-    userEmail && setEmail(userEmail)
+    let userEmail = auth().currentUser?.email;
+    userEmail && setEmail(userEmail);
+
+    userEmail && setLoginFromEmail(true);
+
     if (minutes <= 15 || minutes >= 45) {
       setRating(5);
     } else {
       setRating(4.9);
     }
   }, []);
-
-
-
 
   //docments upload functions end
   const strongRegex = new RegExp(
@@ -351,10 +357,7 @@ export default function DriverDetailScreen({navigation}) {
       dateOfBirth == '' ||
       Email == '' ||
       // !strongRegex.test(Email) ||
-      !strongRegexphone.test(phoneNumber) ||
       phoneNumber == '' ||
-      phoneNumber.length < 10 ||
-      isNaN(phoneNumber) ||
       cnic == '' ||
       address == '' ||
       city == '' ||
@@ -409,21 +412,21 @@ export default function DriverDetailScreen({navigation}) {
         setToastMsg('Phone Number cannot be empty');
         return false;
       }
-      if (phoneNumber.length < 10) {
-        setPhoneNumberError(true);
-        setToastMsg('Phone Number Must Contain 10 digits');
-        return false;
-      }
-      if (isNaN(phoneNumber)) {
-        setPhoneNumberError(true);
-        setToastMsg('Phone Number Must be in Numbers');
-        return false;
-      }
-      if (!strongRegexphone.test(phoneNumber)) {
-        setPhoneNumberError(true);
-        setToastMsg("Please include '+' sign and country code");
-        return false;
-      }
+      // if (phoneNumber.length < 10) {
+      //   setPhoneNumberError(true);
+      //   setToastMsg('Phone Number Must Contain 10 digits');
+      //   return false;
+      // }
+      // if (isNaN(phoneNumber)) {
+      //   setPhoneNumberError(true);
+      //   setToastMsg('Phone Number Must be in Numbers');
+      //   return false;
+      // }
+      // if (!strongRegexphone.test(phoneNumber)) {
+      //   setPhoneNumberError(true);
+      //   setToastMsg("Please include '+' sign and country code");
+      //   return false;
+      // }
       if (profilePicture == '') {
         setToastMsg('Please set Profile Picture');
         return false;
@@ -445,6 +448,7 @@ export default function DriverDetailScreen({navigation}) {
         return false;
       }
     } else {
+      let number = phoneNumber.replace(/\s/g, '');
       try {
         setLoading(true);
         const CurrentUser = auth().currentUser;
@@ -471,7 +475,7 @@ export default function DriverDetailScreen({navigation}) {
             DLNumber: cnic,
             address: address,
             city: city,
-            phoneNumber: phoneNumber,
+            phoneNumber: number,
             // cnicFrontImg: cnicFrontImg,
             // cnicBackImg: cnicBackImg,
             licenseFrontImg: licenseFrontImg,
@@ -489,6 +493,16 @@ export default function DriverDetailScreen({navigation}) {
         console.log(err);
       }
     }
+  };
+
+  const handlePhoneNumberChange = text => {
+    // Remove all non-numeric characters from the input
+
+    // Format the phone number as +1 (123) 456-7890
+    if (text.length === 2) {
+      text += ' ';
+    }
+    setPhoneNumber(text);
   };
 
   return (
@@ -572,7 +586,7 @@ export default function DriverDetailScreen({navigation}) {
                     style={styles.fieldStyles}
                     label="Email"
                     value={Email}
-                    editable={false}
+                    editable={loginFromEmail ? false : true}
                     error={EmailError}
                     onChangeText={setEmail}
                     selectionColor={Colors.black}
@@ -626,11 +640,11 @@ export default function DriverDetailScreen({navigation}) {
                   />
                   <TextInput
                     style={styles.fieldStyles}
-                    label="Phone Number"
+                    placeholder="+1 XXXXXXXXXX"
                     value={phoneNumber}
                     error={phoneNumberError}
                     keyboardType="phone-pad"
-                    onChangeText={setPhoneNumber}
+                    onChangeText={handlePhoneNumberChange}
                     selectionColor={Colors.black}
                     underlineColor={Colors.black}
                     activeOutlineColor={Colors.fontColor}
@@ -643,7 +657,7 @@ export default function DriverDetailScreen({navigation}) {
                 <View style={styles.picsContainer}>
                   {/* <Text style={styles.picsHeadingStyle}>Cnic Pictures</Text>
                   <View style={styles.picItemContainer}> */}
-                    {/* <TouchableOpacity
+                  {/* <TouchableOpacity
                       onPress={cnicFrontShowModal}
                       style={styles.itemContainer}>
                       <Image
@@ -674,7 +688,8 @@ export default function DriverDetailScreen({navigation}) {
                   <View style={styles.picItemContainer}>
                     <TouchableOpacity
                       style={styles.itemContainer}
-                      onPress={licenseFrontShowModal}>
+                      onPress={licenseFrontShowModal}
+                    >
                       <Image
                         style={styles.imagesStyle}
                         resizeMode="contain"
@@ -688,7 +703,8 @@ export default function DriverDetailScreen({navigation}) {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.itemContainer}
-                      onPress={licenseBackShowModal}>
+                      onPress={licenseBackShowModal}
+                    >
                       <Image
                         style={styles.imagesStyle}
                         resizeMode="contain"
@@ -721,7 +737,7 @@ export default function DriverDetailScreen({navigation}) {
               removeImage={removeImage}
               closeModal={hideModal1}
             />
-            <ModalImg
+            {/* <ModalImg
               modalVisible={cnicFrontVisible}
               openGallery={cnicFrontOpenGallery}
               openCamera={cnicFrontOpenCamera}
@@ -734,7 +750,7 @@ export default function DriverDetailScreen({navigation}) {
               openCamera={cnicBackOpenCamera}
               removeImage={cnicBackRemoveImage}
               closeModal={cnicBackHideModal}
-            />
+            /> */}
             <ModalImg
               modalVisible={licenseFrontVisible}
               openGallery={licenseFrontOpenGallery}

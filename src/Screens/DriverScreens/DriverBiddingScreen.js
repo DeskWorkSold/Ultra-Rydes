@@ -65,8 +65,6 @@ export default function DriverBiddingScreen({navigation}) {
 
   const {data} = route.params;
 
-  passengerData.mobileNumber = '+923455437281';
-
   const [pickUpLocation, setpickUpLocation] = useState(
     data && data.pickupAddress ? data.pickupAddress : '',
   );
@@ -104,6 +102,7 @@ export default function DriverBiddingScreen({navigation}) {
   );
   const [arrivePickUpLocation, setArrivePickupLocation] = useState(false);
   const [arriveDropOffLocation, setArriveDropOffLocation] = useState(false);
+  const [tipAmount, setTipAmount] = useState('');
   const [arrive, setArrive] = useState({
     pickUpLocation: false,
     dropOffLocation: false,
@@ -131,26 +130,34 @@ export default function DriverBiddingScreen({navigation}) {
     }
   }, [data]);
 
-  useEffect(() => {
-    if (!selectedDriver) {
-      let interval = setInterval(() => {
-        checkRequestStatus();
-      }, 5000);
+  // useEffect(() => {
+  //   if (!selectedDriver) {
+  //     let interval = setInterval(() => {
+  //       checkRequestStatus();
+  //     }, 5000);
 
-      return () => clearInterval(interval);
-    }
-  }, [loading]);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [loading]);
 
-  const getLocationUpdates = () => {
+  const getLocationUpdates = async () => {
+    let checkDriverArrive = await AsyncStorage.getItem(
+      'ArrivedAtpickUpLocation',
+    );
+
     // let myDriverArrived;
-    // firestore().collection("Request").doc(passengerData?.id??data.id).get().then(doc=>{
-    //   let data = doc.data()
-    //   if(data && Object.keys(data).length>0){
-    //     console.log(data,"dataaa")
-    //         myDriverArrived = data.driverArriveAtPickupLocation
-    //   }
-    // })
-    // console.log(myDriverArrived,"arriver")
+    firestore()
+      .collection('Request')
+      .doc(passengerData?.id ?? data.id)
+      .get()
+      .then(doc => {
+        let data = doc.data();
+        if (data && Object.keys(data).length > 0) {
+          if (data?.tipAmount) {
+            setTipAmount(data?.tipAmount);
+          }
+        }
+      });
 
     if (
       !arrive.pickUpLocation &&
@@ -178,14 +185,14 @@ export default function DriverBiddingScreen({navigation}) {
 
     if (
       !arrive.dropOffLocation &&
-      data?.driverArriveAtPickupLocation &&
       driverCurrentLocation &&
       selectedDriver &&
       driverCurrentLocation.latitude &&
       driverCurrentLocation.longitude &&
       !data?.driverArriveAtDropoffLocation &&
       pickupCords.latitude &&
-      pickupCords.longitude
+      pickupCords.longitude &&
+      (arrive.pickUpLocation || data.driverArriveAtPickupLocation)
     ) {
       const dis = getPreciseDistance(
         {
@@ -221,7 +228,7 @@ export default function DriverBiddingScreen({navigation}) {
   useEffect(() => {
     const interval = setInterval(() => {
       getLocationUpdates();
-    }, 15000);
+    }, 10000);
 
     return () => clearInterval(interval);
   });
@@ -251,17 +258,13 @@ export default function DriverBiddingScreen({navigation}) {
       return () => backHandler.remove();
     } else if (!selectedDriver && !loading) {
       const backAction = () => {
-        Alert.alert(
-          'Hold on!',
-          'You have to either accept the offer or reject it',
-          [
-            {
-              text: 'Cancel',
-              onPress: () => null,
-              style: 'cancel',
-            },
-          ],
-        );
+        Alert.alert('Hold on!', 'You can not go back from here...', [
+          {
+            text: 'Cancel',
+            onPress: () => null,
+            style: 'cancel',
+          },
+        ]);
         return true;
       };
 
@@ -331,151 +334,151 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
-  const checkRequestStatus = async () => {
-    if (!selectedDriver) {
-      if (passengerData && passengerData.bidFare) {
-        await firestore()
-          .collection('Request')
-          .doc(passengerData.id)
-          .onSnapshot(querySnapshot => {
-            let data = querySnapshot.data();
+  // const checkRequestStatus = async () => {
+  //   if (!selectedDriver) {
+  //     if (passengerData && passengerData.bidFare) {
+  //       await firestore()
+  //         .collection('Request')
+  //         .doc(passengerData.id)
+  //         .onSnapshot(querySnapshot => {
+  //           let data = querySnapshot.data();
 
-            if (
-              data &&
-              data.myDriversData &&
-              !Array.isArray(data.myDriversData) &&
-              data.myDriversData.requestStatus == 'rejected'
-            ) {
-              setLoading(false);
-              ToastAndroid.show(
-                'Your Request has been rejected',
-                ToastAndroid.SHORT,
-              );
-              navigation.navigate('DriverHomeScreen');
-              return;
-            }
-            if (
-              data &&
-              data.myDriversData &&
-              Array.isArray(data.myDriversData)
-            ) {
-              let flag = data.myDriversData.some(
-                (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
-              );
+  //           if (
+  //             data &&
+  //             data.myDriversData &&
+  //             !Array.isArray(data.myDriversData) &&
+  //             data.myDriversData.requestStatus == 'rejected'
+  //           ) {
+  //             setLoading(false);
+  //             ToastAndroid.show(
+  //               'Your Request has been rejected',
+  //               ToastAndroid.SHORT,
+  //             );
+  //             navigation.navigate('DriverHomeScreen');
+  //             return;
+  //           }
+  //           if (
+  //             data &&
+  //             data.myDriversData &&
+  //             Array.isArray(data.myDriversData)
+  //           ) {
+  //             let flag = data.myDriversData.some(
+  //               (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
+  //             );
 
-              if (flag) {
-                setLoading(false);
-                ToastAndroid.show(
-                  'Your Request has been rejected',
-                  ToastAndroid.SHORT,
-                );
-                navigation.navigate('DriverHomeScreen');
-                return;
-              }
-            }
-            if (
-              data &&
-              data.myDriversData &&
-              !Array.isArray(data.myDriversData) &&
-              data.myDriversData.requestStatus
-            ) {
-              if (
-                data.myDriversData.id == driverUid &&
-                data.myDriversData.requestStatus == 'accepted' &&
-                !selectedDriver
-              ) {
-                setLoading(false);
-                ToastAndroid.show(
-                  'Your request has been accepted',
-                  ToastAndroid.SHORT,
-                );
-                firestore()
-                  .collection('inlinedDriver')
-                  .doc(driverUid)
-                  .set({
-                    inlined: true,
-                    id: driverUid,
-                  })
-                  .then(() => {
-                    console.log('Driver has been inlined');
-                  })
-                  .catch(error => {
-                    console.log(error);
-                  });
+  //             if (flag) {
+  //               setLoading(false);
+  //               ToastAndroid.show(
+  //                 'Your Request has been rejected',
+  //                 ToastAndroid.SHORT,
+  //               );
+  //               navigation.navigate('DriverHomeScreen');
+  //               return;
+  //             }
+  //           }
+  //           if (
+  //             data &&
+  //             data.myDriversData &&
+  //             !Array.isArray(data.myDriversData) &&
+  //             data.myDriversData.requestStatus
+  //           ) {
+  //             if (
+  //               data.myDriversData.id == driverUid &&
+  //               data.myDriversData.requestStatus == 'accepted' &&
+  //               !selectedDriver
+  //             ) {
+  //               setLoading(false);
+  //               ToastAndroid.show(
+  //                 'Your request has been accepted',
+  //                 ToastAndroid.SHORT,
+  //               );
+  //               firestore()
+  //                 .collection('inlinedDriver')
+  //                 .doc(driverUid)
+  //                 .set({
+  //                   inlined: true,
+  //                   id: driverUid,
+  //                 })
+  //                 .then(() => {
+  //                   console.log('Driver has been inlined');
+  //                 })
+  //                 .catch(error => {
+  //                   console.log(error);
+  //                 });
 
-                setSelectedDriver(data.myDriversData);
-                try {
-                  let myData = JSON.stringify(data);
-                  AsyncStorage.setItem('driverBooking', myData);
-                } catch (error) {
-                  console.log(error);
-                }
-              } else if (
-                data.myDriversData.id == driverUid &&
-                data.myDriversData.requestStatus == 'rejected'
-              ) {
-                ToastAndroid.show(
-                  'Your request has been rejected',
-                  ToastAndroid.SHORT,
-                );
-                setLoading(false);
-                navigation.navigate('DriverHomeScreen');
-              }
-            }
-            if (
-              data &&
-              data.myDriversData &&
-              Array.isArray(data.myDriversData)
-            ) {
-              let flag = data.myDriversData.some(
-                (e, i) => e.selected && e.id == driverUid,
-              );
+  //               setSelectedDriver(data.myDriversData);
+  //               try {
+  //                 let myData = JSON.stringify(data);
+  //                 AsyncStorage.setItem('driverBooking', myData);
+  //               } catch (error) {
+  //                 console.log(error);
+  //               }
+  //             } else if (
+  //               data.myDriversData.id == driverUid &&
+  //               data.myDriversData.requestStatus == 'rejected'
+  //             ) {
+  //               ToastAndroid.show(
+  //                 'Your request has been rejected',
+  //                 ToastAndroid.SHORT,
+  //               );
+  //               setLoading(false);
+  //               navigation.navigate('DriverHomeScreen');
+  //             }
+  //           }
+  //           if (
+  //             data &&
+  //             data.myDriversData &&
+  //             Array.isArray(data.myDriversData)
+  //           ) {
+  //             let flag = data.myDriversData.some(
+  //               (e, i) => e.selected && e.id == driverUid,
+  //             );
 
-              let flag1 = data.myDriversData.some(
-                (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
-              );
-              if (flag && !flag1 & !selectedDriver) {
-                ToastAndroid.show(
-                  'Your request has been accepted',
-                  ToastAndroid.SHORT,
-                );
+  //             let flag1 = data.myDriversData.some(
+  //               (e, i) => e.id == driverUid && e.requestStatus == 'rejected',
+  //             );
+  //             if (flag && !flag1 & !selectedDriver) {
+  //               ToastAndroid.show(
+  //                 'Your request has been accepted',
+  //                 ToastAndroid.SHORT,
+  //               );
 
-                firestore()
-                  .collection('inlinedDriver')
-                  .doc(driverUid)
-                  .set({
-                    inlined: true,
-                    id: driverUid,
-                  })
-                  .then(() => {
-                    console.log('Driver has been inlined');
-                  })
-                  .catch(error => {
-                    console.log(error);
-                  });
+  //               firestore()
+  //                 .collection('inlinedDriver')
+  //                 .doc(driverUid)
+  //                 .set({
+  //                   inlined: true,
+  //                   id: driverUid,
+  //                 })
+  //                 .then(() => {
+  //                   console.log('Driver has been inlined');
+  //                 })
+  //                 .catch(error => {
+  //                   console.log(error);
+  //                 });
 
-                try {
-                  let myData = JSON.stringify(data);
-                  AsyncStorage.setItem('driverBooking', myData);
-                } catch (error) {
-                  console.log(error);
-                }
+  //               try {
+  //                 let myData = JSON.stringify(data);
+  //                 AsyncStorage.setItem('driverBooking', myData);
+  //               } catch (error) {
+  //                 console.log(error);
+  //               }
 
-                setSelectedDriver(myDriverData);
-                setLoading(false);
-              } else if (!flag && flag1) {
-                ToastAndroid.show(
-                  'Your request has been rejected',
-                  ToastAndroid.SHORT,
-                );
-                setLoading(false);
-                navigation.navigate('DriverHomeScreen');
-              }
-            }
-          });
-      }
-    }
-  };
+  //               setSelectedDriver(myDriverData);
+  //               setLoading(false);
+  //             } else if (!flag && flag1) {
+  //               ToastAndroid.show(
+  //                 'Your request has been rejected',
+  //                 ToastAndroid.SHORT,
+  //               );
+  //               setLoading(false);
+  //               navigation.navigate('DriverHomeScreen');
+  //             }
+  //           }
+  //         });
+  //     }
+  //   }
+  // };
 
   const sendArriveMessageToPassenger = async () => {
     setArrive({...arrive, pickUpLocation: true});
@@ -485,7 +488,8 @@ export default function DriverBiddingScreen({navigation}) {
       .doc(passengerData.id)
       .get()
       .then(doc => {
-        let token = doc.data().token;
+        let token = doc.data();
+        token = token?.token;
 
         if (token) {
           var data = JSON.stringify({
@@ -580,11 +584,14 @@ export default function DriverBiddingScreen({navigation}) {
         ? selectedDriver?.bidFare
         : data.bidFare
         ? data.bidFare
-        : data.fare,
+        : data.passengerData.fare,
       withdraw: 0,
       date: new Date(),
-      remainingWallet: Number(data.bidFare ?? data.fare) - 0,
+      remainingWallet:
+        (data.bidFare ? Number(data.bidFare) : Number(data.fare)) + tipAmount,
+      tip: tipAmount,
     };
+
     firestore()
       .collection('driverWallet')
       .doc(uid)
@@ -608,7 +615,7 @@ export default function DriverBiddingScreen({navigation}) {
       .collection('Request')
       .doc(
         route.params?.data?.id
-          ? route.params?.data?.id
+          ? route.params.data.id
           : route.params?.data?.passengerData.id,
       )
       .update({
@@ -629,7 +636,7 @@ export default function DriverBiddingScreen({navigation}) {
       });
     firestore()
       .collection('Request')
-      .doc(data.id)
+      .doc(data.id ?? data.passengerData.id)
       .update({
         driverArriveAtDropoffLocation: true,
       })
@@ -646,6 +653,9 @@ export default function DriverBiddingScreen({navigation}) {
   };
 
   const DropOffModal = useCallback(() => {
+    let myFare = data.bidFare ?? data.passengerData.fare;
+    let tip = tipAmount ?? 0;
+
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -657,7 +667,7 @@ export default function DriverBiddingScreen({navigation}) {
           }}
         >
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, {height: '40%'}]}>
+            <View style={[styles.modalView, {height: '50%'}]}>
               <Text
                 style={[
                   styles.modalText,
@@ -694,7 +704,46 @@ export default function DriverBiddingScreen({navigation}) {
               >
                 Bill Amount:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  ${data?.myDriversData?.bidFare ?? data.fare}
+                  $
+                  {data?.passengerData
+                    ? data?.passengerData?.fare
+                    : data.bidFare}
+                </Text>
+              </Text>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 5,
+                    fontWeight: '500',
+                    fontSize: 14,
+                    alignSelf: 'flex-start',
+                  },
+                ]}
+              >
+                Tip Amount:
+                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  ${tipAmount ?? 0}
+                </Text>
+              </Text>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 5,
+                    fontWeight: '500',
+                    fontSize: 22,
+                    alignSelf: 'flex-start',
+                  },
+                ]}
+              >
+                Total Earning:
+                <Text style={{fontSize: 20, color: 'yellow', width: '100%'}}>
+                  ${(Number(tip) + Number(myFare)).toFixed(2)}
                 </Text>
               </Text>
               <TouchableOpacity
@@ -729,9 +778,10 @@ export default function DriverBiddingScreen({navigation}) {
       reasonForCancelRide: driverReasonForCancelRide,
       date: new Date(),
     };
+
     firestore()
       .collection('Request')
-      .doc(passengerData.id)
+      .doc(route.params?.data?.id ? route.params?.data?.id : passengerData.id)
       .update({
         rideCancelByDriver: true,
       })
@@ -763,12 +813,12 @@ export default function DriverBiddingScreen({navigation}) {
                 );
                 navigation.navigate('AskScreen');
               })
-              .catch(() => {
+              .catch(error => {
                 console.log(error);
               });
           })
           .catch(error => {
-            console.log(error);
+            console.log(error, 'errorr');
           });
       })
       .catch(error => {
@@ -994,7 +1044,6 @@ export default function DriverBiddingScreen({navigation}) {
   const sendRequest = () => {
     if (!selectedDriver) {
       const Userid = route.params.data.id;
-
       if (
         passengerData &&
         !route.params.data.bidFare &&
@@ -1078,8 +1127,6 @@ export default function DriverBiddingScreen({navigation}) {
       }
     }
   };
-  route.params.driverArrive = false;
-
   const cancelRideByPassenger = () => {
     firestore()
       .collection('Request')
@@ -1245,15 +1292,15 @@ export default function DriverBiddingScreen({navigation}) {
     }
   };
 
-  useEffect(() => {
-    if (
-      driverPersonalData &&
-      Object.keys(driverPersonalData).length > 0 &&
-      !selectedDriver
-    ) {
-      sendDriverRequestInFirebase();
-    }
-  }, [driverPersonalData]);
+  // useEffect(() => {
+  //   if (
+  //     driverPersonalData &&
+  //     Object.keys(driverPersonalData).length > 0 &&
+  //     !selectedDriver
+  //   ) {
+  //     sendDriverRequestInFirebase();
+  //   }
+  // }, [driverPersonalData]);
 
   const closeModal = () => {
     setAppearBiddingOption(false);
@@ -1398,6 +1445,11 @@ export default function DriverBiddingScreen({navigation}) {
               'You have successfully rejected the request',
               ToastAndroid.SHORT,
             );
+            AsyncStorage.removeItem('driverBooking');
+            AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+            AsyncStorage.removeItem('startRide');
+            AsyncStorage.removeItem('EndRide');
+
             navigation.navigate('AskScreen');
           }, 2000);
         })
@@ -1464,11 +1516,11 @@ export default function DriverBiddingScreen({navigation}) {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <CustomHeader
-          iconname={'menu'}
-          color={Colors.white}
-          onPress={() => {
-            navigation.toggleDrawer();
-          }}
+          // iconname={'menu'}
+          // color={Colors.white}
+          // onPress={() => {
+          //    navigation.toggleDrawer();
+          // }}
           source={require('../../Assets/Images/URWhiteLogo.png')}
           rightButton={selectedDriver ? 'show' : ''}
           cancelRideFunction={cancelRideByDriver}
@@ -1574,7 +1626,9 @@ export default function DriverBiddingScreen({navigation}) {
           )}
 
         {((arrive.pickUpLocation && !startRide) ||
-          (route.params?.driverArrive && !route.params.startRide) ||
+          (route.params?.driverArrive &&
+            !route.params.startRide &&
+            !startRide) ||
           (data?.driverArriveAtPickupLocation &&
             !route.params?.startRide &&
             !startRide)) && (
@@ -1632,7 +1686,7 @@ export default function DriverBiddingScreen({navigation}) {
             arrive.pickUpLocation ||
             route.params.driverArrive ||
             data?.driverArriveAtPickupLocation
-              ? passengerData.minutes
+              ? data?.passengerData?.minutes ?? data?.minutes
               : Math.ceil(minutesAndDistanceDifference.minutes)}{' '}
             Minutes
           </Text>
@@ -1649,7 +1703,7 @@ export default function DriverBiddingScreen({navigation}) {
             arrive.pickUpLocation ||
             route.params.driverArrive ||
             data?.driverArriveAtPickupLocation
-              ? passengerData.distance
+              ? data?.passengerData?.distance ?? data?.distance
               : (minutesAndDistanceDifference.distance * 0.621371).toFixed(
                   2,
                 )}{' '}
@@ -1695,7 +1749,8 @@ export default function DriverBiddingScreen({navigation}) {
                         color: Colors.primary,
                       }}
                     >
-                      {passengerData.mobileNumber}
+                      {passengerData.mobileNumber ??
+                        data?.passengerPersonalDetails?.mobileNumber}
                     </Text>
                     <View style={{marginRight: 160}}>
                       <Icon name="phone" size={30} color={Colors.secondary} />
@@ -1707,7 +1762,9 @@ export default function DriverBiddingScreen({navigation}) {
               <TextInput
                 placeholder="PickUp Location"
                 placeholderTextColor={Colors.gray}
-                value={pickUpLocation}
+                value={
+                  data?.passengerData?.pickupAddress ?? data?.pickupAddress
+                }
                 onChangeText={setpickUpLocation}
                 selectionColor={Colors.black}
                 activeUnderlineColor={Colors.gray}
@@ -1717,7 +1774,9 @@ export default function DriverBiddingScreen({navigation}) {
               <TextInput
                 placeholder="Destination Location"
                 placeholderTextColor={Colors.gray}
-                value={dropOffLocation}
+                value={
+                  data?.passengerData?.dropOffAddress ?? data?.dropOffAddress
+                }
                 onChangeText={setdropOffLocation}
                 selectionColor={Colors.black}
                 activeUnderlineColor={Colors.gray}
@@ -1738,13 +1797,13 @@ export default function DriverBiddingScreen({navigation}) {
                     ? 'Customer Bid:'
                     : 'Recomended Fare:'
                 } $${
-                  selectedDriver?.bidFare
-                    ? selectedDriver?.bidFare
-                    : passengerData.bidFare > 0
-                    ? passengerData.bidFare
-                    : selectedDriver?.bidFare
-                    ? selectedDriver?.bidFare
-                    : passengerData.fare
+                  route.params?.bidFare
+                    ? route.params?.data?.bidFare
+                    : route?.params?.data?.bidFare > 0
+                    ? route?.params?.data?.bidFare
+                    : route?.params?.data?.bidFare
+                    ? route?.params?.bidFare
+                    : route?.params?.data?.passengerData?.fare
                 }`}
               />
               {driverBidFare && (
@@ -1801,7 +1860,7 @@ export default function DriverBiddingScreen({navigation}) {
               {cancelRide && cancelRideModal()}
 
               {/* </ScrollView> */}
-              {!selectedDriver && (
+              {/* {!selectedDriver && (
                 <View
                   style={[
                     styles.btnContainer,
@@ -1828,7 +1887,7 @@ export default function DriverBiddingScreen({navigation}) {
                     styleContainer={{width: '49%'}}
                   />
                 </View>
-              )}
+              )} */}
             </KeyboardAvoidingView>
           </ScrollView>
         </KeyboardAvoidingView>

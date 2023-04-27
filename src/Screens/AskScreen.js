@@ -24,6 +24,27 @@ export default function AskScreen({navigation, route}) {
   const [loading, setLoading] = useState();
   const {height} = useWindowDimensions();
   const [warningData, setWarningData] = useState([]);
+  const [activeDriverData, setActiveDriverData] = useState({});
+
+  const getDriverData = () => {
+    let id = auth().currentUser.uid;
+
+    firestore()
+      .collection('Drivers')
+      .doc(id)
+      .get()
+      .then(doc => {
+        console.log(doc, 'doc');
+        if (doc._exists) {
+          let data = doc.data();
+          setActiveDriverData(data);
+        }
+      });
+  };
+
+  useEffect(() => {
+    getDriverData();
+  }, []);
 
   const getDriverBookingData = async () => {
     try {
@@ -33,8 +54,8 @@ export default function AskScreen({navigation, route}) {
       );
       let startRide = await AsyncStorage.getItem('startRide');
       let endRide = await AsyncStorage.getItem('EndRide');
-
       data = JSON.parse(data);
+
       if (checkDriverArrive) {
         data.driverArriveAtPickupLocation = true;
       }
@@ -53,7 +74,9 @@ export default function AskScreen({navigation, route}) {
             },
             selectedDriver: data?.myDriversData
               ? data?.myDriversData
-              : data?.driverData,
+              : data?.driverData
+              ? data?.driverData
+              : activeDriverData,
             startRide: startRide ? true : false,
             driverArrive: checkDriverArrive ? true : false,
             endRide: endRide ? true : false,
@@ -178,7 +201,6 @@ export default function AskScreen({navigation, route}) {
       let data = await AsyncStorage.getItem('passengerBooking');
       data = JSON.parse(data);
       let checkDriverArrive = await AsyncStorage.getItem('driverArrive');
-
       if (data && Object.keys(data).length > 0) {
         navigation.navigate('PassengerRoutes', {
           screen: 'PassengerHomeScreen',
@@ -266,7 +288,7 @@ export default function AskScreen({navigation, route}) {
                     ? data.passengerData.dropLocationCords
                     : data.dropLocationCords,
                 },
-                selectedDriver: data?.myDriversData,
+                selectedDriver: data?.driverDATA,
                 startRide: startRide ? true : false,
                 driverArrive: checkDriverArrive ? true : false,
                 endRide: endRide ? true : false,

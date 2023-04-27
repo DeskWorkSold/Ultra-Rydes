@@ -63,7 +63,7 @@ export default function PassengerHomeScreen({navigation}) {
   const [bookingData, setBookingData] = useState([]);
   const [result, setResult] = useState();
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
-  const [wallet, setWallet] = useState(null);
+  const [wallet, setWallet] = useState(0);
   const [bidFare, setBidFare] = useState(null);
   const [driverArrive, setDriverArrive] = useState({
     pickupLocation: false,
@@ -246,7 +246,6 @@ export default function PassengerHomeScreen({navigation}) {
         }
       });
   };
-
   const getNotificationPermission = async () => {
     let id = auth().currentUser.uid;
 
@@ -362,6 +361,9 @@ export default function PassengerHomeScreen({navigation}) {
   }, [route.params]);
 
   useEffect(() => {
+    console.log(data, 'data');
+    console.log(selectedDriver, 'driver');
+
     if (data) {
       setRouteData(data);
       if (data && data.passengerData) {
@@ -393,6 +395,7 @@ export default function PassengerHomeScreen({navigation}) {
         setSelectedLocation(data.driverData.currentLocation);
       }
     }
+
     if (data) {
       let myData = JSON.stringify(data);
       AsyncStorage.setItem('passengerBooking', myData);
@@ -410,6 +413,8 @@ export default function PassengerHomeScreen({navigation}) {
       calculateDistance(result);
     }
   };
+
+  console.log(selectedDriver, 'selected');
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -746,6 +751,9 @@ export default function PassengerHomeScreen({navigation}) {
       console.log(error);
     }
   };
+
+  console.log(auth().currentUser.uid);
+
   const showBidFareModal = () => {
     let flag =
       dummyDataCat &&
@@ -762,24 +770,30 @@ export default function PassengerHomeScreen({navigation}) {
   const handlePayPress = async () => {
     setButtonLoader(true);
     let id = auth().currentUser.uid;
-
     let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
     let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
 
-    if (tip.includes('%')) {
+    if (tip && tip.includes('%')) {
       let tipPercent = tip.slice(0, 2);
       tipPercent = Number(tipPercent);
       tip = (Number(rideFare) * tipPercent) / 100;
     } else {
       tip = Number(tip).toFixed(2);
     }
-    let totalCharges = (Number(rideFare) + tip).toFixed(2);
+
+    let totalCharges = Number(rideFare) + Number(tip);
+
+    totalCharges = totalCharges.toFixed(2);
+
+    console.log(totalCharges, 'charges');
+
     if (wallet > totalCharges) {
       firestore()
         .collection('Request')
         .doc(id)
         .update({
           confirmByPassenger: true,
+          tipAmount: tip,
         })
         .then(() => {
           setButtonLoader(false);
@@ -905,6 +919,8 @@ export default function PassengerHomeScreen({navigation}) {
     }
   };
 
+  console.log(route.params, 'paramsssss');
+
   const ArriveModal = useCallback(() => {
     return (
       <View style={styles.centeredView}>
@@ -912,12 +928,6 @@ export default function PassengerHomeScreen({navigation}) {
           animationType="slide"
           transparent={true}
           visible={driverArrive.pickupLocation && !driverArriveAtPickUpLocation}
-          onRequestClose={() => {
-            setDriverArrive({
-              ...driverArrive,
-              pickupLocation: false,
-            });
-          }}
         >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
@@ -1104,28 +1114,28 @@ export default function PassengerHomeScreen({navigation}) {
         tip = Number(tip);
       }
 
-      let driverWallet = {
-        tip: tip,
-        fare: 0,
-        date: new Date(),
-        withdraw: 0,
-        remainingWallet: tip,
-      };
-      firestore()
-        .collection('driverWallet')
-        .doc(route.params.driverData.id)
-        .set(
-          {
-            driverWallet: firestore.FieldValue.arrayUnion(driverWallet),
-          },
-          {merge: true},
-        )
-        .then(res => {
-          console.log('driver Wallet successfully updated');
-        })
-        .catch(error => {
-          console.log(error);
-        });
+      // let driverWallet = {
+      //   tip: tip,
+      //   fare: 0,
+      //   date: new Date(),
+      //   withdraw: 0,
+      //   remainingWallet: tip,
+      // };
+      // firestore()
+      //   .collection('driverWallet')
+      //   .doc(route.params.driverData.id)
+      //   .set(
+      //     {
+      //       driverWallet: firestore.FieldValue.arrayUnion(driverWallet),
+      //     },
+      //     {merge: true},
+      //   )
+      //   .then(res => {
+      //     console.log('driver Wallet successfully updated');
+      //   })
+      //   .catch(error => {
+      //     console.log(error);
+      //   });
 
       firestore().collection('Request').doc(id).update({
         bookingStatus: 'complete',
@@ -1757,7 +1767,7 @@ export default function PassengerHomeScreen({navigation}) {
               color={Colors.white}
               rightButton={selectedDriver ? 'show' : ''}
               onPress={() => {
-                navigation.toggleDrawer();
+                !selectedDriver && navigation.toggleDrawer();
               }}
               source={require('../../Assets/Images/URWhiteLogo.png')}
               cancelRideFunction={cancelRideByPassenger}
@@ -2013,12 +2023,12 @@ export default function PassengerHomeScreen({navigation}) {
                     value={
                       selectedDriver &&
                       Object.keys(selectedDriver).length > 0 &&
-                      !selectedDriver.bidFare
-                        ? `$${selectedDriver.fare} `
+                      !data.bidFare
+                        ? `$${data?.passengerData?.fare} `
                         : selectedDriver &&
                           Object.keys(selectedDriver).length > 0 &&
-                          selectedDriver.bidFare
-                        ? `$${selectedDriver.bidFare}`
+                          data?.bidFare
+                        ? `$${data.bidFare}`
                         : bidFare
                         ? `$${bidFare}`
                         : fare

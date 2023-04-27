@@ -26,6 +26,7 @@ import Ionicons from 'react-native-vector-icons/MaterialIcons';
 import {ScrollView} from 'react-native-gesture-handler';
 import axios from 'axios';
 import {BASE_URI} from '../../Constants/Base_uri';
+import {setMaxListeners} from 'npm';
 
 export default function PassengerFindRide({navigation, route}) {
   const passengerData = route.params;
@@ -42,6 +43,7 @@ export default function PassengerFindRide({navigation, route}) {
   const [showCardForm, setShowCardForm] = useState(false);
   const [savedCards, setSavedCards] = React.useState(true);
   const [buttonLoader, setButtonLoader] = React.useState(false);
+  const [noDriverData,setNoDriverData] = React.useState(false)
 
   const [cardDetail, setCardDetail] = useState({
     cardHolderName: '',
@@ -87,10 +89,32 @@ export default function PassengerFindRide({navigation, route}) {
   };
 
   useEffect(() => {
-    if (passengerData.id && passengerData.bidFare) {
+    if (passengerData.id && passengerData.bidFare  && !noDriverData) {
       setRequest(true);
     }
+
     checkAvailableDriverStatus();
+  }, []);
+
+  
+
+  useEffect(() => {
+    let interval = setInterval(() => {
+      if (driverData.length == 0 && request && !noDriverData) {
+        console.log("hello")
+        setRequest(false);
+        setNoDriverData(true)
+        navigation.navigate('PassengerHomeScreen');
+        clearInterval(interval)
+        ToastAndroid.show(
+          'Driver are not available rightnow request after sometime',
+          ToastAndroid.SHORT,
+        );
+      }else{
+        navigation.navigate('PassengerHomeScreen');
+      }
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -302,6 +326,7 @@ export default function PassengerFindRide({navigation, route}) {
             if (
               myDriverData.status == 'online' &&
               mileDistance <= 3 &&
+              myDriversTemp.length < 6 &&
               flag &&
               !isInlined &&
               !driverRequestedButNotRespond &&
@@ -405,213 +430,213 @@ export default function PassengerFindRide({navigation, route}) {
     });
   }, []);
 
-  const confirmToMakePayment = () => {
-    setShowAskPaymentModal(false);
-    setShowCardForm(true);
-  };
+  // const confirmToMakePayment = () => {
+  //   setShowAskPaymentModal(false);
+  //   setShowCardForm(true);
+  // };
 
-  const PaymentAskModal = useCallback(() => {
-    return (
-      <View style={styles.centeredView}>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showAskPaymentModal}
-          onRequestClose={() => {
-            setShowAskPaymentModal(false);
-          }}
-        >
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <View>
-                <Ionicons size={80} color="white" name="payment" />
-              </View>
-              <Text style={styles.modalText}>
-                You need to make payment before request the ride!
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {color: Colors.white, fontSize: 18, fontWeight: '600'},
-                ]}
-              >
-                Do you want to make payment!
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  {marginBottom: 10, backgroundColor: Colors.primary},
-                ]}
-                onPress={() => confirmToMakePayment()}
-              >
-                <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
-                >
-                  Confirm
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      </View>
-    );
-  }, [showAskPaymentModal]);
+  // const PaymentAskModal = useCallback(() => {
+  //   return (
+  //     <View style={styles.centeredView}>
+  //       <Modal
+  //         animationType="slide"
+  //         transparent={true}
+  //         visible={showAskPaymentModal}
+  //         onRequestClose={() => {
+  //           setShowAskPaymentModal(false);
+  //         }}
+  //       >
+  //         <View style={styles.centeredView}>
+  //           <View style={styles.modalView}>
+  //             <View>
+  //               <Ionicons size={80} color="white" name="payment" />
+  //             </View>
+  //             <Text style={styles.modalText}>
+  //               You need to make payment before request the ride!
+  //             </Text>
+  //             <Text
+  //               style={[
+  //                 styles.modalText,
+  //                 {color: Colors.white, fontSize: 18, fontWeight: '600'},
+  //               ]}
+  //             >
+  //               Do you want to make payment!
+  //             </Text>
+  //             <TouchableOpacity
+  //               style={[
+  //                 styles.button,
+  //                 {marginBottom: 10, backgroundColor: Colors.primary},
+  //               ]}
+  //               onPress={() => confirmToMakePayment()}
+  //             >
+  //               <Text
+  //                 style={[styles.textStyle, {backgroundColor: Colors.primary}]}
+  //               >
+  //                 Confirm
+  //               </Text>
+  //             </TouchableOpacity>
+  //           </View>
+  //         </View>
+  //       </Modal>
+  //     </View>
+  //   );
+  // }, [showAskPaymentModal]);
 
-  const confirmPayment = () => {
-    setButtonLoader(true);
+  // const confirmPayment = () => {
+  //   setButtonLoader(true);
 
-    let customerData = {
-      cardNumber: cardDetail.cardNumber,
-      expiryMonth: Number(cardDetail.expiryMonth),
-      expiryYear: Number(cardDetail.expiryYear),
-      cvc: cardDetail.cvc,
-      amount: Number(passengerData.bidFare ?? passengerData.fare),
-    };
-    axios
-      .post(`${BASE_URI}dopayment`, customerData)
-      .then(res => {
-        setButtonLoader(false);
-        let data = res.data;
-        console.log(typeof data.amount);
-        let {result, status} = data;
-        if (!status) {
-          ToastAndroid.show(data.message, ToastAndroid.SHORT);
-          return;
-        }
-        let walletData = {
-          payment: result.amount / 100,
-          fare: 0,
-          wallet: result.amount / 100,
-          date: new Date(),
-          tip: 0,
-        };
-        let id = auth().currentUser.uid;
-        firestore()
-          .collection('wallet')
-          .doc(id)
-          .set(
-            {
-              wallet: firestore.FieldValue.arrayUnion(walletData),
-            },
-            {merge: true},
-          )
-          .then(() => {
-            ToastAndroid.show(
-              'Amount Successfully Deposit in your wallet and will be deducted after you complete your ride',
-              ToastAndroid.SHORT,
-            );
-            setShowAskPaymentModal(false);
-            setShowPaymentConfirmationModal(false);
+  //   let customerData = {
+  //     cardNumber: cardDetail.cardNumber,
+  //     expiryMonth: Number(cardDetail.expiryMonth),
+  //     expiryYear: Number(cardDetail.expiryYear),
+  //     cvc: cardDetail.cvc,
+  //     amount: Number(passengerData.bidFare ?? passengerData.fare),
+  //   };
+  //   axios
+  //     .post(`${BASE_URI}dopayment`, customerData)
+  //     .then(res => {
+  //       setButtonLoader(false);
+  //       let data = res.data;
+  //       console.log(typeof data.amount);
+  //       let {result, status} = data;
+  //       if (!status) {
+  //         ToastAndroid.show(data.message, ToastAndroid.SHORT);
+  //         return;
+  //       }
+  //       let walletData = {
+  //         payment: result.amount / 100,
+  //         fare: 0,
+  //         wallet: result.amount / 100,
+  //         date: new Date(),
+  //         tip: 0,
+  //       };
+  //       let id = auth().currentUser.uid;
+  //       firestore()
+  //         .collection('wallet')
+  //         .doc(id)
+  //         .set(
+  //           {
+  //             wallet: firestore.FieldValue.arrayUnion(walletData),
+  //           },
+  //           {merge: true},
+  //         )
+  //         .then(() => {
+  //           ToastAndroid.show(
+  //             'Amount Successfully Deposit in your wallet and will be deducted after you complete your ride',
+  //             ToastAndroid.SHORT,
+  //           );
+  //           setShowAskPaymentModal(false);
+  //           setShowPaymentConfirmationModal(false);
 
-            firestore()
-              .collection('Request')
-              .doc(passengerData.id)
-              .set({
-                passengerData: passengerData,
-                driverData: selectedDriver,
-              })
-              .then(() => {
-                setRequest(true);
-                setShowCardForm(false);
-              })
-              .catch(error => {
-                console.log(error);
-              });
-          })
-          .catch(error => {
-            console.log(error);
-          });
-      })
-      .catch(error => {
-        setButtonLoader(false);
-        console.log(error, 'erro');
-        ToastAndroid.show('error', ToastAndroid.SHORT);
-      });
-  };
+  //           firestore()
+  //             .collection('Request')
+  //             .doc(passengerData.id)
+  //             .set({
+  //               passengerData: passengerData,
+  //               driverData: selectedDriver,
+  //             })
+  //             .then(() => {
+  //               setRequest(true);
+  //               setShowCardForm(false);
+  //             })
+  //             .catch(error => {
+  //               console.log(error);
+  //             });
+  //         })
+  //         .catch(error => {
+  //           console.log(error);
+  //         });
+  //     })
+  //     .catch(error => {
+  //       setButtonLoader(false);
+  //       console.log(error, 'erro');
+  //       ToastAndroid.show('error', ToastAndroid.SHORT);
+  //     });
+  // };
 
-  const PaymentConfirmationModal = useCallback(() => {
-    return (
-      <View style={styles.centeredView}>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showPaymentConfirmationModal}
-          onRequestClose={() => {
-            setShowPaymentConfirmationModal(false);
-            setShowCardForm(false);
-            setSelectedDriver('');
-          }}
-        >
-          <View style={styles.centeredView}>
-            <View
-              style={[
-                styles.modalView,
-                {alignItems: 'flex-start', justifyContent: 'flex-start'},
-              ]}
-            >
-              <View style={{alignSelf: 'center'}}>
-                <Ionicons size={80} color="white" name="payment" />
-              </View>
-              <Text
-                style={[
-                  styles.modalText,
-                  {marginBottom: 0, textAlign: 'left', padding: 0},
-                ]}
-              >
-                Fare : {passengerData.bidFare ?? passengerData.fare}
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {marginTop: 0, textAlign: 'left', padding: 0, fontSize: 16},
-                ]}
-              >
-                Total amount deducted :{' '}
-                {passengerData.bidFare ?? passengerData.fare}
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: '600',
-                    alignSelf: 'center',
-                  },
-                ]}
-              >
-                Are you sure to make payment!
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  {
-                    marginBottom: 10,
-                    backgroundColor: Colors.primary,
-                    alignSelf: 'center',
-                  },
-                ]}
-                onPress={() => confirmPayment()}
-              >
-                {buttonLoader ? (
-                  <ActivityIndicator size={'large'} color={Colors.secondary} />
-                ) : (
-                  <Text
-                    style={[
-                      styles.textStyle,
-                      {backgroundColor: Colors.primary},
-                    ]}
-                  >
-                    Pay Amount
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      </View>
-    );
-  }, [showPaymentConfirmationModal, buttonLoader, selectedDriver]);
+  // const PaymentConfirmationModal = useCallback(() => {
+  //   return (
+  //     <View style={styles.centeredView}>
+  //       <Modal
+  //         animationType="slide"
+  //         transparent={true}
+  //         visible={showPaymentConfirmationModal}
+  //         onRequestClose={() => {
+  //           setShowPaymentConfirmationModal(false);
+  //           setShowCardForm(false);
+  //           setSelectedDriver('');
+  //         }}
+  //       >
+  //         <View style={styles.centeredView}>
+  //           <View
+  //             style={[
+  //               styles.modalView,
+  //               {alignItems: 'flex-start', justifyContent: 'flex-start'},
+  //             ]}
+  //           >
+  //             <View style={{alignSelf: 'center'}}>
+  //               <Ionicons size={80} color="white" name="payment" />
+  //             </View>
+  //             <Text
+  //               style={[
+  //                 styles.modalText,
+  //                 {marginBottom: 0, textAlign: 'left', padding: 0},
+  //               ]}
+  //             >
+  //               Fare : {passengerData.bidFare ?? passengerData.fare}
+  //             </Text>
+  //             <Text
+  //               style={[
+  //                 styles.modalText,
+  //                 {marginTop: 0, textAlign: 'left', padding: 0, fontSize: 16},
+  //               ]}
+  //             >
+  //               Total amount deducted :{' '}
+  //               {passengerData.bidFare ?? passengerData.fare}
+  //             </Text>
+  //             <Text
+  //               style={[
+  //                 styles.modalText,
+  //                 {
+  //                   color: Colors.white,
+  //                   fontSize: 16,
+  //                   fontWeight: '600',
+  //                   alignSelf: 'center',
+  //                 },
+  //               ]}
+  //             >
+  //               Are you sure to make payment!
+  //             </Text>
+  //             <TouchableOpacity
+  //               style={[
+  //                 styles.button,
+  //                 {
+  //                   marginBottom: 10,
+  //                   backgroundColor: Colors.primary,
+  //                   alignSelf: 'center',
+  //                 },
+  //               ]}
+  //               onPress={() => confirmPayment()}
+  //             >
+  //               {buttonLoader ? (
+  //                 <ActivityIndicator size={'large'} color={Colors.secondary} />
+  //               ) : (
+  //                 <Text
+  //                   style={[
+  //                     styles.textStyle,
+  //                     {backgroundColor: Colors.primary},
+  //                   ]}
+  //                 >
+  //                   Pay Amount
+  //                 </Text>
+  //               )}
+  //             </TouchableOpacity>
+  //           </View>
+  //         </View>
+  //       </Modal>
+  //     </View>
+  //   );
+  // }, [showPaymentConfirmationModal, buttonLoader, selectedDriver]);
 
   // const makePayment = () => {
   //   let values = Object.values(cardDetail);
@@ -649,170 +674,170 @@ export default function PassengerFindRide({navigation, route}) {
   //   }
   // };
 
-  const makePayment = () => {
-    let values = Object.values(cardDetail);
-    console.log(values, 'bales');
-    let flag = values.some(e => e == '');
-    if (flag) {
-      ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
-    } else {
-      console.log(showPaymentConfirmationModal, 'payment');
-      setShowPaymentConfirmationModal(true);
-    }
-  };
+  // const makePayment = () => {
+  //   let values = Object.values(cardDetail);
+  //   console.log(values, 'bales');
+  //   let flag = values.some(e => e == '');
+  //   if (flag) {
+  //     ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
+  //   } else {
+  //     console.log(showPaymentConfirmationModal, 'payment');
+  //     setShowPaymentConfirmationModal(true);
+  //   }
+  // };
 
-  const PaymentFormCard = () => {
-    return (
-      <View style={{width: '100%', paddingHorizontal: 20, marginTop: 30}}>
-        <ScrollView>
-          <View style={{width: '100%'}}>
-            <Text
-              style={[
-                styles.text,
-                {
-                  textAlign: 'center',
-                  fontSize: 20,
-                  fontWeight: '600',
-                  marginBottom: 20,
-                  color: Colors.black,
-                },
-              ]}
-            >
-              Add Card details you want to make payment from
-            </Text>
+  // const PaymentFormCard = () => {
+  //   return (
+  //     <View style={{width: '100%', paddingHorizontal: 20, marginTop: 30}}>
+  //       <ScrollView>
+  //         <View style={{width: '100%'}}>
+  //           <Text
+  //             style={[
+  //               styles.text,
+  //               {
+  //                 textAlign: 'center',
+  //                 fontSize: 20,
+  //                 fontWeight: '600',
+  //                 marginBottom: 20,
+  //                 color: Colors.black,
+  //               },
+  //             ]}
+  //           >
+  //             Add Card details you want to make payment from
+  //           </Text>
 
-            <Text
-              style={[
-                styles.text,
-                {textAlign: 'left', color: Colors.secondary},
-              ]}
-            >
-              Card Holder Name
-            </Text>
-            <TextInput
-              onChangeText={e =>
-                setCardDetail({...cardDetail, cardHolderName: e})
-              }
-              placeholder="Enter name..."
-              placeholderTextColor={Colors.black}
-              style={{
-                width: '100%',
-                color: Colors.black,
-                borderWidth: 1,
-                borderColor: Colors.black,
-                padding: 10,
-                borderRadius: 10,
-                marginTop: 5,
-              }}
-            />
-          </View>
-          <View style={{width: '100%', marginTop: 10}}>
-            <Text
-              style={[
-                styles.text,
-                {textAlign: 'left', color: Colors.secondary},
-              ]}
-            >
-              Card Number
-            </Text>
-            <TextInput
-              placeholder="Enter card number..."
-              onChangeText={e => setCardDetail({...cardDetail, cardNumber: e})}
-              placeholderTextColor={Colors.black}
-              style={{
-                width: '100%',
-                borderWidth: 1,
-                borderColor: Colors.black,
-                padding: 10,
-                color: 'black',
-                borderRadius: 10,
-                marginTop: 5,
-              }}
-            />
-          </View>
-          <View style={{width: '100%', marginTop: 10}}>
-            <Text
-              style={[
-                styles.text,
-                {textAlign: 'left', color: Colors.secondary},
-              ]}
-            >
-              Expiry Month
-            </Text>
-            <TextInput
-              keyboardType="numeric"
-              onChangeText={e => setCardDetail({...cardDetail, expiryMonth: e})}
-              placeholder="Enter expiry date..."
-              placeholderTextColor={Colors.black}
-              style={{
-                width: '100%',
-                borderWidth: 1,
-                borderColor: Colors.black,
-                padding: 10,
-                color: 'black',
-                borderRadius: 10,
-                marginTop: 5,
-              }}
-            />
-          </View>
-          <View style={{width: '100%', marginTop: 10}}>
-            <Text
-              style={[
-                styles.text,
-                {textAlign: 'left', color: Colors.secondary},
-              ]}
-            >
-              Expiry Year
-            </Text>
-            <TextInput
-              keyboardType="numeric"
-              onChangeText={e => setCardDetail({...cardDetail, expiryYear: e})}
-              placeholder="Enter expiry date..."
-              placeholderTextColor={Colors.black}
-              style={{
-                width: '100%',
-                borderWidth: 1,
-                borderColor: Colors.black,
-                padding: 10,
-                color: 'black',
-                borderRadius: 10,
-                marginTop: 5,
-              }}
-            />
-          </View>
-          <View style={{width: '100%', marginTop: 10}}>
-            <Text
-              style={[
-                styles.text,
-                {textAlign: 'left', color: Colors.secondary},
-              ]}
-            >
-              CVC
-            </Text>
-            <TextInput
-              placeholder="Enter cvc..."
-              onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
-              placeholderTextColor={Colors.black}
-              style={{
-                width: '100%',
-                borderWidth: 1,
-                borderColor: Colors.black,
-                padding: 10,
-                color: 'black',
-                borderRadius: 10,
-                marginTop: 5,
-              }}
-            />
-            <CustomButton
-              styleContainer={{width: '100%', marginTop: 20}}
-              text={'Make payment'}
-              onPress={() => makePayment()}
-            />
-          </View>
-        </ScrollView>
-      </View>
-    );
-  };
+  //           <Text
+  //             style={[
+  //               styles.text,
+  //               {textAlign: 'left', color: Colors.secondary},
+  //             ]}
+  //           >
+  //             Card Holder Name
+  //           </Text>
+  //           <TextInput
+  //             onChangeText={e =>
+  //               setCardDetail({...cardDetail, cardHolderName: e})
+  //             }
+  //             placeholder="Enter name..."
+  //             placeholderTextColor={Colors.black}
+  //             style={{
+  //               width: '100%',
+  //               color: Colors.black,
+  //               borderWidth: 1,
+  //               borderColor: Colors.black,
+  //               padding: 10,
+  //               borderRadius: 10,
+  //               marginTop: 5,
+  //             }}
+  //           />
+  //         </View>
+  //         <View style={{width: '100%', marginTop: 10}}>
+  //           <Text
+  //             style={[
+  //               styles.text,
+  //               {textAlign: 'left', color: Colors.secondary},
+  //             ]}
+  //           >
+  //             Card Number
+  //           </Text>
+  //           <TextInput
+  //             placeholder="Enter card number..."
+  //             onChangeText={e => setCardDetail({...cardDetail, cardNumber: e})}
+  //             placeholderTextColor={Colors.black}
+  //             style={{
+  //               width: '100%',
+  //               borderWidth: 1,
+  //               borderColor: Colors.black,
+  //               padding: 10,
+  //               color: 'black',
+  //               borderRadius: 10,
+  //               marginTop: 5,
+  //             }}
+  //           />
+  //         </View>
+  //         <View style={{width: '100%', marginTop: 10}}>
+  //           <Text
+  //             style={[
+  //               styles.text,
+  //               {textAlign: 'left', color: Colors.secondary},
+  //             ]}
+  //           >
+  //             Expiry Month
+  //           </Text>
+  //           <TextInput
+  //             keyboardType="numeric"
+  //             onChangeText={e => setCardDetail({...cardDetail, expiryMonth: e})}
+  //             placeholder="Enter expiry date..."
+  //             placeholderTextColor={Colors.black}
+  //             style={{
+  //               width: '100%',
+  //               borderWidth: 1,
+  //               borderColor: Colors.black,
+  //               padding: 10,
+  //               color: 'black',
+  //               borderRadius: 10,
+  //               marginTop: 5,
+  //             }}
+  //           />
+  //         </View>
+  //         <View style={{width: '100%', marginTop: 10}}>
+  //           <Text
+  //             style={[
+  //               styles.text,
+  //               {textAlign: 'left', color: Colors.secondary},
+  //             ]}
+  //           >
+  //             Expiry Year
+  //           </Text>
+  //           <TextInput
+  //             keyboardType="numeric"
+  //             onChangeText={e => setCardDetail({...cardDetail, expiryYear: e})}
+  //             placeholder="Enter expiry date..."
+  //             placeholderTextColor={Colors.black}
+  //             style={{
+  //               width: '100%',
+  //               borderWidth: 1,
+  //               borderColor: Colors.black,
+  //               padding: 10,
+  //               color: 'black',
+  //               borderRadius: 10,
+  //               marginTop: 5,
+  //             }}
+  //           />
+  //         </View>
+  //         <View style={{width: '100%', marginTop: 10}}>
+  //           <Text
+  //             style={[
+  //               styles.text,
+  //               {textAlign: 'left', color: Colors.secondary},
+  //             ]}
+  //           >
+  //             CVC
+  //           </Text>
+  //           <TextInput
+  //             placeholder="Enter cvc..."
+  //             onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
+  //             placeholderTextColor={Colors.black}
+  //             style={{
+  //               width: '100%',
+  //               borderWidth: 1,
+  //               borderColor: Colors.black,
+  //               padding: 10,
+  //               color: 'black',
+  //               borderRadius: 10,
+  //               marginTop: 5,
+  //             }}
+  //           />
+  //           <CustomButton
+  //             styleContainer={{width: '100%', marginTop: 20}}
+  //             text={'Make payment'}
+  //             onPress={() => makePayment()}
+  //           />
+  //         </View>
+  //       </ScrollView>
+  //     </View>
+  //   );
+  // };
 
   const AccecptOffer = acceptDriver => {
     if (passengerData && passengerData.bidFare && acceptDriver.bidFare) {
@@ -892,6 +917,7 @@ export default function PassengerFindRide({navigation, route}) {
         .set({
           passengerData: passengerData,
           driverData: acceptDriver,
+          requestDate: new Date(),
         })
         .then(() => {
           setRequest(true);
@@ -919,7 +945,7 @@ export default function PassengerFindRide({navigation, route}) {
           'This driver is not available right now',
           ToastAndroid.SHORT,
         );
-      }, 60000);
+      }, 32000);
 
       return () => clearInterval(interval);
     }

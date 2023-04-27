@@ -38,6 +38,7 @@ const CurrentBalanceScreen = ({navigation}) => {
   const [stripeId, setStripeId] = useState('');
   const [driverData, setDriverData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
   const [amountWithdrawn, setAmountWithdrawn] = useState(false);
   const [earn, setEarn] = useState({
     monthly: null,
@@ -247,13 +248,14 @@ const CurrentBalanceScreen = ({navigation}) => {
   const checkStripeAccount = () => {
     if (!stripeId) {
       let id = auth().currentUser.uid;
+      setLoading(true);
       axios.post(`${BASE_URI}createAccount`, driverData).then(res => {
-        console.log(res.data, 'res');
         firestore()
           .collection('DriverstripeAccount')
           .doc(id)
           .set(res.data)
           .then(() => {
+            setLoading(false);
             ToastAndroid.show(
               'Your account has been created',
               ToastAndroid.SHORT,
@@ -262,12 +264,18 @@ const CurrentBalanceScreen = ({navigation}) => {
           })
           .catch(error => {
             console.log(error);
+            setLoading(false);
+          })
+          .catch(error => {
+            setLoading(false);
+            ToastAndroid.show(error.message, ToastAndroid.SHORT);
           });
       });
       return;
     }
 
     if (stripeId && !stripeVerifiedAccount) {
+      setLoading(false);
       setOpenCreateAccountModal(true);
       return;
     }
@@ -331,6 +339,7 @@ const CurrentBalanceScreen = ({navigation}) => {
         })
         .catch(error => {
           console.log(error);
+          setLoading(false);
         })
         .catch(error => {
           setLoading(false);
@@ -340,11 +349,8 @@ const CurrentBalanceScreen = ({navigation}) => {
   };
 
   const getStripeAccountDetailsFromDriver = () => {
-    if (stripeAccountId && stripeVerifiedAccount) {
-      axios.post();
-    }
-
     let id = auth().currentUser.uid;
+    setModalLoading(true);
     firestore()
       .collection('DriverstripeAccount')
       .doc(id)
@@ -353,12 +359,14 @@ const CurrentBalanceScreen = ({navigation}) => {
         axios
           .post(`${BASE_URI}accountLink`, {id: accountId})
           .then(res => {
+            setModalLoading(false);
             let data = res.data;
             Linking.openURL(data.data.url);
             setOpenCreateAccountModal(false);
           })
           .catch(error => {
             console.log(error);
+            setModalLoading(false);
           });
       });
   };
@@ -390,20 +398,25 @@ const CurrentBalanceScreen = ({navigation}) => {
                 ]}
                 onPress={() => getStripeAccountDetailsFromDriver()}
               >
-                <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}
-                >
-                  Get my Details
-                </Text>
+                {modalLoading ? (
+                  <ActivityIndicator size={'small'} color={Colors.black} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.textStyle,
+                      {backgroundColor: Colors.primary},
+                    ]}
+                  >
+                    Get my Details
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
       </View>
     );
-  }, [openCreateAccountModal]);
-
-  console.log(currentwallet, 'wallet');
+  }, [openCreateAccountModal, modalLoading]);
 
   return (
     <SafeAreaView>

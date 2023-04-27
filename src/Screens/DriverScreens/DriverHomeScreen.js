@@ -5,6 +5,8 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
+  ToastAndroid,
+  Alert,
 } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
@@ -13,16 +15,17 @@ import {
   locationPermission,
   getCurrentLocation,
 } from '../../Helper/HelperFunction';
-import {TextInput, TouchableOpacity} from 'react-native-gesture-handler';
 import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import firestore, {firebase} from '@react-native-firebase/firestore';
 import Geolocation from 'react-native-geolocation-service';
 import {getPreciseDistance} from 'geolib';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useCallback} from 'react';
 import Sound from 'react-native-sound';
-import tone from '../../../assets/my_sound.mp3';
 import mytone from '../../Assets/my_sound.mp3';
+import CustomButton from '../../Components/CustomButton';
+
+import {BackHandler} from 'react-native';
 
 export default function DriverHomeScreen({navigation, route}) {
   let reload = route.params;
@@ -52,29 +55,71 @@ export default function DriverHomeScreen({navigation, route}) {
   const [inlinedDrivers, setInlinedDrivers] = useState(false);
   const [watchState, setWatchState] = useState(null);
   const [ding, setDing] = useState('');
+  const [rejectLoader, setRejectLoader] = useState(false);
+  const [requestLoader, setRequestLoader] = useState(false);
+  const [requestData, setRequestData] = useState({});
+  const [acceptRequest, setAcceptRequest] = useState(false);
 
   Sound.setCategory('Playback');
 
   useEffect(() => {
+    if (requestLoader) {
+      setDing('');
+      return;
+    }
+
+    if(acceptRequest){
+      setDing("")
+      return
+    }
+
     let createSound = new Sound(mytone, error => {
       if (error) {
         console.log('failed to load the sound', error);
         return;
       }
       // if loaded successfully
-      console.log(
-        'duration in seconds: ' +
-          createSound.getDuration() +
-          'number of channels: ' +
-          createSound.getNumberOfChannels(),
-        setDing(createSound),
-        // playPause()
-      );
+      // console.log(
+      //   'duration in seconds: ' +
+      //     createSound.getDuration() +
+      //     'number of channels: ' +
+      //     createSound.getNumberOfChannels(),
+      //   setDing(createSound),
+      //   // playPause()
+      // );
+      setDing(createSound);
+
       //   console.log(passengerBookingData.length, "" , requestIds.length)
       //   if(passengerBookingData.length>requestIds.length){
       // }
     });
-  }, [passengerBookingData]);
+  }, [passengerBookingData, requestLoader]);
+
+  useEffect(() => {
+    if (requestLoader) {
+      const backAction = () => {
+        Alert.alert(
+          'Hold on!',
+          'Your request is in process wait for passenger response',
+          [
+            {
+              text: 'Cancel',
+              onPress: () => null,
+              style: 'cancel',
+            },
+          ],
+        );
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
+
+      return () => backHandler.remove();
+    }
+  }, [requestLoader]);
 
   useEffect(() => {
     if (passengerBookingData.length < requestIds.length) {
@@ -92,7 +137,7 @@ export default function DriverHomeScreen({navigation, route}) {
     }
 
     if (ding && Object.keys(ding).length > 0) {
-      ding.setVolume(1);
+      ding.setVolume(5);
       playPause();
       return () => {
         ding.release();
@@ -132,13 +177,12 @@ export default function DriverHomeScreen({navigation, route}) {
       newRequest &&
       newRequest.length > 0
     ) {
-      ding.setNumberOfLoops(2);
+      // ding.setNumberOfLoops(1);
 
       ding.play(success => {
         if (success) {
-          console.log('successfully finished playing');
-
-          setTimeout(() => {
+          // console.log('successfully finished playing');
+          let interval = setTimeout(() => {
             setRequestIds(
               passengerBookingData &&
                 passengerBookingData.length > 0 &&
@@ -152,14 +196,14 @@ export default function DriverHomeScreen({navigation, route}) {
             );
           }, 30000);
         } else {
-          console.log('playback failed due to audio decoding errors');
+          // console.log('playback failed due to audio decoding errors');
         }
       });
     }
     if (requestIds.length == 0 && passengerBookingData.length > 0) {
       ding.play(success => {
         if (success) {
-          console.log('successfully finished playing');
+          // console.log('successfully finished playing');
 
           setTimeout(() => {
             setRequestIds(
@@ -175,7 +219,7 @@ export default function DriverHomeScreen({navigation, route}) {
             );
           }, 30000);
         } else {
-          console.log('playback failed due to audio decoding errors');
+          // console.log('playback failed due to audio decoding errors');
         }
       });
     }
@@ -264,11 +308,21 @@ export default function DriverHomeScreen({navigation, route}) {
             querySnapshot.forEach(documentSnapshot => {
               let data = documentSnapshot.data();
 
-              // if (data?.requestStatus == 'accepted') {
-              //   setPassengerBookingData([]);
-              // }
+              let date = data?.requestDate?.toDate();
 
-              if (!data?.requestStatus) {
+              let time = date?.getTime();
+              let nowTime = new Date().getTime();
+
+              let requestSeconds = time / 1000;
+              let nowSeconds = nowTime / 1000;
+
+              let requestRespondSeconds = requestSeconds + 32;
+
+              let differenceSeconds = requestRespondSeconds - nowSeconds;
+
+              data.timeLimit = differenceSeconds;
+
+              if (!data?.requestStatus && differenceSeconds > 0) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -356,13 +410,16 @@ export default function DriverHomeScreen({navigation, route}) {
                   let id = auth().currentUser.uid;
                   let flag2 = data?.rejectedDrivers?.some((e, i) => e == id);
 
+                  let rejectStatus = false;
+
                   if (
                     data &&
                     data.passengerData &&
                     driverData.id == data.driverData.id &&
                     !data.requestStatus &&
                     !checkRejectStatus &&
-                    !flag2
+                    !flag2 &&
+                    !rejectStatus
                   ) {
                     requestData.push(data);
                   } else {
@@ -399,7 +456,7 @@ export default function DriverHomeScreen({navigation, route}) {
     ) {
       let interval = setInterval(() => {
         getRequestFromPassengers();
-      }, 5000);
+      }, 2000);
 
       return () => clearInterval(interval);
     }
@@ -430,6 +487,418 @@ export default function DriverHomeScreen({navigation, route}) {
   useEffect(() => {
     getDriverData();
   }, [driverStatus]);
+
+  const checkRequestStatus = () => {
+    if (requestData && requestData?.bidFare) {
+      firestore()
+        .collection('Request')
+        .doc(requestData.id)
+        .get()
+        .then(doc => {
+          let data = doc.data();
+
+          if (
+            data &&
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData) &&
+            data.myDriversData.requestStatus == 'rejected'
+          ) {
+            ToastAndroid.show(
+              'Your Request has been rejected',
+              ToastAndroid.SHORT,
+            );
+            setRequestData(false)
+            return;
+          }
+
+          if (
+            data &&
+            data?.myDriversData &&
+            Array.isArray(data?.myDriversData)
+          ) {
+            let flag = data?.myDriversData.some(
+              (e, i) => e.id == driverData?.id && e.requestStatus == 'rejected',
+            );
+
+            if (flag) {
+              ToastAndroid.show(
+                'Your Request has been rejected',
+                ToastAndroid.SHORT,
+              );
+              setRequestLoader(false)
+              return;
+            }
+          }
+
+          if (
+            data &&
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData) &&
+            data.myDriversData.requestStatus
+          ) {
+            if (
+              data.myDriversData.id == driverData.id &&
+              data.myDriversData.requestStatus == 'accepted'
+            ) {
+              ToastAndroid.show(
+                'Your request has been accepted',
+                ToastAndroid.SHORT,
+              );
+              setAcceptRequest(true);
+              setRequestLoader(false);
+              try {
+                requestData.driverData = driverData;
+                let myData = JSON.stringify(requestData ?? data);
+
+                AsyncStorage.setItem('driverBooking', myData);
+              } catch (error) {}
+
+              firestore()
+                .collection('inlinedDriver')
+                .doc(driverData.id)
+                .set({
+                  inlined: true,
+                  id: driverData.id,
+                })
+                .then(() => {
+                  navigation.navigate('DriverRoutes', {
+                    screen: 'DriverBiddingScreen',
+                    params: {
+                      data: requestData ?? data,
+                      passengerState: {
+                        pickupCords: data?.pickupCords,
+                        dropLocationCords: data?.dropLocationCords,
+                      },
+                      selectedDriver: driverData,
+                    },
+                  });
+                })
+                .catch(error => {
+                  console.log(error);
+                });
+            }
+            return;
+          }
+
+          if (data && data.myDriversData && Array.isArray(data.myDriversData)) {
+            let flag = data.myDriversData.some(
+              (e, i) => e.selected && e.id == driverData.id,
+            );
+
+            let flag1 = data.myDriversData.some(
+              (e, i) => e.id == driverData.id && e.requestStatus == 'rejected',
+            );
+            if (flag && !flag1) {
+              ToastAndroid.show(
+                'Your request has been accepted',
+                ToastAndroid.SHORT,
+              );
+              setAcceptRequest(true);
+              setRequestLoader(false);
+              try {
+                requestData.driverData = driverData;
+                let myData = JSON.stringify(requestData ?? data);
+                AsyncStorage.setItem('driverBooking', myData);
+              } catch (error) {}
+
+              firestore()
+                .collection('inlinedDriver')
+                .doc(driverData.id)
+                .set({
+                  inlined: true,
+                  id: driverData.id,
+                })
+                .then(() => {
+                  console.log('Driver has been inlined');
+                  navigation.navigate('DriverRoutes', {
+                    screen: 'DriverBiddingScreen',
+                    params: {
+                      data: requestData ?? data,
+                      passengerState: {
+                        pickupCords: data?.pickupCords,
+                        dropLocationCords: data?.dropLocationCords,
+                      },
+                      selectedDriver: driverData,
+                    },
+                  });
+                })
+                .catch(error => {
+                  console.log(error);
+                });
+            } else if (!flag && flag1) {
+              ToastAndroid.show(
+                'Your request has been rejected',
+                ToastAndroid.SHORT,
+              );
+            }
+          }
+        });
+    }
+  };
+  useEffect(() => {
+    if (requestLoader && driverData && !acceptRequest) {
+      let interval = setInterval(() => {
+        checkRequestStatus();
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [requestLoader]);
+
+  const rejectRequest = async data => {
+    setRejectLoader(true);
+    if (data && data.bidFare) {
+      let rejectedDrivers = [];
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .get()
+        .then(doc => {
+          if (doc._exists) {
+            let data = doc.data();
+
+            if (data?.rejectedDrivers && !Array.isArray(data.rejectedDrivers)) {
+              rejectedDrivers.push(data.rejectedDrivers);
+            }
+            if (data?.rejectedDrivers && Array.isArray(data.rejectedDrivers)) {
+              rejectedDrivers = data.rejectedDrivers;
+            }
+          }
+        });
+      let id = auth().currentUser.uid;
+      rejectedDrivers = [...rejectedDrivers, id];
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .update({
+          rejectedDrivers: rejectedDrivers,
+        })
+        .then(() => {
+          setRejectLoader(false);
+          ToastAndroid.show(
+            'You have successfully rejected the request',
+            ToastAndroid.SHORT,
+          );
+        })
+        .catch(error => {
+          setRejectLoader(false);
+          console.log(error);
+        });
+    } else {
+      let id = auth().currentUser.uid;
+      let rejectedDrivers = [];
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .get()
+        .then(doc => {
+          if (doc._exists) {
+            let data = doc?.data();
+
+            if (
+              data?.rejectedDrivers &&
+              !Array.isArray(data?.rejectedDrivers)
+            ) {
+              rejectedDrivers.push(data.rejectedDrivers);
+            }
+            if (data?.rejectedDrivers && Array.isArray(data.rejectedDrivers)) {
+              rejectedDrivers = data.rejectedDrivers;
+            }
+          }
+        });
+      rejectedDrivers = [...rejectedDrivers, id];
+
+      await firestore()
+        .collection('Request')
+        .doc(data?.passengerData ? data.passengerData?.id : data.id)
+        .update({
+          rejectedDrivers: rejectedDrivers,
+        })
+        .then(() => {
+          setTimeout(() => {
+            setRejectLoader(false);
+            ToastAndroid.show(
+              'Your have succesfully rejected the request',
+              ToastAndroid.SHORT,
+            );
+          }, 1000);
+        });
+    }
+  };
+
+  useEffect(() => {}, [requestLoader]);
+
+  const AcceptRequest = item => {
+    const Userid = item?.id ?? item?.passengerData?.id;
+
+    firestore()
+      .collection('Request')
+      .doc(Userid)
+      .get()
+      .then(doc => {
+        let data = doc.data();
+        if (data && !data?.bidFare) {
+          let passengerData = data?.passengerData;
+          firestore()
+            .collection('Request')
+            .doc(passengerData.id)
+            .update({
+              requestStatus: 'accepted',
+            })
+            .then(() => {
+              ToastAndroid.show(
+                'You have successfully accepted customer Request',
+                ToastAndroid.SHORT,
+              );
+              try {
+                data.passengerData = item.passengerData;
+                data.driverData = item.driverData;
+                let myData = JSON.stringify(data);
+                AsyncStorage.setItem('driverBooking', myData);
+              } catch (error) {}
+              firestore()
+                .collection('inlinedDriver')
+                .doc(driverData.id)
+                .set({
+                  inlined: true,
+                  id: driverData.id,
+                })
+                .then(() => {
+                  item.driverData = driverData;
+                  navigation.navigate('DriverRoutes', {
+                    screen: 'DriverBiddingScreen',
+                    params: {
+                      data: item,
+                      passengerState: {
+                        pickupCords: item?.passengerData
+                          ? item?.passengerData?.pickupCords
+                          : item?.pickupCords,
+                        dropLocationCords: item?.passengerData
+                          ? item?.passengerData?.dropLocationCords
+                          : item?.dropLocationCords,
+                      },
+                      selectedDriver: driverData,
+                    },
+                  });
+                })
+                .catch(error => {
+                  console.log(error);
+                  ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                });
+            })
+            .catch(error => {
+              ToastAndroid.show(error.message, ToastAndroid.SHORT);
+              console.log(error);
+            });
+        }
+
+        if (data && data?.bidFare) {
+          if (data?.requestStatus == 'accepted') {
+            ToastAndroid.show(
+              'Another driver has accepted this request',
+              ToastAndroid.SHORT,
+            );
+            return;
+          }
+          if (
+            data.myDriversData &&
+            !Array.isArray(data.myDriversData) &&
+            data.myDriversData.id == driverData.id
+          ) {
+            ToastAndroid.show(
+              'You have already accepted this request',
+              ToastAndroid.SHORT,
+            );
+            return;
+          }
+          if (
+            data.myDriversData &&
+            Array.isArray(data.myDriversData) &&
+            data.myDriversData.some((e, i) => e.id == driverData.id)
+          ) {
+            ToastAndroid.show(
+              'You have already accepted this request',
+              ToastAndroid.SHORT,
+            );
+            return;
+          }
+        }
+
+        if (data && !data.myDriversData) {
+          firestore()
+            .collection('Request')
+            .doc(data.id)
+            .update({
+              myDriversData: driverData,
+            })
+            .then(() => {
+              ToastAndroid.show(
+                'Your request has been send to passenger',
+                ToastAndroid.SHORT,
+              );
+              setRequestData(item);
+              setRequestLoader(true);
+            })
+            .catch(error => {
+              console.log(error);
+            });
+          return;
+        }
+
+        if (data && Array.isArray(data.myDriversData) && !data.requestStatus) {
+          let flag = data.myDriversData.some((e, i) => e.id == driverData.id);
+
+          if (flag) {
+            ToastAndroid.show('You have already requested', ToastAndroid.SHORT);
+            return;
+          } else {
+            let driverDataArray = [...data.myDriversData, driverData];
+            firestore()
+              .collection('Request')
+              .doc(data.id)
+              .update({
+                myDriversData: driverDataArray,
+              })
+              .then(() => {
+                ToastAndroid.show(
+                  'Your request has been send to passenger',
+                  ToastAndroid.SHORT,
+                );
+                setRequestData(item);
+                setRequestLoader(true);
+              })
+              .catch(error => {
+                console.log(error);
+              });
+            return;
+          }
+        }
+
+        if (
+          data &&
+          data.myDriversData &&
+          !Array.isArray(data.myDriversData) &&
+          driverData.id !== data.myDriversData.id
+        ) {
+          let myData = [data.myDriversData];
+          let driverDataArray = [...myData, driverData];
+          firestore()
+            .collection('Request')
+            .doc(data.id)
+            .update({
+              myDriversData: driverDataArray,
+            })
+            .then(() => {
+              ToastAndroid.show(
+                'Your request has been send to passenger',
+                ToastAndroid.SHORT,
+              );
+              setRequestData(item);
+              setRequestLoader(true);
+            });
+        }
+      });
+  };
 
   const updateOnlineOnFirebase = () => {
     try {
@@ -479,6 +948,8 @@ export default function DriverHomeScreen({navigation, route}) {
 
   const rideList = useCallback(
     ({item, index}) => {
+      // console.log(item?.timeLimit, 'timelimit');
+
       let items = item.passengerData ?? item;
       items.selectedCar[0].carMiles.map((e, i) => {
         if (
@@ -505,26 +976,59 @@ export default function DriverHomeScreen({navigation, route}) {
       });
 
       return (
-        <TouchableOpacity
+        <View
           style={styles.listItemContainer}
           key={item.passengerData ? item.passengerData.id : item.id}
-          onPress={() => {
-            navigation.navigate('DriverRoutes', {
-              screen: 'DriverBiddingScreen',
-              params: {
-                data: items,
-                passengerState: {
-                  pickupCords: item.passengerData
-                    ? item.passengerData.pickupCords
-                    : item.pickupCords,
-                  dropLocationCords: item.passengerData
-                    ? item.passengerData.dropLocationCords
-                    : item.dropLocationCords,
-                },
-              },
-            });
-          }}
+          // onPress={() => {
+          //   navigation.navigate('DriverRoutes', {
+          //     screen: 'DriverBiddingScreen',
+          //     params: {
+          //       data: items,
+          //       passengerState: {
+          //         pickupCords: item.passengerData
+          //           ? item.passengerData.pickupCords
+          //           : item.pickupCords,
+          //         dropLocationCords: item.passengerData
+          //           ? item.passengerData.dropLocationCords
+          //           : item.dropLocationCords,
+          //       },
+          //     },
+          //   });
+          // }}
         >
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginHorizontal: 10,
+              paddingBottom: 10,
+              borderBottomWidth: 2,
+              borderBottomColor: Colors.secondary,
+              alignItems: 'center',
+              marginBottom: 10,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 22,
+                color: Colors.black,
+                fontWeight: '400',
+                width: '54%',
+              }}
+            >
+              Time Remaining:
+            </Text>
+            <Text
+              style={{
+                fontSize: 22,
+                color: Colors.secondary,
+                fontWeight: '400',
+                width: '46%',
+              }}
+            >
+              {item?.timeLimit?.toFixed(0)} Seconds
+            </Text>
+          </View>
           <Text style={styles.itemTextStyle}>
             Pickup Cords:
             <Text style={styles.itemLocStyle}>
@@ -541,18 +1045,101 @@ export default function DriverHomeScreen({navigation, route}) {
                 : item.dropOffAddress}
             </Text>
           </Text>
-          <Text style={styles.itemTextStyle}>
-            Fare:
-            <Text style={styles.itemLocStyle}>
-              ${item.passengerData ? item.passengerData.fare : item.fare}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: '100%',
+              alignItems: 'center',
+              padding: 10,
+            }}
+          >
+            <Text
+              style={[
+                styles.itemTextStyle,
+                {width: '50%', textAlign: 'center'},
+              ]}
+            >
+              Fare:
+              <Text style={styles.itemLocStyle}>
+                ${item.passengerData ? item.passengerData.fare : item.fare}
+              </Text>
             </Text>
-          </Text>
-          {items && items.bidFare > 0 && (
-            <Text style={styles.itemTextStyle}>
-              Bid Fare:<Text style={styles.itemLocStyle}>${items.bidFare}</Text>
+            <Text
+              style={[
+                styles.itemTextStyle,
+                {width: '50%', textAlign: 'center'},
+              ]}
+            >
+              Distance:
+              <Text style={styles.itemLocStyle}>
+                $
+                {item.passengerData
+                  ? item.passengerData.distance
+                  : item.distance}
+              </Text>
             </Text>
-          )}
-        </TouchableOpacity>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '100%',
+              padding: 10,
+            }}
+          >
+            {items && items.bidFare > 0 && (
+              <Text
+                style={[
+                  styles.itemTextStyle,
+                  {width: '50%', textAlign: 'center'},
+                ]}
+              >
+                Bid Fare:
+                <Text style={styles.itemLocStyle}>${items.bidFare}</Text>
+              </Text>
+            )}
+            <Text
+              style={[
+                styles.itemTextStyle,
+                {width: '50%', textAlign: 'center'},
+              ]}
+            >
+              Minutes:
+              <Text style={styles.itemLocStyle}>
+                {items?.passengerData
+                  ? items?.passengerData?.minutes
+                  : items.minutes}
+              </Text>
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              width: '100%',
+              justifyContent: 'space-around',
+              padding: 5,
+            }}
+          >
+            <CustomButton
+              onPress={() => AcceptRequest(item)}
+              text={'Accept'}
+              styleContainer={{width: '45%'}}
+            />
+            <CustomButton
+              text={
+                rejectLoader ? (
+                  <ActivityIndicator size={'large'} color={Colors.black} />
+                ) : (
+                  'Reject'
+                )
+              }
+              onPress={() => rejectRequest(item)}
+              styleContainer={{width: '45%'}}
+            />
+          </View>
+        </View>
       );
     },
     [passengerBookingData],
@@ -560,7 +1147,7 @@ export default function DriverHomeScreen({navigation, route}) {
 
   return (
     <>
-      {loading ? (
+      {loading || requestLoader ? (
         <View style={styles.activityIndicatorStyles}>
           <ActivityIndicator size="large" color={Colors.fontColor} />
         </View>
@@ -666,6 +1253,7 @@ const styles = StyleSheet.create({
   itemTextStyle: {
     color: Colors.fontColor,
     fontFamily: 'Poppins-Medium',
+    fontSize: 18,
   },
   itemLocStyle: {
     color: Colors.black,
