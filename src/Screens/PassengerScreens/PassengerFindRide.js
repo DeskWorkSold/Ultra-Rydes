@@ -22,14 +22,9 @@ import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Icon from 'react-native-vector-icons/AntDesign';
 import {BackHandler} from 'react-native';
 import auth from '@react-native-firebase/auth';
-import Ionicons from 'react-native-vector-icons/MaterialIcons';
-import {ScrollView} from 'react-native-gesture-handler';
-import axios from 'axios';
-import {BASE_URI} from '../../Constants/Base_uri';
-import {setMaxListeners} from 'npm';
-
+import storage from '@react-native-firebase/storage';
 export default function PassengerFindRide({navigation, route}) {
-  const passengerData = route.params;
+  let passengerData = route.params;
   const [driverData, setDriverData] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [request, setRequest] = useState(false);
@@ -43,7 +38,8 @@ export default function PassengerFindRide({navigation, route}) {
   const [showCardForm, setShowCardForm] = useState(false);
   const [savedCards, setSavedCards] = React.useState(true);
   const [buttonLoader, setButtonLoader] = React.useState(false);
-  const [noDriverData,setNoDriverData] = React.useState(false)
+  const [noDriverData, setNoDriverData] = React.useState(false);
+  const [driversRejected, setDriverRejected] = React.useState([]);
 
   const [cardDetail, setCardDetail] = useState({
     cardHolderName: '',
@@ -67,11 +63,28 @@ export default function PassengerFindRide({navigation, route}) {
           let data = querySnapshot.data();
           if (
             data &&
-            data.bidFare &&
-            data.myDriversData &&
+            data?.bidFare &&
+            data?.myDriversData &&
             !Array.isArray(data.myDriversData) &&
-            data.myDriversData?.requestStatus !== 'rejected'
+            data?.myDriversData?.requestStatus !== 'rejected'
           ) {
+            let dis = getPreciseDistance(
+              {
+                latitude: passengerData?.pickupCords?.latitude,
+                longitude: passengerData?.pickupCords?.longitude,
+              },
+              {
+                latitude: data?.myDriversData?.currentLocation?.latitude,
+                longitude: data?.myDriversData?.currentLocation?.longitude,
+              },
+            );
+
+            mileDistance = (dis / 1609.34).toFixed(2);
+            data.myDriversData.distance = mileDistance;
+
+            const speed = 10; // meters per second
+            data.myDriversData.minutes = Math.round(dis / speed / 60);
+            console.log('hello');
             setDriverData([data.myDriversData]);
           } else if (
             data &&
@@ -89,33 +102,27 @@ export default function PassengerFindRide({navigation, route}) {
   };
 
   useEffect(() => {
-    if (passengerData.id && passengerData.bidFare  && !noDriverData) {
+    if (passengerData.id && passengerData.bidFare && !noDriverData) {
       setRequest(true);
     }
-
     checkAvailableDriverStatus();
   }, []);
 
-  
-
   useEffect(() => {
     let interval = setInterval(() => {
-      if (driverData.length == 0 && request && !noDriverData) {
-        console.log("hello")
+      if (driverData.length == 0 && request) {
         setRequest(false);
-        setNoDriverData(true)
+        setNoDriverData(true);
         navigation.navigate('PassengerHomeScreen');
-        clearInterval(interval)
+        clearInterval(interval);
         ToastAndroid.show(
-          'Driver are not available rightnow request after sometime',
+          'Drivers are not available rightnow request after sometime',
           ToastAndroid.SHORT,
         );
-      }else{
-        navigation.navigate('PassengerHomeScreen');
       }
     }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [request]);
 
   useEffect(() => {
     if (passengerData && !passengerData.bidFare && !request) {
@@ -123,7 +130,6 @@ export default function PassengerFindRide({navigation, route}) {
       let interval = setInterval(() => {
         let rejectedDriver = false;
         let id = auth().currentUser.uid;
-
         firestore()
           .collection('Request')
           .doc(id)
@@ -135,8 +141,8 @@ export default function PassengerFindRide({navigation, route}) {
             }
           })
           .then(() => {
-            setLoader(false);
             getDriverData(rejectedDriver);
+            setLoader(false);
           })
           .catch(error => {
             setLoader(false);
@@ -148,6 +154,15 @@ export default function PassengerFindRide({navigation, route}) {
       setRequest(true);
     }
   }, [route.params]);
+
+  useEffect(() => {
+    let interval = setInterval(() => {
+      if (!passengerData.bidFare && !request && driverData.length < 5) {
+        getDriverData();
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (request) {
@@ -165,7 +180,17 @@ export default function PassengerFindRide({navigation, route}) {
         'hardwareBackPress',
         backAction,
       );
-
+      return () => backHandler.remove();
+    }
+    if (!request) {
+      const backAction = () => {
+        navigation.goBack();
+        return true;
+      };
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
       return () => backHandler.remove();
     }
   }, [request]);
@@ -226,7 +251,6 @@ export default function PassengerFindRide({navigation, route}) {
         });
     }
   };
-
   const getInlineDriver = () => {
     firestore()
       .collection('inlinedDriver')
@@ -258,148 +282,156 @@ export default function PassengerFindRide({navigation, route}) {
   }, [request, selectedDriver]);
 
   const getDriverData = async rejectedDriver => {
-    /// GET ALL DRIVERS
-    const Driver = await firestore()
-      .collection('Drivers')
-      .onSnapshot(querySnapshot => {
-        // console.log('Total users: ', querySnapshot.size);
-        let myDriversTemp = [];
-        querySnapshot.forEach(documentSnapshot => {
-          // console.log('User ID: ', documentSnapshot.id, documentSnapshot.data());
-          const myDriverData = documentSnapshot.data();
+    if (driverData.length < 5) {
+      /// GET ALL DRIVERS
+      const Driver = await firestore()
+        .collection('Drivers')
+        .onSnapshot(querySnapshot => {
+          // console.log('Total users: ', querySnapshot.size);
+          let myDriversTemp = [];
+          querySnapshot.forEach(documentSnapshot => {
+            // console.log('User ID: ', documentSnapshot.id, documentSnapshot.data());
+            const myDriverData = documentSnapshot.data();
 
-          let driverRequestedButNotRespond =
-            driverNotAvailable &&
-            driverNotAvailable.length > 0 &&
-            driverNotAvailable.some((e, i) => {
-              return e == myDriverData.id;
+            let driverRequestedButNotRespond =
+              driverNotAvailable &&
+              driverNotAvailable.length > 0 &&
+              driverNotAvailable.some((e, i) => {
+                return e == myDriverData.id;
+              });
+
+            let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
+              return e.carName;
             });
 
-          let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
-            return e.carName;
-          });
-
-          let selectedCar = selectedVehicleName[0];
-          let flag = '';
-          if (myDriverData && myDriverData.vehicleDetails) {
-            flag = selectedCar == myDriverData.vehicleDetails.vehicleCategory;
-          }
-          let mileDistance = '';
-          if (
-            myDriverData &&
-            myDriverData.currentLocation &&
-            myDriverData.status == 'online' &&
-            flag
-          ) {
-            let dis = getPreciseDistance(
-              {
-                latitude: passengerData.pickupCords.latitude,
-                longitude: passengerData.pickupCords.longitude,
-              },
-              {
-                latitude: myDriverData.currentLocation.latitude,
-                longitude: myDriverData.currentLocation.longitude,
-              },
-            );
-            mileDistance = (dis / 1609.34).toFixed(2);
-            myDriverData.distance = mileDistance;
-
-            const speed = 10; // meters per second
-            myDriverData.minutes = Math.round(dis / speed / 60);
-          }
-
-          let isInlined =
-            inlineDriver &&
-            inlineDriver.filter((e, i) => {
-              if (e == myDriverData.id) {
-                return 'true';
-              }
-            });
-          isInlined = isInlined[0];
-
-          let flag2 = false;
-          flag2 =
-            rejectedDriver &&
-            rejectedDriver.length > 0 &&
-            rejectedDriver?.some((e, i) => e == myDriverData?.id);
-          if (!driverRequestedButNotRespond) {
-            if (
-              myDriverData.status == 'online' &&
-              mileDistance <= 3 &&
-              myDriversTemp.length < 6 &&
-              flag &&
-              !isInlined &&
-              !driverRequestedButNotRespond &&
-              !flag2
-            ) {
-              myDriverData.fare = passengerData.fare;
-              myDriversTemp.push(myDriverData);
-            } else if (
-              myDriversTemp.length < 5 &&
-              myDriverData.status == 'online' &&
-              mileDistance > 3 &&
-              mileDistance < 5 &&
-              flag &&
-              !flag2 &&
-              !isInlined &&
-              !driverRequestedButNotRespond
-            ) {
-              myDriverData.fare = passengerData.fare;
-              myDriversTemp.push(myDriverData);
-            } else if (
-              myDriversTemp.length < 5 &&
-              myDriverData.status == 'online' &&
-              mileDistance < 10 &&
-              mileDistance > 5 &&
-              flag &&
-              !flag2 &&
-              !isInlined &&
-              !driverRequestedButNotRespond
-            ) {
-              myDriverData.fare = passengerData.fare;
-              myDriversTemp.push(myDriverData);
-            } else if (
-              myDriversTemp.length < 5 &&
-              myDriverData.status == 'online' &&
-              mileDistance < 15 &&
-              mileDistance > 10 &&
-              flag &&
-              !isInlined &&
-              !flag2 &&
-              !driverRequestedButNotRespond
-            ) {
-              myDriverData.fare = passengerData.fare;
-              myDriversTemp.push(myDriverData);
-            } else if (
-              myDriversTemp.length < 5 &&
-              myDriverData.status == 'online' &&
-              mileDistance < 20 &&
-              mileDistance > 15 &&
-              flag &&
-              !flag2 &&
-              !isInlined &&
-              !driverRequestedButNotRespond
-            ) {
-              myDriverData.fare = passengerData.fare;
-              myDriversTemp.push(myDriverData);
-            } else if (
-              myDriversTemp.length < 5 &&
-              myDriverData.status == 'online' &&
-              mileDistance < 25 &&
-              mileDistance > 20 &&
-              !isInlined &&
-              !flag2 &&
-              !driverRequestedButNotRespond
-            ) {
-              myDriverData.fare = passengerData.fare;
-              myDriversTemp.push(myDriverData);
+            let selectedCar = selectedVehicleName[0];
+            let flag = '';
+            if (myDriverData && myDriverData.vehicleDetails) {
+              flag = selectedCar == myDriverData.vehicleDetails.vehicleCategory;
             }
-          }
-        });
-        setDriverData(myDriversTemp);
-      });
-  };
+            let mileDistance = '';
+            if (
+              myDriverData &&
+              myDriverData.currentLocation &&
+              myDriverData.status == 'online' &&
+              flag
+            ) {
+              let dis = getPreciseDistance(
+                {
+                  latitude: passengerData.pickupCords.latitude,
+                  longitude: passengerData.pickupCords.longitude,
+                },
+                {
+                  latitude: myDriverData.currentLocation.latitude,
+                  longitude: myDriverData.currentLocation.longitude,
+                },
+              );
 
+              mileDistance = (dis / 1609.34).toFixed(2);
+              myDriverData.distance = mileDistance;
+
+              const speed = 10; // meters per second
+              myDriverData.minutes = Math.round(dis / speed / 60);
+            }
+
+            let isInlined =
+              inlineDriver &&
+              inlineDriver.filter((e, i) => {
+                if (e == myDriverData.id) {
+                  return 'true';
+                }
+              });
+            isInlined = isInlined[0];
+
+            let flag2 = false;
+            flag2 =
+              rejectedDriver &&
+              rejectedDriver.length > 0 &&
+              rejectedDriver?.some((e, i) => e == myDriverData?.id);
+
+            let flag3 =
+              driversRejected &&
+              driversRejected.length > 0 &&
+              driversRejected.some((e, i) => e.id == myDriverData?.id);
+
+            if (!driverRequestedButNotRespond && !flag3) {
+              if (
+                myDriverData.status == 'online' &&
+                mileDistance <= 3 &&
+                myDriversTemp.length < 6 &&
+                flag &&
+                !isInlined &&
+                !driverRequestedButNotRespond &&
+                !flag2
+              ) {
+                myDriverData.fare = passengerData.fare;
+                myDriversTemp.push(myDriverData);
+              } else if (
+                myDriversTemp.length < 5 &&
+                myDriverData.status == 'online' &&
+                mileDistance > 3 &&
+                mileDistance < 5 &&
+                flag &&
+                !flag2 &&
+                !isInlined &&
+                !driverRequestedButNotRespond
+              ) {
+                myDriverData.fare = passengerData.fare;
+                myDriversTemp.push(myDriverData);
+              } else if (
+                myDriversTemp.length < 5 &&
+                myDriverData.status == 'online' &&
+                mileDistance < 10 &&
+                mileDistance > 5 &&
+                flag &&
+                !flag2 &&
+                !isInlined &&
+                !driverRequestedButNotRespond
+              ) {
+                myDriverData.fare = passengerData.fare;
+                myDriversTemp.push(myDriverData);
+              } else if (
+                myDriversTemp.length < 5 &&
+                myDriverData.status == 'online' &&
+                mileDistance < 15 &&
+                mileDistance > 10 &&
+                flag &&
+                !isInlined &&
+                !flag2 &&
+                !driverRequestedButNotRespond
+              ) {
+                myDriverData.fare = passengerData.fare;
+                myDriversTemp.push(myDriverData);
+              } else if (
+                myDriversTemp.length < 5 &&
+                myDriverData.status == 'online' &&
+                mileDistance < 20 &&
+                mileDistance > 15 &&
+                flag &&
+                !flag2 &&
+                !isInlined &&
+                !driverRequestedButNotRespond
+              ) {
+                myDriverData.fare = passengerData.fare;
+                myDriversTemp.push(myDriverData);
+              } else if (
+                myDriversTemp.length < 5 &&
+                myDriverData.status == 'online' &&
+                mileDistance < 25 &&
+                mileDistance > 20 &&
+                !isInlined &&
+                !flag2 &&
+                !driverRequestedButNotRespond
+              ) {
+                myDriverData.fare = passengerData.fare;
+                myDriversTemp.push(myDriverData);
+              }
+            }
+          });
+          setDriverData(myDriversTemp);
+        });
+    }
+  };
   const deleteBookingData = () => {
     firestore()
       .collection('Request')
@@ -412,7 +444,6 @@ export default function PassengerFindRide({navigation, route}) {
         console.log(error, 'error');
       });
   };
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
@@ -429,418 +460,8 @@ export default function PassengerFindRide({navigation, route}) {
       },
     });
   }, []);
-
-  // const confirmToMakePayment = () => {
-  //   setShowAskPaymentModal(false);
-  //   setShowCardForm(true);
-  // };
-
-  // const PaymentAskModal = useCallback(() => {
-  //   return (
-  //     <View style={styles.centeredView}>
-  //       <Modal
-  //         animationType="slide"
-  //         transparent={true}
-  //         visible={showAskPaymentModal}
-  //         onRequestClose={() => {
-  //           setShowAskPaymentModal(false);
-  //         }}
-  //       >
-  //         <View style={styles.centeredView}>
-  //           <View style={styles.modalView}>
-  //             <View>
-  //               <Ionicons size={80} color="white" name="payment" />
-  //             </View>
-  //             <Text style={styles.modalText}>
-  //               You need to make payment before request the ride!
-  //             </Text>
-  //             <Text
-  //               style={[
-  //                 styles.modalText,
-  //                 {color: Colors.white, fontSize: 18, fontWeight: '600'},
-  //               ]}
-  //             >
-  //               Do you want to make payment!
-  //             </Text>
-  //             <TouchableOpacity
-  //               style={[
-  //                 styles.button,
-  //                 {marginBottom: 10, backgroundColor: Colors.primary},
-  //               ]}
-  //               onPress={() => confirmToMakePayment()}
-  //             >
-  //               <Text
-  //                 style={[styles.textStyle, {backgroundColor: Colors.primary}]}
-  //               >
-  //                 Confirm
-  //               </Text>
-  //             </TouchableOpacity>
-  //           </View>
-  //         </View>
-  //       </Modal>
-  //     </View>
-  //   );
-  // }, [showAskPaymentModal]);
-
-  // const confirmPayment = () => {
-  //   setButtonLoader(true);
-
-  //   let customerData = {
-  //     cardNumber: cardDetail.cardNumber,
-  //     expiryMonth: Number(cardDetail.expiryMonth),
-  //     expiryYear: Number(cardDetail.expiryYear),
-  //     cvc: cardDetail.cvc,
-  //     amount: Number(passengerData.bidFare ?? passengerData.fare),
-  //   };
-  //   axios
-  //     .post(`${BASE_URI}dopayment`, customerData)
-  //     .then(res => {
-  //       setButtonLoader(false);
-  //       let data = res.data;
-  //       console.log(typeof data.amount);
-  //       let {result, status} = data;
-  //       if (!status) {
-  //         ToastAndroid.show(data.message, ToastAndroid.SHORT);
-  //         return;
-  //       }
-  //       let walletData = {
-  //         payment: result.amount / 100,
-  //         fare: 0,
-  //         wallet: result.amount / 100,
-  //         date: new Date(),
-  //         tip: 0,
-  //       };
-  //       let id = auth().currentUser.uid;
-  //       firestore()
-  //         .collection('wallet')
-  //         .doc(id)
-  //         .set(
-  //           {
-  //             wallet: firestore.FieldValue.arrayUnion(walletData),
-  //           },
-  //           {merge: true},
-  //         )
-  //         .then(() => {
-  //           ToastAndroid.show(
-  //             'Amount Successfully Deposit in your wallet and will be deducted after you complete your ride',
-  //             ToastAndroid.SHORT,
-  //           );
-  //           setShowAskPaymentModal(false);
-  //           setShowPaymentConfirmationModal(false);
-
-  //           firestore()
-  //             .collection('Request')
-  //             .doc(passengerData.id)
-  //             .set({
-  //               passengerData: passengerData,
-  //               driverData: selectedDriver,
-  //             })
-  //             .then(() => {
-  //               setRequest(true);
-  //               setShowCardForm(false);
-  //             })
-  //             .catch(error => {
-  //               console.log(error);
-  //             });
-  //         })
-  //         .catch(error => {
-  //           console.log(error);
-  //         });
-  //     })
-  //     .catch(error => {
-  //       setButtonLoader(false);
-  //       console.log(error, 'erro');
-  //       ToastAndroid.show('error', ToastAndroid.SHORT);
-  //     });
-  // };
-
-  // const PaymentConfirmationModal = useCallback(() => {
-  //   return (
-  //     <View style={styles.centeredView}>
-  //       <Modal
-  //         animationType="slide"
-  //         transparent={true}
-  //         visible={showPaymentConfirmationModal}
-  //         onRequestClose={() => {
-  //           setShowPaymentConfirmationModal(false);
-  //           setShowCardForm(false);
-  //           setSelectedDriver('');
-  //         }}
-  //       >
-  //         <View style={styles.centeredView}>
-  //           <View
-  //             style={[
-  //               styles.modalView,
-  //               {alignItems: 'flex-start', justifyContent: 'flex-start'},
-  //             ]}
-  //           >
-  //             <View style={{alignSelf: 'center'}}>
-  //               <Ionicons size={80} color="white" name="payment" />
-  //             </View>
-  //             <Text
-  //               style={[
-  //                 styles.modalText,
-  //                 {marginBottom: 0, textAlign: 'left', padding: 0},
-  //               ]}
-  //             >
-  //               Fare : {passengerData.bidFare ?? passengerData.fare}
-  //             </Text>
-  //             <Text
-  //               style={[
-  //                 styles.modalText,
-  //                 {marginTop: 0, textAlign: 'left', padding: 0, fontSize: 16},
-  //               ]}
-  //             >
-  //               Total amount deducted :{' '}
-  //               {passengerData.bidFare ?? passengerData.fare}
-  //             </Text>
-  //             <Text
-  //               style={[
-  //                 styles.modalText,
-  //                 {
-  //                   color: Colors.white,
-  //                   fontSize: 16,
-  //                   fontWeight: '600',
-  //                   alignSelf: 'center',
-  //                 },
-  //               ]}
-  //             >
-  //               Are you sure to make payment!
-  //             </Text>
-  //             <TouchableOpacity
-  //               style={[
-  //                 styles.button,
-  //                 {
-  //                   marginBottom: 10,
-  //                   backgroundColor: Colors.primary,
-  //                   alignSelf: 'center',
-  //                 },
-  //               ]}
-  //               onPress={() => confirmPayment()}
-  //             >
-  //               {buttonLoader ? (
-  //                 <ActivityIndicator size={'large'} color={Colors.secondary} />
-  //               ) : (
-  //                 <Text
-  //                   style={[
-  //                     styles.textStyle,
-  //                     {backgroundColor: Colors.primary},
-  //                   ]}
-  //                 >
-  //                   Pay Amount
-  //                 </Text>
-  //               )}
-  //             </TouchableOpacity>
-  //           </View>
-  //         </View>
-  //       </Modal>
-  //     </View>
-  //   );
-  // }, [showPaymentConfirmationModal, buttonLoader, selectedDriver]);
-
-  // const makePayment = () => {
-  //   let values = Object.values(cardDetail);
-  //   console.log(values, 'bales');
-  //   let flag = values.some(e => e == '');
-  //   if (flag) {
-  //     ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
-  //   } else {
-  //     let id = auth().currentUser.uid;
-
-  //     let savedCards = {
-  //       ...cardDetail,
-  //       date: new Date(),
-  //     };
-
-  //     firestore()
-  //       .collection('passengerCards')
-  //       .doc(id)
-  //       .set(
-  //         {
-  //           savedCards: firestore.FieldValue.arrayUnion(savedCards),
-  //         },
-  //         {merge: true},
-  //       )
-  //       .then(() => {
-  //         ToastAndroid.show(
-  //           'Card has been successfully added',
-  //           ToastAndroid.SHORT,
-  //         );
-  //         setSavedCards(true);
-  //       })
-  //       .catch(error => {
-  //         console.log(error);
-  //       });
-  //   }
-  // };
-
-  // const makePayment = () => {
-  //   let values = Object.values(cardDetail);
-  //   console.log(values, 'bales');
-  //   let flag = values.some(e => e == '');
-  //   if (flag) {
-  //     ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
-  //   } else {
-  //     console.log(showPaymentConfirmationModal, 'payment');
-  //     setShowPaymentConfirmationModal(true);
-  //   }
-  // };
-
-  // const PaymentFormCard = () => {
-  //   return (
-  //     <View style={{width: '100%', paddingHorizontal: 20, marginTop: 30}}>
-  //       <ScrollView>
-  //         <View style={{width: '100%'}}>
-  //           <Text
-  //             style={[
-  //               styles.text,
-  //               {
-  //                 textAlign: 'center',
-  //                 fontSize: 20,
-  //                 fontWeight: '600',
-  //                 marginBottom: 20,
-  //                 color: Colors.black,
-  //               },
-  //             ]}
-  //           >
-  //             Add Card details you want to make payment from
-  //           </Text>
-
-  //           <Text
-  //             style={[
-  //               styles.text,
-  //               {textAlign: 'left', color: Colors.secondary},
-  //             ]}
-  //           >
-  //             Card Holder Name
-  //           </Text>
-  //           <TextInput
-  //             onChangeText={e =>
-  //               setCardDetail({...cardDetail, cardHolderName: e})
-  //             }
-  //             placeholder="Enter name..."
-  //             placeholderTextColor={Colors.black}
-  //             style={{
-  //               width: '100%',
-  //               color: Colors.black,
-  //               borderWidth: 1,
-  //               borderColor: Colors.black,
-  //               padding: 10,
-  //               borderRadius: 10,
-  //               marginTop: 5,
-  //             }}
-  //           />
-  //         </View>
-  //         <View style={{width: '100%', marginTop: 10}}>
-  //           <Text
-  //             style={[
-  //               styles.text,
-  //               {textAlign: 'left', color: Colors.secondary},
-  //             ]}
-  //           >
-  //             Card Number
-  //           </Text>
-  //           <TextInput
-  //             placeholder="Enter card number..."
-  //             onChangeText={e => setCardDetail({...cardDetail, cardNumber: e})}
-  //             placeholderTextColor={Colors.black}
-  //             style={{
-  //               width: '100%',
-  //               borderWidth: 1,
-  //               borderColor: Colors.black,
-  //               padding: 10,
-  //               color: 'black',
-  //               borderRadius: 10,
-  //               marginTop: 5,
-  //             }}
-  //           />
-  //         </View>
-  //         <View style={{width: '100%', marginTop: 10}}>
-  //           <Text
-  //             style={[
-  //               styles.text,
-  //               {textAlign: 'left', color: Colors.secondary},
-  //             ]}
-  //           >
-  //             Expiry Month
-  //           </Text>
-  //           <TextInput
-  //             keyboardType="numeric"
-  //             onChangeText={e => setCardDetail({...cardDetail, expiryMonth: e})}
-  //             placeholder="Enter expiry date..."
-  //             placeholderTextColor={Colors.black}
-  //             style={{
-  //               width: '100%',
-  //               borderWidth: 1,
-  //               borderColor: Colors.black,
-  //               padding: 10,
-  //               color: 'black',
-  //               borderRadius: 10,
-  //               marginTop: 5,
-  //             }}
-  //           />
-  //         </View>
-  //         <View style={{width: '100%', marginTop: 10}}>
-  //           <Text
-  //             style={[
-  //               styles.text,
-  //               {textAlign: 'left', color: Colors.secondary},
-  //             ]}
-  //           >
-  //             Expiry Year
-  //           </Text>
-  //           <TextInput
-  //             keyboardType="numeric"
-  //             onChangeText={e => setCardDetail({...cardDetail, expiryYear: e})}
-  //             placeholder="Enter expiry date..."
-  //             placeholderTextColor={Colors.black}
-  //             style={{
-  //               width: '100%',
-  //               borderWidth: 1,
-  //               borderColor: Colors.black,
-  //               padding: 10,
-  //               color: 'black',
-  //               borderRadius: 10,
-  //               marginTop: 5,
-  //             }}
-  //           />
-  //         </View>
-  //         <View style={{width: '100%', marginTop: 10}}>
-  //           <Text
-  //             style={[
-  //               styles.text,
-  //               {textAlign: 'left', color: Colors.secondary},
-  //             ]}
-  //           >
-  //             CVC
-  //           </Text>
-  //           <TextInput
-  //             placeholder="Enter cvc..."
-  //             onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
-  //             placeholderTextColor={Colors.black}
-  //             style={{
-  //               width: '100%',
-  //               borderWidth: 1,
-  //               borderColor: Colors.black,
-  //               padding: 10,
-  //               color: 'black',
-  //               borderRadius: 10,
-  //               marginTop: 5,
-  //             }}
-  //           />
-  //           <CustomButton
-  //             styleContainer={{width: '100%', marginTop: 20}}
-  //             text={'Make payment'}
-  //             onPress={() => makePayment()}
-  //           />
-  //         </View>
-  //       </ScrollView>
-  //     </View>
-  //   );
-  // };
-
   const AccecptOffer = acceptDriver => {
-    if (passengerData && passengerData.bidFare && acceptDriver.bidFare) {
+    if (passengerData && passengerData.bidFare) {
       if (
         driverData &&
         !Array.isArray(driverData) &&
@@ -884,9 +505,7 @@ export default function PassengerFindRide({navigation, route}) {
               };
             }
           });
-
         let selectedDriverData = mySelectedDriver.filter((e, i) => e.selected);
-
         firestore()
           .collection('Request')
           .doc(passengerData.id)
@@ -895,9 +514,12 @@ export default function PassengerFindRide({navigation, route}) {
             requestStatus: 'accepted',
           })
           .then(res => {
-            navigation.navigate('PassengerHomeScreen', {
-              passengerData: passengerData,
-              driverData: acceptDriver,
+            navigation.navigate('PassengerRoutes', {
+              screen: 'PassengerHomeScreen',
+              params: {
+                passengerData: passengerData,
+                driverData: acceptDriver,
+              },
             });
           })
           .catch(error => {
@@ -905,12 +527,7 @@ export default function PassengerFindRide({navigation, route}) {
           });
       }
     }
-
     if (passengerData && !passengerData.bidFare) {
-      // if (!paymentDone) {
-      //   setShowAskPaymentModal(true);
-      //   setSelectedDriver(acceptDriver);
-      // } else {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
@@ -926,10 +543,8 @@ export default function PassengerFindRide({navigation, route}) {
         .catch(error => {
           console.log(error);
         });
-      // }
     }
   };
-
   useEffect(() => {
     if (!passengerData.bidFare) {
     }
@@ -962,6 +577,7 @@ export default function PassengerFindRide({navigation, route}) {
         driverData.filter((e, i) => {
           return e.id !== rejectedDriver.id;
         }),
+        setDriverRejected([...driversRejected, rejectedDriver]),
       );
     } else if (rejectedDriver && passengerData.bidFare) {
       firestore()
@@ -970,10 +586,9 @@ export default function PassengerFindRide({navigation, route}) {
         .onSnapshot(querySnapshot => {
           if (querySnapshot.exists) {
             let data = querySnapshot.data();
-
             if (
               data &&
-              data.myDriversData &&
+              data?.myDriversData &&
               !Array.isArray(data.myDriversData)
             ) {
               data.myDriversData.selected = false;
@@ -1033,7 +648,6 @@ export default function PassengerFindRide({navigation, route}) {
         });
     }
   };
-
   const calculateMinutes = (result, item) => {
     let duration = Math.ceil(result.duration);
     setMinutes([...minutes, duration]);
@@ -1060,16 +674,36 @@ export default function PassengerFindRide({navigation, route}) {
         }
       });
     }
-
     let flag = driverNotAvailable.some((e, i) => e == item.id);
 
+    let dis = getPreciseDistance(
+      {
+        latitude: passengerData?.pickupCords?.latitude,
+        longitude: passengerData?.pickupCords?.longitude,
+      },
+      {
+        latitude: item?.currentLocation?.latitude,
+        longitude: item?.currentLocation?.longitude,
+      },
+    );
+
+    mileDistance = (dis / 1609.34).toFixed(2);
+    item.distance = mileDistance;
+
+    const speed = 10; // meters per second
+    item.minutes = Math.round(dis / speed / 60);
+
+    let flag3 =
+      driversRejected && driversRejected.some((e, i) => e.id == item.id);
+
     return (
-      !flag && (
+      !flag &&
+      !flag3 && (
         <View style={styles.card}>
           <View style={styles.innerItemsUpper}>
             <View style={styles.imgContainer}>
               <Image
-                source={{uri: item.profilePicture}}
+                source={{uri: item.url}}
                 resizeMode="cover"
                 style={styles.proPic}
               />

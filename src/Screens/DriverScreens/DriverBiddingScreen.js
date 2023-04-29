@@ -178,7 +178,7 @@ export default function DriverBiddingScreen({navigation}) {
         {latitude: pickupCords.latitude, longitude: pickupCords.longitude},
       );
 
-      if (dis < 1000) {
+      if (dis < 100) {
         setArrivePickupLocation(true);
       }
     }
@@ -205,7 +205,7 @@ export default function DriverBiddingScreen({navigation}) {
         },
       );
 
-      if (dis < 1000) {
+      if (dis < 100) {
         setArriveDropOffLocation(true);
       }
     }
@@ -645,6 +645,13 @@ export default function DriverBiddingScreen({navigation}) {
         AsyncStorage.removeItem('ArrivedAtpickUpLocation');
         AsyncStorage.removeItem('startRide');
         AsyncStorage.removeItem('EndRide');
+
+        setEndRide(false);
+        setArrivePickupLocation(false);
+        setArriveDropOffLocation(false);
+        setStartRide(false);
+        setSelectedDriver([]);
+
         navigation.navigate('AskScreen');
       })
       .catch(error => {

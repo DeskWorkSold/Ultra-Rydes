@@ -85,6 +85,7 @@ function PassengerRoutes() {
         component={PassengerFindRide}
         options={{
           title: 'Finding Ride',
+          unmountOnBlur: true,
         }}
       />
       <Drawer.Screen
@@ -141,7 +142,7 @@ function DriverRoutes() {
       <Drawer.Screen
         name="DriverHomeScreen"
         component={DriverHomeScreen}
-        options={{headerShown: false}}
+        options={{headerShown: false, unmountOnBlur: true}}
       />
       <Drawer.Screen
         name="SettingsDriver"
@@ -176,6 +177,7 @@ function DriverRoutes() {
         component={DriverBiddingScreen}
         options={{
           headerShown: false,
+          unmountOnBlur: true,
         }}
       />
       <Drawer.Screen

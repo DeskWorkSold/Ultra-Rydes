@@ -333,6 +333,7 @@ export default function PassengerDetailScreen({navigation}) {
               placeholder="+1 XXXXXXXXXX"
               keyboardType="phone-pad"
               value={mobileNumber}
+              maxLength={13}
               error={mobileNumberError}
               onChangeText={handlePhoneNumberChange}
               selectionColor={Colors.black}

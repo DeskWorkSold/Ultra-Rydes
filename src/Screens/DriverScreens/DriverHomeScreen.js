@@ -68,9 +68,9 @@ export default function DriverHomeScreen({navigation, route}) {
       return;
     }
 
-    if(acceptRequest){
-      setDing("")
-      return
+    if (acceptRequest) {
+      setDing('');
+      return;
     }
 
     let createSound = new Sound(mytone, error => {
@@ -282,7 +282,6 @@ export default function DriverHomeScreen({navigation, route}) {
             selectedDriver: data.myDriversData
               ? data.myDriversData
               : data.driverData,
-
             driverArrive: checkDriverArrive ? true : false,
             startRide: startRide ? true : false,
             endRide: endRide ? true : false,
@@ -293,7 +292,6 @@ export default function DriverHomeScreen({navigation, route}) {
       console.log(error, 'error');
     }
   };
-
   useEffect(() => {
     getDriverBookingData();
   }, []);
@@ -307,22 +305,15 @@ export default function DriverHomeScreen({navigation, route}) {
           .then(querySnapshot => {
             querySnapshot.forEach(documentSnapshot => {
               let data = documentSnapshot.data();
-
               let date = data?.requestDate?.toDate();
-
               let time = date?.getTime();
               let nowTime = new Date().getTime();
-
               let requestSeconds = time / 1000;
               let nowSeconds = nowTime / 1000;
-
               let requestRespondSeconds = requestSeconds + 32;
-
               let differenceSeconds = requestRespondSeconds - nowSeconds;
-
               data.timeLimit = differenceSeconds;
-
-              if (!data?.requestStatus && differenceSeconds > 0) {
+              if (!data?.requestStatus) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -507,7 +498,7 @@ export default function DriverHomeScreen({navigation, route}) {
               'Your Request has been rejected',
               ToastAndroid.SHORT,
             );
-            setRequestData(false)
+            setRequestLoader(false);
             return;
           }
 
@@ -525,7 +516,7 @@ export default function DriverHomeScreen({navigation, route}) {
                 'Your Request has been rejected',
                 ToastAndroid.SHORT,
               );
-              setRequestLoader(false)
+              setRequestLoader(false);
               return;
             }
           }
@@ -635,6 +626,11 @@ export default function DriverHomeScreen({navigation, route}) {
         });
     }
   };
+
+  console.log(acceptRequest, 'acceptRequest');
+  console.log(requestLoader, 'locatio');
+  console.log(driverData, 'driver');
+
   useEffect(() => {
     if (requestLoader && driverData && !acceptRequest) {
       let interval = setInterval(() => {
@@ -713,6 +709,7 @@ export default function DriverHomeScreen({navigation, route}) {
         .doc(data?.passengerData ? data.passengerData?.id : data.id)
         .update({
           rejectedDrivers: rejectedDrivers,
+          requestStatus: 'rejected',
         })
         .then(() => {
           setTimeout(() => {

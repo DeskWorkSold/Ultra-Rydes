@@ -33,13 +33,33 @@ function AddCard({navigation}) {
     let flag = values.some(e => e == '');
     if (flag) {
       ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
+    }
+
+    if (Number(cardDetail.expiryMonth) > 12) {
+      ToastAndroid.show('Invalid Expiry month', ToastAndroid.SHORT);
+      return;
+    }
+
+    let currentYear = new Date().getFullYear();
+    currentYear = currentYear.toString();
+    currentYear = currentYear.slice(2);
+    currentYear = Number(currentYear);
+
+    if (Number(cardDetail.expiryYear) < currentYear) {
+      ToastAndroid.show('Invalid Expiry Year', ToastAndroid.SHORT);
+      return;
+    }
+
+    if (cardDetail.cvc.length < 3) {
+      ToastAndroid.show('Invalid CVC', ToastAndroid.SHORT);
+      return;
     } else {
       setLoading(true);
-
       let id = auth().currentUser.uid;
-
+      let Details = {...cardDetail};
+      Details.cardNumber = Details.cardNumber.replace(/ /g, '');
       let savedCards = {
-        ...cardDetail,
+        ...Details,
         default: true,
         date: new Date(),
       };
@@ -67,6 +87,15 @@ function AddCard({navigation}) {
           console.log(error);
         });
     }
+  };
+
+  const getCardDetails = text => {
+    text = text.replace(/ /g, '');
+
+    // Add a space after every 4 digits
+    text = text.replace(/(\d{4})/g, '$1 ');
+
+    setCardDetail({...cardDetail, cardNumber: text});
   };
 
   return (
@@ -148,7 +177,9 @@ function AddCard({navigation}) {
           <TextInput
             placeholder="Enter card number..."
             keyboardType="numeric"
-            onChangeText={e => setCardDetail({...cardDetail, cardNumber: e})}
+            maxLength={20}
+            value={cardDetail.cardNumber}
+            onChangeText={getCardDetails}
             placeholderTextColor={Colors.black}
             style={{
               width: '100%',
@@ -171,6 +202,7 @@ function AddCard({navigation}) {
             keyboardType="numeric"
             onChangeText={e => setCardDetail({...cardDetail, expiryMonth: e})}
             placeholder="Enter expiry month..."
+            maxLength={2}
             placeholderTextColor={Colors.black}
             style={{
               width: '100%',
@@ -191,6 +223,7 @@ function AddCard({navigation}) {
           </Text>
           <TextInput
             keyboardType="numeric"
+            maxLength={2}
             onChangeText={e => setCardDetail({...cardDetail, expiryYear: e})}
             placeholder="Enter expiry year..."
             placeholderTextColor={Colors.black}
@@ -214,6 +247,7 @@ function AddCard({navigation}) {
           <TextInput
             placeholder="Enter cvc..."
             keyboardType="numeric"
+            maxLength={3}
             onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
             placeholderTextColor={Colors.black}
             style={{

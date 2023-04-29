@@ -46,6 +46,8 @@ export default function DriverDetailScreen({navigation}) {
   const [cityError, setCityError] = useState(false);
   const [phoneNumberError, setPhoneNumberError] = useState(false);
   const [loginFromEmail, setLoginFromEmail] = useState(false);
+  const [profilePicUrl, setProfilePicUrl] = useState('');
+
   //error fields end
   //Date picker
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -77,12 +79,10 @@ export default function DriverDetailScreen({navigation}) {
   const hideModal1 = () => setVisible1(false);
   const [profilePicture, setprofilePicture] = useState('');
   const defaultImg = require('../Assets/Images/dummyPic.png');
-
   let options = {
     saveToPhotos: true,
     mediaType: 'photo',
   };
-
   const openCamera = async () => {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.CAMERA,
@@ -124,6 +124,13 @@ export default function DriverDetailScreen({navigation}) {
     } else {
       hideModal1();
       setprofilePicture(result.assets[0].uri);
+
+      storage()
+        .ref(result.assets[0].uri)
+        .getDownloadURL()
+        .then(url => {
+          setProfilePicUrl(url);
+        });
     }
   };
 
@@ -345,6 +352,8 @@ export default function DriverDetailScreen({navigation}) {
     }
   }, []);
 
+  console.log(profilePicUrl, 'profiel');
+
   //docments upload functions end
   const strongRegex = new RegExp(
     '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$',
@@ -463,11 +472,15 @@ export default function DriverDetailScreen({navigation}) {
         // await cnicReferenceBack.putFile(cnicBackImg);
         await licenseReferenceFront.putFile(licenseFrontImg);
         await licenseReferenceBack.putFile(licenseBackImg);
+
+        let url = await storage().ref(profilePicture).getDownloadURL();
+
         firestore()
           .collection('Drivers')
           .doc(CurrentUser.uid)
           .set({
             profilePicture: profilePicture,
+            url: url,
             firstName: firstName,
             lastName: lastName,
             dateOfBirth: dateOfBirth,
@@ -644,6 +657,7 @@ export default function DriverDetailScreen({navigation}) {
                     value={phoneNumber}
                     error={phoneNumberError}
                     keyboardType="phone-pad"
+                    maxLength={13}
                     onChangeText={handlePhoneNumberChange}
                     selectionColor={Colors.black}
                     underlineColor={Colors.black}

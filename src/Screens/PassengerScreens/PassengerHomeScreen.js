@@ -96,9 +96,9 @@ export default function PassengerHomeScreen({navigation}) {
   const [cancelRide, setCancelRide] = useState(false);
 
   const [location, setLocation] = useState({
-    pickupCords: route.params ? route.params.passengerData.pickupCords : null,
+    pickupCords: route.params ? route.params?.passengerData?.pickupCords : null,
     dropLocationCords: route.params
-      ? route.params.passengerData.dropLocationCords
+      ? route.params?.passengerData?.dropLocationCords
       : {},
   });
 
@@ -524,21 +524,6 @@ export default function PassengerHomeScreen({navigation}) {
       return;
     }
 
-    // if (bidFare && wallet < (bidFare * 110) / 100) {
-    //   ToastAndroid.show(
-    //     "You don't have enough wallet amount",
-    //     ToastAndroid.SHORT,
-    //   );
-    //   return false;
-    // }
-    // if (fare && fare > wallet) {
-    //   ToastAndroid.show(
-    //     "You don't have enough wallet amount",
-    //     ToastAndroid.SHORT,
-    //   );
-    //   return false;
-    // }
-
     if (!bidFare && !data) {
       let id = auth().currentUser.uid;
       let passengerPersonalDetails = '';
@@ -548,7 +533,6 @@ export default function PassengerHomeScreen({navigation}) {
         .get()
         .then(doc => {
           let passengerPersonalData = doc.data();
-
           let data = {
             pickupCords: pickupCords,
             dropLocationCords: dropLocationCords,
@@ -564,11 +548,9 @@ export default function PassengerHomeScreen({navigation}) {
             passengerPersonalDetails: passengerPersonalData,
             requestDate: new Date(),
           };
-
           navigation.navigate('PassengerFindRide', data);
         });
     }
-
     if (bidFare) {
       const id = auth().currentUser.uid;
       firestore()
@@ -577,7 +559,6 @@ export default function PassengerHomeScreen({navigation}) {
         .get()
         .then(doc => {
           let passengerPersonalData = doc.data();
-
           let myData = {
             pickupCords: pickupCords,
             dropLocationCords: dropLocationCords,
@@ -593,7 +574,6 @@ export default function PassengerHomeScreen({navigation}) {
             passengerPersonalDetails: passengerPersonalData,
             requestDate: new Date(),
           };
-
           firestore()
             .collection('Request')
             .doc(CurrentUserUid)
@@ -603,7 +583,6 @@ export default function PassengerHomeScreen({navigation}) {
                 'Your request has been sent',
                 ToastAndroid.SHORT,
               );
-
               navigation.navigate('PassengerFindRide', myData);
             })
             .catch(error => {
@@ -766,13 +745,11 @@ export default function PassengerHomeScreen({navigation}) {
       ToastAndroid.show('Kindly Select car first', ToastAndroid.SHORT);
     }
   };
-
-  const handlePayPress = async () => {
+    const handlePayPress = async () => {
     setButtonLoader(true);
     let id = auth().currentUser.uid;
     let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
     let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
-
     if (tip && tip.includes('%')) {
       let tipPercent = tip.slice(0, 2);
       tipPercent = Number(tipPercent);
@@ -780,14 +757,12 @@ export default function PassengerHomeScreen({navigation}) {
     } else {
       tip = Number(tip).toFixed(2);
     }
-
     let totalCharges = Number(rideFare) + Number(tip);
-
     totalCharges = totalCharges.toFixed(2);
+    let myWallet = wallet;
+    myWallet = myWallet.toFixed(2);
 
-    console.log(totalCharges, 'charges');
-
-    if (wallet > totalCharges) {
+    if (myWallet >= totalCharges) {
       firestore()
         .collection('Request')
         .doc(id)
@@ -812,8 +787,10 @@ export default function PassengerHomeScreen({navigation}) {
           ToastAndroid.show(error.message, ToastAndroid.SHORT);
         });
       return;
-    } else if (wallet < totalCharges) {
-      let differenceAmount = Number(totalCharges) - Number(wallet);
+    } else if (myWallet < totalCharges) {
+      let differenceAmount = Number(totalCharges) - Number(myWallet);
+
+      differenceAmount = Number(differenceAmount).toFixed(2);
 
       firestore()
         .collection('passengerCards')
@@ -831,35 +808,37 @@ export default function PassengerHomeScreen({navigation}) {
               return e.default;
             });
 
-          // let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
-          // let rideFare =
-          //   data?.passengerData?.bidFare ?? data?.passengerData?.fare;
-
-          // if (tip.includes('%')) {
-          //   let tipPercent = tip.slice(0, 2);
-          //   tipPercent = Number(tipPercent);
-          //   tip = (rideFare * tipPercent) / 100;
-          // } else {
-          //   tip = Number(tip);
-          // }
-
-          // let totalCharges = (Number(rideFare) + tip).toFixed(2);
-
           let customerData = {
             cardNumber: savedCards[0].cardNumber,
             expiryMonth: Number(savedCards[0].expiryMonth),
             expiryYear: Number(savedCards[0].expiryYear),
             cvc: savedCards[0].cvc,
-            amount: Number(differenceAmount).toFixed(2),
+            amount: differenceAmount,
           };
 
+          console.log(differenceAmount, 'amount');
+
+          const timeout = 30000; // 5 seconds
+          let timedOut = false;
+
+          // Set a timeout for the API request
+          const timeoutId = setTimeout(() => {
+            timedOut = true;
+            // Show an error message to the user
+            setButtonLoader(false);
+            ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
+            console.log('Request timed out');
+          }, timeout);
+          console.log(timedOut, 'timeoUT');
           axios
             .post(`${BASE_URI}dopayment`, customerData)
             .then(res => {
+              clearTimeout(timeoutId);
               let data = res.data;
               console.log(typeof data.amount);
               let {result, status} = data;
-              if (!status) {
+              if (!status && !timedOut) {
+                setButtonLoader(false);
                 ToastAndroid.show(data.message, ToastAndroid.SHORT);
                 return;
               }
@@ -886,6 +865,7 @@ export default function PassengerHomeScreen({navigation}) {
                     .doc(id)
                     .update({
                       confirmByPassenger: true,
+                      tipAmount: tip,
                     })
                     .then(() => {
                       setButtonLoader(false);
@@ -900,26 +880,30 @@ export default function PassengerHomeScreen({navigation}) {
                       );
                     })
                     .catch(error => {
-                      setButtonLoader(false);
-                      ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                      if (!timedOut) {
+                        setButtonLoader(false);
+                        ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                      }
                     });
                 })
                 .catch(error => {
-                  setButtonLoader(false);
-                  console.log(error);
-                  ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                  if (!timedOut) {
+                    setButtonLoader(false);
+                    console.log(error);
+                    ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                  }
                 });
             })
             .catch(error => {
-              setButtonLoader(false);
-              console.log(error, 'error');
-              ToastAndroid.show('error occurs', ToastAndroid.SHORT);
+              if (!timedOut) {
+                setButtonLoader(false);
+                console.log(error, 'error');
+                ToastAndroid.show('error occurs', ToastAndroid.SHORT);
+              }
             });
         });
     }
   };
-
-  console.log(route.params, 'paramsssss');
 
   const ArriveModal = useCallback(() => {
     return (
