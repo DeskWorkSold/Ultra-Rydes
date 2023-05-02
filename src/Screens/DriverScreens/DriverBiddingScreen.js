@@ -118,6 +118,7 @@ export default function DriverBiddingScreen({navigation}) {
   });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
   const [endRide, setEndRide] = useState(false);
+  const [buttonLoader, setButtonLoader] = useState(false);
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -481,6 +482,7 @@ export default function DriverBiddingScreen({navigation}) {
   // };
 
   const sendArriveMessageToPassenger = async () => {
+    setButtonLoader(true);
     setArrive({...arrive, pickUpLocation: true});
     setArrivePickupLocation(false);
     firestore()
@@ -511,9 +513,11 @@ export default function DriverBiddingScreen({navigation}) {
           };
           axios(config)
             .then(res => {
+              setButtonLoader(false);
               console.log(res);
             })
             .catch(error => {
+              setButtonLoader(false);
               console.log(error);
             });
         }
@@ -525,9 +529,11 @@ export default function DriverBiddingScreen({navigation}) {
         driverArriveAtPickupLocation: true,
       })
       .then(res => {
+        setButtonLoader(false);
         console.log('You have arrived at pickup Location');
       })
       .catch(error => {
+        setButtonLoader(false);
         console.log(error);
       });
 
@@ -567,18 +573,25 @@ export default function DriverBiddingScreen({navigation}) {
                 ]}
                 onPress={() => sendArriveMessageToPassenger()}
               >
-                <Text style={styles.textStyle}>confirm</Text>
+                <Text style={styles.textStyle}>
+                  {buttonLoader ? (
+                    <ActivityIndicator size={'large'} color={Colors.black} />
+                  ) : (
+                    'confirm'
+                  )}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
       </View>
     );
-  }, [arrivePickUpLocation]);
+  }, [arrivePickUpLocation, buttonLoader]);
 
   const bookingComplete = () => {
-    let uid = auth().currentUser.uid;
+    setButtonLoader(true);
 
+    let uid = auth().currentUser.uid;
     let walletData = {
       fare: selectedDriver?.bidFare
         ? selectedDriver?.bidFare
@@ -609,6 +622,7 @@ export default function DriverBiddingScreen({navigation}) {
       })
       .catch(error => {
         console.log(error);
+        setButtonLoader(false);
       });
 
     firestore()
@@ -632,6 +646,7 @@ export default function DriverBiddingScreen({navigation}) {
         console.log('driver has been successfully lined');
       })
       .catch(error => {
+        setButtonLoader(false);
         console.log(error);
       });
     firestore()
@@ -641,11 +656,11 @@ export default function DriverBiddingScreen({navigation}) {
         driverArriveAtDropoffLocation: true,
       })
       .then(() => {
+        setButtonLoader(false);
         AsyncStorage.removeItem('driverBooking');
         AsyncStorage.removeItem('ArrivedAtpickUpLocation');
         AsyncStorage.removeItem('startRide');
         AsyncStorage.removeItem('EndRide');
-
         setEndRide(false);
         setArrivePickupLocation(false);
         setArriveDropOffLocation(false);
@@ -655,6 +670,7 @@ export default function DriverBiddingScreen({navigation}) {
         navigation.navigate('AskScreen');
       })
       .catch(error => {
+        setButtonLoader(false);
         console.log(error);
       });
   };
@@ -760,14 +776,20 @@ export default function DriverBiddingScreen({navigation}) {
                 ]}
                 onPress={() => bookingComplete()}
               >
-                <Text style={styles.textStyle}>confirm</Text>
+                <Text style={styles.textStyle}>
+                  {buttonLoader ? (
+                    <ActivityIndicator size={'large'} color={Colors.black} />
+                  ) : (
+                    'confirm'
+                  )}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
       </View>
     );
-  }, [endRide]);
+  }, [endRide, buttonLoader]);
 
   const cancelBookingByDriver = () => {
     if (!driverReasonForCancelRide) {
@@ -777,6 +799,8 @@ export default function DriverBiddingScreen({navigation}) {
       );
       return;
     }
+
+    setButtonLoader(true);
 
     let cancelRide = {
       passengerData: passengerData,
@@ -810,6 +834,7 @@ export default function DriverBiddingScreen({navigation}) {
                 inlined: false,
               })
               .then(() => {
+                setButtonLoader(false);
                 AsyncStorage.removeItem('driverBooking');
                 AsyncStorage.removeItem('ArrivedAtpickUpLocation');
                 AsyncStorage.removeItem('startRide');
@@ -822,14 +847,17 @@ export default function DriverBiddingScreen({navigation}) {
               })
               .catch(error => {
                 console.log(error);
+                setButtonLoader(false);
               });
           })
           .catch(error => {
             console.log(error, 'errorr');
+            setButtonLoader(false);
           });
       })
       .catch(error => {
         console.log(error, 'error');
+        setButtonLoader(false);
       });
   };
 
@@ -946,12 +974,11 @@ export default function DriverBiddingScreen({navigation}) {
                           {backgroundColor: Colors.primary},
                         ]}
                       >
-                        confirm
+                        "confirm"
                       </Text>
                     </TouchableOpacity>
                   </View>
                 )}
-
                 {reasonForCancelRide && (
                   <View style={{width: '100%'}}>
                     <Text
@@ -1004,7 +1031,14 @@ export default function DriverBiddingScreen({navigation}) {
                             {backgroundColor: Colors.primary},
                           ]}
                         >
-                          Cancel Ride
+                          {buttonLoader ? (
+                            <ActivityIndicator
+                              size={'small'}
+                              color={Colors.black}
+                            />
+                          ) : (
+                            'Cancel Ride'
+                          )}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -1016,7 +1050,13 @@ export default function DriverBiddingScreen({navigation}) {
         </View>
       )
     );
-  }, [cancelRide, reasonForCancelRide, input, driverReasonForCancelRide]);
+  }, [
+    cancelRide,
+    reasonForCancelRide,
+    input,
+    driverReasonForCancelRide,
+    buttonLoader,
+  ]);
 
   const getDriverUid = () => {
     if (!selectedDriver) {
@@ -1355,13 +1395,28 @@ export default function DriverBiddingScreen({navigation}) {
   };
 
   const rideStartByDriver = async () => {
-    try {
-      await AsyncStorage.setItem('startRide', 'Ride has been started');
-      setStartRide(true);
-      handleZoom();
-    } catch (error) {
-      console.log(error);
-    }
+    firestore()
+      .collection('Request')
+      .doc(data.id ?? data.passengerData.id)
+      .get()
+      .then(async doc => {
+        let data = doc.data();
+
+        if (data && data.confirmByPassenger) {
+          try {
+            await AsyncStorage.setItem('startRide', 'Ride has been started');
+            setStartRide(true);
+            handleZoom();
+          } catch (error) {
+            console.log(error);
+          }
+        } else {
+          ToastAndroid.show(
+            'Your passenger has not confirm your arrival ask passenger to confirm arrival and then start your ride',
+            ToastAndroid.SHORT,
+          );
+        }
+      });
   };
 
   const getViewLocation = useCallback(() => {

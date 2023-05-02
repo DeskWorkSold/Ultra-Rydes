@@ -303,7 +303,7 @@ export default function DriverVehicleAdd({navigation}) {
             console.log('User added!');
           });
         setLoading(false);
-        navigation.navigate('DriverHomeScreen');
+        navigation.replace('DriverRoutes', {screen: 'DriverHomeScreen'});
       } catch (err) {
         console.log(err);
       }

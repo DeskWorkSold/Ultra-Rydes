@@ -313,7 +313,7 @@ export default function DriverHomeScreen({navigation, route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus) {
+              if (!data?.requestStatus && differenceSeconds > 0) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -536,7 +536,7 @@ export default function DriverHomeScreen({navigation, route}) {
                 ToastAndroid.SHORT,
               );
               setAcceptRequest(true);
-              setRequestLoader(false);
+
               try {
                 requestData.driverData = driverData;
                 let myData = JSON.stringify(requestData ?? data);
@@ -563,8 +563,10 @@ export default function DriverHomeScreen({navigation, route}) {
                       selectedDriver: driverData,
                     },
                   });
+                  setRequestLoader(false);
                 })
                 .catch(error => {
+                  setRequestLoader(false);
                   console.log(error);
                 });
             }
@@ -585,7 +587,7 @@ export default function DriverHomeScreen({navigation, route}) {
                 ToastAndroid.SHORT,
               );
               setAcceptRequest(true);
-              setRequestLoader(false);
+
               try {
                 requestData.driverData = driverData;
                 let myData = JSON.stringify(requestData ?? data);
@@ -612,8 +614,10 @@ export default function DriverHomeScreen({navigation, route}) {
                       selectedDriver: driverData,
                     },
                   });
+                  setRequestLoader(false);
                 })
                 .catch(error => {
+                  setRequestLoader(false);
                   console.log(error);
                 });
             } else if (!flag && flag1) {

@@ -256,10 +256,10 @@ const CurrentBalanceScreen = ({navigation}) => {
           .set(res.data)
           .then(() => {
             setLoading(false);
-            ToastAndroid.show(
-              'Your account has been created',
-              ToastAndroid.SHORT,
-            );
+            // ToastAndroid.show(
+            //   'Your account has been created',
+            //   ToastAndroid.SHORT,
+            // );
             setOpenCreateAccountModal(true);
           })
           .catch(error => {
@@ -612,8 +612,8 @@ const CurrentBalanceScreen = ({navigation}) => {
                   >
                     $
                     {allWalletData
-                      ? earn.total && earn.total.toFixed(2)
-                      : earn.monthly && earn.monthly.toFixed(2)}
+                      ? earn.total && (earn.total.toFixed(2) ?? 0)
+                      : earn.monthly && (earn.monthly.toFixed(2) ?? 0)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -674,7 +674,10 @@ const CurrentBalanceScreen = ({navigation}) => {
                     $
                     {allWalletData
                       ? withdraw.total
-                      : withdraw.monthly && withdraw.monthly.toFixed(2)}
+                        ? withdraw.total
+                        : 0
+                      : (withdraw.monthly ?? 0) &&
+                        (withdraw.monthly.toFixed(2) ?? 0)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -733,7 +736,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                 loading ? (
                   <ActivityIndicator size="large" color={Colors.secondary} />
                 ) : !stripeAccountId ? (
-                  'Create Account'
+                  'Submit Card Details'
                 ) : !stripeVerifiedAccount ? (
                   'Need naccessary details'
                 ) : (

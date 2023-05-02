@@ -217,7 +217,7 @@ export default function PassengerDetailScreen({navigation}) {
           .then(() => {
             setLoading(false);
             console.log('User added!');
-            navigation.navigate('AddCardScreen');
+            navigation.replace('AddCardScreen');
           })
           .catch(error => {
             console.log(error);

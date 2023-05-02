@@ -13,6 +13,8 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import {useEffect} from 'react';
 import {load} from 'npm';
+import axios from 'axios';
+import {BASE_URI} from '../../Constants/Base_uri';
 
 function PaymentMethod({navigation, route}) {
   const [savedCards, setSavedCards] = React.useState(true);
@@ -78,40 +80,79 @@ function PaymentMethod({navigation, route}) {
   }, []);
 
   const getCardData = () => {
-    setLoader(true);
     let values = Object.values(cardDetail);
     console.log(values, 'bales');
     let flag = values.some(e => e == '');
     if (flag) {
       ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
+    }
+
+    if (Number(cardDetail.expiryMonth) > 12) {
+      ToastAndroid.show('Invalid Expiry month', ToastAndroid.SHORT);
+      return;
+    }
+
+    let currentYear = new Date().getFullYear();
+    currentYear = currentYear.toString();
+    currentYear = currentYear.slice(2);
+    currentYear = Number(currentYear);
+
+    if (Number(cardDetail.expiryYear) < currentYear) {
+      ToastAndroid.show('Invalid Expiry Year', ToastAndroid.SHORT);
+      return;
+    }
+
+    if (cardDetail.cvc.length < 3) {
+      ToastAndroid.show('Invalid CVC', ToastAndroid.SHORT);
+      return;
     } else {
+      setLoader(true);
       let id = auth().currentUser.uid;
+      let Details = {...cardDetail};
+      Details.cardNumber = Details.cardNumber.replace(/ /g, '');
 
-      let savedCards = {
-        ...cardDetail,
-        date: new Date(),
-      };
+      axios
+        .post(`${BASE_URI}generateToken`, Details)
+        .then(res => {
+          console.log(res, 'res');
+          let {data} = res;
 
-      firestore()
-        .collection('passengerCards')
-        .doc(id)
-        .set(
-          {
-            savedCards: firestore.FieldValue.arrayUnion(savedCards),
-          },
-          {merge: true},
-        )
-        .then(() => {
-          setLoader(false);
-          ToastAndroid.show(
-            'Card has been successfully added',
-            ToastAndroid.SHORT,
-          );
-          setSavedCards(true);
+          if (!data.status) {
+            ToastAndroid.show(data.message, ToastAndroid.SHORT);
+            setLoader(false);
+          } else {
+            let savedCards = {
+              ...Details,
+              token: data.token,
+              date: new Date(),
+            };
+            firestore()
+              .collection('passengerCards')
+              .doc(id)
+              .set(
+                {
+                  savedCards: firestore.FieldValue.arrayUnion(savedCards),
+                },
+                {merge: true},
+              )
+              .then(() => {
+                setLoader(false);
+                ToastAndroid.show(
+                  'Card has been successfully added',
+                  ToastAndroid.SHORT,
+                );
+                setSavedCards(true);
+              })
+              .catch(error => {
+                setLoader(false);
+                console.log(error);
+              });
+          }
         })
         .catch(error => {
+          console.log(error, 'error');
+          ToastAndroid.show(error.message, ToastAndroid.SHORT);
           setLoader(false);
-          console.log(error);
         });
     }
   };
@@ -172,6 +213,13 @@ function PaymentMethod({navigation, route}) {
       });
   };
 
+  const getCardDetails = text => {
+    text = text.replace(/ /g, '');
+    // Add a space after every 4 digits
+    text = text.replace(/(\d{4})/g, '$1 ');
+    setCardDetail({...cardDetail, cardNumber: text});
+  };
+
   return (
     <View style={{height: '100%'}}>
       <ScrollView>
@@ -214,7 +262,6 @@ function PaymentMethod({navigation, route}) {
               styleContainer={{
                 marginRight: 10,
                 width: savedCards ? '40%' : '32%',
-
                 padding: 0,
               }}
               onPress={() => setSavedCards(false)}
@@ -262,10 +309,10 @@ function PaymentMethod({navigation, route}) {
               <TextInput
                 placeholder="Enter card number..."
                 keyboardType="number-pad"
-                onChangeText={e =>
-                  setCardDetail({...cardDetail, cardNumber: e})
-                }
+                onChangeText={getCardDetails}
                 placeholderTextColor={Colors.black}
+                value={cardDetail.cardNumber}
+                maxLength={20}
                 style={{
                   width: '100%',
                   borderWidth: 1,
@@ -283,6 +330,7 @@ function PaymentMethod({navigation, route}) {
               </Text>
               <TextInput
                 keyboardType="numeric"
+                maxLength={2}
                 onChangeText={e =>
                   setCardDetail({...cardDetail, expiryMonth: e})
                 }
@@ -305,6 +353,7 @@ function PaymentMethod({navigation, route}) {
               </Text>
               <TextInput
                 keyboardType="numeric"
+                maxLength={2}
                 onChangeText={e =>
                   setCardDetail({...cardDetail, expiryYear: e})
                 }
@@ -326,6 +375,7 @@ function PaymentMethod({navigation, route}) {
               <TextInput
                 placeholder="Enter cvc..."
                 keyboardType="number-pad"
+                maxLength={3}
                 onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
                 placeholderTextColor={Colors.black}
                 style={{

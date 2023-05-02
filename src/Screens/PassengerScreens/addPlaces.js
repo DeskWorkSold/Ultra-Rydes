@@ -32,7 +32,6 @@ function PredefinedPlaces({navigation, route}) {
   const [loading, setLoading] = React.useState(false);
 
   let data = route.params;
-  console.log(data, 'data');
 
   const placeRef = useRef();
 

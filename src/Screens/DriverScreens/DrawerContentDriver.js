@@ -91,7 +91,7 @@ export default function DrawerContentDriver({navigation}) {
               size={25}
               color={Colors.white}
             />
-            <Text style={styles.fieldItemText}>City</Text>
+            <Text style={styles.fieldItemText}>Home</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.fieldItemContainer}>

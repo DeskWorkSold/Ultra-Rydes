@@ -745,7 +745,7 @@ export default function PassengerHomeScreen({navigation}) {
       ToastAndroid.show('Kindly Select car first', ToastAndroid.SHORT);
     }
   };
-    const handlePayPress = async () => {
+  const handlePayPress = async () => {
     setButtonLoader(true);
     let id = auth().currentUser.uid;
     let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
@@ -969,6 +969,8 @@ export default function PassengerHomeScreen({navigation}) {
       //   tip = Number(tip);
       // }
 
+      setButtonLoader(true);
+
       let remainingWallet = Number(rideFare) + Number(tip);
 
       let walletData = {
@@ -989,6 +991,7 @@ export default function PassengerHomeScreen({navigation}) {
           {merge: true},
         )
         .then(() => {
+          setButtonLoader(false);
           setDriverArrive({
             ...driverArrive,
             dropoffLocation: true,
@@ -1004,6 +1007,7 @@ export default function PassengerHomeScreen({navigation}) {
             });
         })
         .catch(error => {
+          setButtonLoader(false);
           ToastAndroid.show(`${error.message}`, ToastAndroid.SHORT);
         });
     }
@@ -1059,6 +1063,8 @@ export default function PassengerHomeScreen({navigation}) {
     if (!feedBack) {
       ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
     } else {
+      setButtonLoader(true);
+
       // let id = auth().currentUser.uid;
       // let totalFare =
       //   data.passengerData && data.passengerData.bidFare
@@ -1145,12 +1151,14 @@ export default function PassengerHomeScreen({navigation}) {
           {merge: true},
         )
         .then(() => {
+          setButtonLoader(false);
           ToastAndroid.show('Thanks for your feedBack', ToastAndroid.SHORT);
           navigation.navigate('AskScreen');
           AsyncStorage.removeItem('passengerBooking');
           AsyncStorage.removeItem('driverArrive');
         })
         .catch(error => {
+          setButtonLoader(false);
           console.log(error, 'error');
         });
     }
@@ -1318,7 +1326,11 @@ export default function PassengerHomeScreen({navigation}) {
                 <Text
                   style={[styles.textStyle, {backgroundColor: Colors.primary}]}
                 >
-                  Confirm
+                  {buttonLoader ? (
+                    <ActivityIndicator size={'large'} color={'black'} />
+                  ) : (
+                    'Confirm'
+                  )}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1326,7 +1338,12 @@ export default function PassengerHomeScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [driverArriveAtdropoffLocation, driverRatingStar, carRatingStar]);
+  }, [
+    driverArriveAtdropoffLocation,
+    driverRatingStar,
+    carRatingStar,
+    buttonLoader,
+  ]);
 
   console.log(bookingData, 'booking');
 
@@ -1387,7 +1404,11 @@ export default function PassengerHomeScreen({navigation}) {
                 <Text
                   style={[styles.textStyle, {backgroundColor: Colors.primary}]}
                 >
-                  Confirm
+                  {buttonLoader ? (
+                    <ActivityIndicator size={'large'} color={'black'} />
+                  ) : (
+                    'Confirm'
+                  )}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1395,7 +1416,7 @@ export default function PassengerHomeScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [showFeedBackModal, feedBack]);
+  }, [showFeedBackModal, feedBack, buttonLoader]);
 
   console.log(driverRatingStar, 'rating');
   console.log(carRatingStar, 'carRating');
@@ -1448,11 +1469,9 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const cancelBookingByPassenger = passengerReasonForCancelRide => {
+    setButtonLoader(true);
     let fare = data.passengerData.bidFare ?? data.passengerData.fare;
-
     let deductedAmount = ((Number(fare) * 5) / 100).toFixed(2);
-
-    console.log(deductedAmount, 'deducted');
 
     let walletData = {
       payment: 0,
@@ -1496,6 +1515,7 @@ export default function PassengerHomeScreen({navigation}) {
                 {merge: true},
               )
               .then(() => {
+                setButtonLoader(false);
                 AsyncStorage.removeItem('passengerBooking');
                 AsyncStorage.removeItem('driverArrive');
                 ToastAndroid.show(
@@ -1505,16 +1525,19 @@ export default function PassengerHomeScreen({navigation}) {
                 navigation.navigate('AskScreen');
               })
               .catch(error => {
+                setButtonLoader(false);
                 ToastAndroid.show(error.message, ToastAndroid.SHORT);
                 console.log(error);
               });
           })
           .catch(error => {
+            setButtonLoader(false);
             ToastAndroid.show(error.message, ToastAndroid.SHORT);
             console.log(error, 'error');
           });
       })
       .catch(error => {
+        setButtonLoader(false);
         ToastAndroid.show(error.message, ToastAndroid.SHORT);
       });
   };
@@ -1723,7 +1746,14 @@ export default function PassengerHomeScreen({navigation}) {
                             {backgroundColor: Colors.primary},
                           ]}
                         >
-                          Cancel Ride
+                          {buttonLoader ? (
+                            <ActivityIndicator
+                              size={'large'}
+                              color={Colors.black}
+                            />
+                          ) : (
+                            'Cancel Ride'
+                          )}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -1735,7 +1765,7 @@ export default function PassengerHomeScreen({navigation}) {
         </View>
       )
     );
-  }, [cancelRide, reasonForCancelRide, input]);
+  }, [cancelRide, reasonForCancelRide, input, buttonLoader]);
 
   return (
     <View style={styles.container}>

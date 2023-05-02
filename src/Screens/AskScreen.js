@@ -312,9 +312,9 @@ export default function AskScreen({navigation, route}) {
       const checkData = firestore()
         .collection('Passengers')
         .doc(CurrentUser.uid)
-        .onSnapshot(documentSnapshot => {
+        .get()
+        .then(documentSnapshot => {
           const checkEmpty = documentSnapshot.data();
-          console.log(checkEmpty, 'empty');
           if (checkEmpty == null) {
             setLoading(false);
             navigation.navigate('PassengerDetailScreen', {
@@ -343,7 +343,8 @@ export default function AskScreen({navigation, route}) {
       const checkData = firestore()
         .collection('Drivers')
         .doc(CurrentUser.uid)
-        .onSnapshot(documentSnapshot => {
+        .get()
+        .then(documentSnapshot => {
           const checkEmpty = documentSnapshot.data();
           if (checkEmpty == null) {
             setLoading(false);

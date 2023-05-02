@@ -501,7 +501,7 @@ export default function DriverDetailScreen({navigation}) {
             console.log('User added!');
           });
         setLoading(false);
-        navigation.navigate('DriverRoutes', {screen: 'DriverVehicleAdd'});
+        navigation.replace('DriverRoutes', {screen: 'DriverVehicleAdd'});
       } catch (err) {
         console.log(err);
       }

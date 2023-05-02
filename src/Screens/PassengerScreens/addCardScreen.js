@@ -15,7 +15,8 @@ import Colors from '../../Constants/Colors';
 import CustomButton from '../../Components/CustomButton';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-import {sexagesimalToDecimal} from 'geolib';
+import axios from 'axios';
+import {BASE_URI} from '../../Constants/Base_uri';
 
 function AddCard({navigation}) {
   const [cardDetail, setCardDetail] = useState({
@@ -58,33 +59,58 @@ function AddCard({navigation}) {
       let id = auth().currentUser.uid;
       let Details = {...cardDetail};
       Details.cardNumber = Details.cardNumber.replace(/ /g, '');
-      let savedCards = {
-        ...Details,
-        default: true,
-        date: new Date(),
-      };
-      firestore()
-        .collection('passengerCards')
-        .doc(id)
-        .set(
-          {
-            savedCards: firestore.FieldValue.arrayUnion(savedCards),
-          },
-          {merge: true},
-        )
-        .then(() => {
-          setLoading(false);
-          ToastAndroid.show(
-            'Card has been successfully added',
-            ToastAndroid.SHORT,
-          );
-          firestore().collection('Passengers').doc(id).update({
-            paymentCardAdd: true,
-          });
+      axios
+        .post(`${BASE_URI}generateToken`, Details)
+        .then(res => {
+          let {data} = res;
+          if (!data.status) {
+            ToastAndroid.show(data.message, ToastAndroid.SHORT);
+            setLoading(false);
+          } else {
+            let savedCards = {
+              ...Details,
+              default: true,
+              token: data.token,
+              date: new Date(),
+            };
+            firestore()
+              .collection('passengerCards')
+              .doc(id)
+              .set(
+                {
+                  savedCards: firestore.FieldValue.arrayUnion(savedCards),
+                },
+                {merge: true},
+              )
+              .then(() => {
+                setLoading(false);
+                ToastAndroid.show(
+                  'Card has been successfully added',
+                  ToastAndroid.SHORT,
+                );
+                firestore()
+                  .collection('Passengers')
+                  .doc(id)
+                  .update({
+                    paymentCardAdd: true,
+                  })
+                  .then(() => {
+                    navigation.replace('PassengerRoutes', {
+                      screen: 'PassengerHomeScreen',
+                    });
+                  });
+              })
+              .catch(error => {
+                setLoading(false);
+
+                console.log(error);
+              });
+          }
         })
         .catch(error => {
+          console.log(error, 'error');
+          ToastAndroid.show(error.message, ToastAndroid.SHORT);
           setLoading(false);
-          console.log(error);
         });
     }
   };
