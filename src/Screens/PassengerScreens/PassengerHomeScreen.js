@@ -209,7 +209,7 @@ export default function PassengerHomeScreen({navigation}) {
                 myDriversData.currentLocation.longitude;
               myDriversData.currentLocation.heading = myDriversData
                 .currentLocation.heading
-                ? myDriversData.currentLocation.heading.toString()
+                ? myDriversData?.currentLocation?.heading?.toString()
                 : '180';
               setSelectedLocation(myDriversData.currentLocation);
             } else if (myData && Array.isArray(myDriversData)) {
@@ -675,7 +675,7 @@ export default function PassengerHomeScreen({navigation}) {
               Tfare = Math.round(myfare + serviceCharges);
             }
 
-            Tfare && setFare(Tfare.toString());
+            Tfare && setFare(Tfare?.toString());
           }
         });
       }
@@ -1549,7 +1549,8 @@ export default function PassengerHomeScreen({navigation}) {
     firestore()
       .collection('Request')
       .doc(id)
-      .onSnapshot(doc => {
+      .get()
+      .then(doc => {
         let data = doc.data();
 
         if (data && data.rideCancelByDriver) {

@@ -27,14 +27,15 @@ export default function AskScreen({navigation, route}) {
   const [activeDriverData, setActiveDriverData] = useState({});
 
   const getDriverData = () => {
+
     let id = auth().currentUser.uid;
 
+    
     firestore()
       .collection('Drivers')
       .doc(id)
       .get()
       .then(doc => {
-        console.log(doc, 'doc');
         if (doc._exists) {
           let data = doc.data();
           setActiveDriverData(data);

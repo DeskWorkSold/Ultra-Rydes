@@ -110,7 +110,7 @@ export default function PassengerFindRide({navigation, route}) {
 
   useEffect(() => {
     let interval = setInterval(() => {
-      if (driverData.length == 0 && request) {
+      if (driverData.length == 0 && request && passengerData.bidFare) {
         setRequest(false);
         setNoDriverData(true);
         navigation.navigate('PassengerHomeScreen');
@@ -352,7 +352,6 @@ export default function PassengerFindRide({navigation, route}) {
             driversRejected &&
             driversRejected.length > 0 &&
             driversRejected.some((e, i) => e.id == myDriverData?.id);
-
           if (!driverRequestedButNotRespond && !flag3) {
             if (
               myDriverData.status == 'online' &&
@@ -421,7 +420,6 @@ export default function PassengerFindRide({navigation, route}) {
             }
           }
         });
-
         myDriversTemp.sort((a, b) => a.distance - b.distance);
         let nearedDrivers = myDriversTemp.slice(0, 5);
         setDriverData(nearedDrivers);
@@ -656,9 +654,8 @@ export default function PassengerFindRide({navigation, route}) {
 
   const rideRequests = ({item, index}) => {
     let data = route.params;
-
     if (data.bidFare) {
-      data.selectedCar[0].carMiles.map((e, i) => {
+      data?.selectedCar[0]?.carMiles?.map((e, i) => {
         if (data.distance >= e.rangeMin && data.distance <= e.rangeMax) {
           let serviceCharges = e.serviceCharge;
           let creditCardFee = (Number(data.fare) * 5) / 100;
@@ -669,27 +666,40 @@ export default function PassengerFindRide({navigation, route}) {
         }
       });
     }
-    let flag = driverNotAvailable.some((e, i) => e == item.id);
+    let flag =
+      driverNotAvailable &&
+      driverNotAvailable.length > 0 &&
+      driverNotAvailable.some((e, i) => e == item.id);
 
-    let dis = getPreciseDistance(
-      {
-        latitude: passengerData?.pickupCords?.latitude,
-        longitude: passengerData?.pickupCords?.longitude,
-      },
-      {
-        latitude: item?.currentLocation?.latitude,
-        longitude: item?.currentLocation?.longitude,
-      },
-    );
+    let mileDistance = '';
 
-    mileDistance = (dis / 1609.34).toFixed(2);
+    if (
+      passengerData &&
+      passengerData.pickupCords &&
+      item &&
+      item.currentLocation
+    ) {
+      let dis = getPreciseDistance(
+        {
+          latitude: passengerData?.pickupCords?.latitude,
+          longitude: passengerData?.pickupCords?.longitude,
+        },
+        {
+          latitude: item?.currentLocation?.latitude,
+          longitude: item?.currentLocation?.longitude,
+        },
+      );
+      mileDistance = (dis / 1609.34)?.toFixed(2);
+    }
     item.distance = mileDistance;
 
     const speed = 10; // meters per second
     item.minutes = Math.round(dis / speed / 60);
 
     let flag3 =
-      driversRejected && driversRejected.some((e, i) => e.id == item.id);
+      driversRejected &&
+      driversRejected.length > 0 &&
+      driversRejected.some((e, i) => e.id == item.id);
 
     return (
       !flag &&
@@ -751,6 +761,8 @@ export default function PassengerFindRide({navigation, route}) {
       )
     );
   };
+
+  console.log(driverData, 'driver');
 
   return (
     <View>

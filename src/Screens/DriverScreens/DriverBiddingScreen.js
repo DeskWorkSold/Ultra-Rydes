@@ -1178,7 +1178,7 @@ export default function DriverBiddingScreen({navigation}) {
     firestore()
       .collection('Request')
       .doc(passengerData.id)
-      .onSnapshot(doc => {
+      .get().then(doc => {
         let data = doc.data();
         if (data && data.rideCancelByPassenger) {
           firestore()
