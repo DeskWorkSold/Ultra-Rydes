@@ -313,7 +313,7 @@ export default function DriverHomeScreen({navigation, route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus && differenceSeconds > 0) {
+              if (!data?.requestStatus) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -962,10 +962,17 @@ export default function DriverHomeScreen({navigation, route}) {
           );
 
           let baseCharge = items.selectedCar[0].carMiles[0].mileCharge;
-          let myDistance = items.distance - 3;
+
+          console.log(baseCharge, 'baseCharge');
+
+          let myDistance = 0;
+
+          if (item.distance > 3) {
+            myDistance = items.distance - 3;
+          }
+
           let milesCharge = myDistance * e.mileCharge;
           let totalCharges = baseCharge + milesCharge;
-
           items.fare = totalCharges.toFixed(2);
           if (item && !item.passengerData) {
             items.bidFare = (
@@ -1007,16 +1014,14 @@ export default function DriverHomeScreen({navigation, route}) {
               borderBottomColor: Colors.secondary,
               alignItems: 'center',
               marginBottom: 10,
-            }}
-          >
+            }}>
             <Text
               style={{
                 fontSize: 22,
                 color: Colors.black,
                 fontWeight: '400',
                 width: '54%',
-              }}
-            >
+              }}>
               Time Remaining:
             </Text>
             <Text
@@ -1025,8 +1030,7 @@ export default function DriverHomeScreen({navigation, route}) {
                 color: Colors.secondary,
                 fontWeight: '400',
                 width: '46%',
-              }}
-            >
+              }}>
               {item?.timeLimit?.toFixed(0)} Seconds
             </Text>
           </View>
@@ -1053,14 +1057,12 @@ export default function DriverHomeScreen({navigation, route}) {
               width: '100%',
               alignItems: 'center',
               padding: 10,
-            }}
-          >
+            }}>
             <Text
               style={[
                 styles.itemTextStyle,
                 {width: '50%', textAlign: 'center'},
-              ]}
-            >
+              ]}>
               Fare:
               <Text style={styles.itemLocStyle}>
                 ${item.passengerData ? item.passengerData.fare : item.fare}
@@ -1070,14 +1072,13 @@ export default function DriverHomeScreen({navigation, route}) {
               style={[
                 styles.itemTextStyle,
                 {width: '50%', textAlign: 'center'},
-              ]}
-            >
+              ]}>
               Distance:
-              <Text style={styles.itemLocStyle}>
-                $
+              <Text style={[styles.itemLocStyle, {fontSize: 18}]}>
                 {item.passengerData
                   ? item.passengerData.distance
-                  : item.distance}
+                  : item.distance}{' '}
+                miles away
               </Text>
             </Text>
           </View>
@@ -1088,15 +1089,13 @@ export default function DriverHomeScreen({navigation, route}) {
               alignItems: 'center',
               width: '100%',
               padding: 10,
-            }}
-          >
+            }}>
             {items && items.bidFare > 0 && (
               <Text
                 style={[
                   styles.itemTextStyle,
                   {width: '50%', textAlign: 'center'},
-                ]}
-              >
+                ]}>
                 Bid Fare:
                 <Text style={styles.itemLocStyle}>${items.bidFare}</Text>
               </Text>
@@ -1105,8 +1104,7 @@ export default function DriverHomeScreen({navigation, route}) {
               style={[
                 styles.itemTextStyle,
                 {width: '50%', textAlign: 'center'},
-              ]}
-            >
+              ]}>
               Minutes:
               <Text style={styles.itemLocStyle}>
                 {items?.passengerData
@@ -1121,8 +1119,7 @@ export default function DriverHomeScreen({navigation, route}) {
               width: '100%',
               justifyContent: 'space-around',
               padding: 5,
-            }}
-          >
+            }}>
             <CustomButton
               onPress={() => AcceptRequest(item)}
               text={'Accept'}
@@ -1204,8 +1201,7 @@ export default function DriverHomeScreen({navigation, route}) {
                 height: '70%',
                 alignItems: 'center',
                 justifyContent: 'center',
-              }}
-            >
+              }}>
               <Text
                 style={{
                   color: 'black',
@@ -1213,8 +1209,7 @@ export default function DriverHomeScreen({navigation, route}) {
                   fontWeight: '700',
                   width: '95%',
                   textAlign: 'center',
-                }}
-              >
+                }}>
                 No Request Wait for passenger Request
               </Text>
             </View>

@@ -98,8 +98,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
               margin: 20,
               borderRadius: 10,
               alignItems: 'center',
-            }}
-          >
+            }}>
             {loader ? (
               <ActivityIndicator size={'large'} color={Colors.secondary} />
             ) : (
@@ -114,8 +113,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                   justifyContent: 'center',
                   flexDirection: 'row',
                   alignItems: 'center',
-                }}
-              >
+                }}>
                 <Text style={styles.text}>
                   {data.driverData.firstName.toUpperCase()}{' '}
                   {data.driverData.lastName.toUpperCase()}
@@ -125,8 +123,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                     marginLeft: 20,
                     flexDirection: 'row',
                     alignItems: 'center',
-                  }}
-                >
+                  }}>
                   <Text style={[styles.text, {fontSize: 20}]}>
                     {data.driverData.rating}
                   </Text>
@@ -152,8 +149,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
               marginTop: 0,
               borderRadius: 10,
               alignItems: 'center',
-            }}
-          >
+            }}>
             {loader ? (
               <ActivityIndicator size={'large'} color={Colors.secondary} />
             ) : (
@@ -167,8 +163,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                }}
-              >
+                }}>
                 <Text style={styles.text}>
                   {data.passengerData.passengerPersonalDetails.firstName.toUpperCase()}{' '}
                   {data.passengerData.passengerPersonalDetails.lastName.toUpperCase()}
@@ -187,8 +182,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
               borderWidth: 2,
               borderColor: Colors.primary,
               height: '58%',
-            }}
-          >
+            }}>
             {data && data.passengerData && (
               <MapView
                 ref={mapRef}
@@ -199,8 +193,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                   latitudeDelta: LATITUDE_DELTA,
                   longitudeDelta: LONGITUDE_DELTA,
                 }}
-                apikey={GoogleMapKey.GOOGLE_MAP_KEY}
-              >
+                apikey={GoogleMapKey.GOOGLE_MAP_KEY}>
                 <Marker
                   coordinate={{
                     latitude: data.passengerData.pickupCords.latitude,
@@ -224,8 +217,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                 backgroundColor: Colors.primary,
                 height: '52%',
                 justifyContent: 'center',
-              }}
-            >
+              }}>
               <View style={{flexDirection: 'row'}}>
                 <Icon name="calendar" size={20} color="black" />
                 <Text style={[styles.text, {marginLeft: 10}]}>
@@ -235,11 +227,10 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                   style={[
                     styles.text,
                     {marginLeft: 10, color: Colors.secondary},
-                  ]}
-                >
-                  {`${data.date
+                  ]}>
+                  {`${data.date.toDate().getHours()}:${data.date
                     .toDate()
-                    .getHours()}:${data.date.toDate().getMinutes()}`}
+                    .getMinutes()}`}
                 </Text>
               </View>
               <View style={{flexDirection: 'row', marginTop: 3}}>

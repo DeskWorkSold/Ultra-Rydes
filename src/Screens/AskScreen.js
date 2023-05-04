@@ -8,7 +8,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ToastAndroid,
+  BackHandler,
+  Linking,
 } from 'react-native';
+import {useLayoutEffect} from 'react';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
 import CustomButton from '../Components/CustomButton';
@@ -17,9 +20,12 @@ import auth, {firebase} from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal} from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
+import { useNavigation } from '@react-navigation/native';
 
-export default function AskScreen({navigation, route}) {
+export default function AskScreen({route}) {
   let email = route.params;
+
+  const navigation = useNavigation()
 
   const [loading, setLoading] = useState();
   const {height} = useWindowDimensions();
@@ -27,10 +33,8 @@ export default function AskScreen({navigation, route}) {
   const [activeDriverData, setActiveDriverData] = useState({});
 
   const getDriverData = () => {
-
     let id = auth().currentUser.uid;
 
-    
     firestore()
       .collection('Drivers')
       .doc(id)
@@ -158,21 +162,18 @@ export default function AskScreen({navigation, route}) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={warningData && warningData.length > 0}
-        >
+          visible={warningData && warningData.length > 0}>
           <View style={styles.centeredView}>
             <View style={[styles.modalView, {height: '60%'}]}>
               <View>
                 <Icon size={80} color="white" name="warning" />
               </View>
               <Text
-                style={[styles.modalText, {fontSize: 24, fontWeight: '900'}]}
-              >
+                style={[styles.modalText, {fontSize: 24, fontWeight: '900'}]}>
                 Warning!
               </Text>
               <Text
-                style={[styles.modalText, {fontSize: 16, fontWeight: '900'}]}
-              >
+                style={[styles.modalText, {fontSize: 16, fontWeight: '900'}]}>
                 Your car has been recently given the lowest rating either your
                 car is dirty or it has got some mechanical issues you are
                 directed to fix it before taking another ride..
@@ -182,11 +183,12 @@ export default function AskScreen({navigation, route}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => hideModal()}
-              >
+                onPress={() => hideModal()}>
                 <Text
-                  style={[styles.textStyle1, {backgroundColor: Colors.primary}]}
-                >
+                  style={[
+                    styles.textStyle1,
+                    {backgroundColor: Colors.primary},
+                  ]}>
                   confirm
                 </Text>
               </TouchableOpacity>
@@ -218,6 +220,21 @@ export default function AskScreen({navigation, route}) {
       console.log(error, 'error');
     }
   };
+
+  // const handleBackPress = () => {
+  //   if (navigation.canGoBack) {
+  //     navigation.goBack();
+  //     return;
+  //   }
+
+  //   // Linking.openURL('home://');
+  //   return true;
+  // };
+
+  // const backHandler = BackHandler.addEventListener(
+  //   'hardwareBackPress',
+  //   handleBackPress,
+  // );
 
   const checkPassengerRequestToDriver = async () => {
     let id = auth().currentUser.uid;
@@ -300,9 +317,11 @@ export default function AskScreen({navigation, route}) {
       });
   };
 
+
+
   useEffect(() => {
     getDriverBookingData();
-    getPassengerBookingData();
+    // getPassengerBookingData();
     checkPassengerRequestToDriver();
     checkDriverRequestToPassenger();
   }, []);
@@ -366,6 +385,36 @@ export default function AskScreen({navigation, route}) {
     }
   };
 
+  const signOutHandler = async () => {
+    await auth()
+      .signOut()
+      .then(() =>
+        navigation.dispatch(StackActions.replace('GetStartedScreen')),
+      ).catch(()=>{
+        navigation.navigate("GetStartedScreen")
+      })
+  };
+
+
+
+
+// useEffect(() => {
+  
+//   const backAction = () => {
+//     return false;
+//   };
+//   const backHandler = BackHandler.addEventListener(
+//     'hardwareBackPress',
+//     backAction,
+//   );
+//   return () => backHandler.remove();
+
+  
+// }, [])
+
+
+
+
   return (
     <View style={styles.container}>
       <CustomHeader
@@ -376,6 +425,21 @@ export default function AskScreen({navigation, route}) {
         }}
         source={require('../Assets/Images/URWhiteLogo.png')}
       />
+      <TouchableOpacity
+        style={{
+          width: 100,
+          padding: 10,
+          position: 'absolute',
+          top: 2,
+          right: 10,
+        }}
+        onPress={() => {
+          signOutHandler();
+        }}>
+        <Text style={{color: Colors.red, fontSize: 18, textAlign: 'center'}}>
+          Log out
+        </Text>
+      </TouchableOpacity>
       <View style={styles.topContainer}>
         <Text style={[styles.textStyle]}>Are You a Driver or a Passenger</Text>
       </View>

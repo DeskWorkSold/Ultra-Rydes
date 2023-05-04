@@ -10,13 +10,19 @@ import {
   ToastAndroid,
   ActivityIndicator,
 } from 'react-native';
+import { StackActions } from '@react-navigation/native';
 import CustomButton from '../Components/CustomButton';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
 import {TextInput} from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
+import { CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
-export default function EmailSignInScreen({navigation}) {
+export default function EmailSignInScreen() {
+
+  const navigation = useNavigation()
+
   const [email, setEmail] = useState();
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState(false);
@@ -37,7 +43,23 @@ export default function EmailSignInScreen({navigation}) {
           setPassword('');
           setLoading(false);
           ToastAndroid.show('Login Successfully', ToastAndroid.SHORT);
-          navigation.navigate('AskScreen', user.email);
+
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'AskScreen',
+                params: {
+                  email: user.email,
+                },
+              },
+            ],
+          });
+
+          // navigation.dispatch(StackActions.replace(0, { screen: 'AskScreen',params :user.email}));
+
+          // navigation.dispatch(StackActions.replace('AskScreen', user.email));
+          // navigation.replace('AskScreen', user.email);
         });
     } catch (err) {
       setLoading(false);

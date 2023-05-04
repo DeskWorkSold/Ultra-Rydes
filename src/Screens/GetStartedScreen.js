@@ -76,7 +76,7 @@ export default function GetStartedScreen({navigation}) {
       ToastAndroid.SHORT,
     );
     setLoading(false);
-    navigation.navigate('AskScreen');
+    navigation.replace('AskScreen');
   };
 
   return (
@@ -90,8 +90,7 @@ export default function GetStartedScreen({navigation}) {
           source={require('../Assets/Images/GetStartedBackground.png')}
           resizeMode="cover"
           style={styles.container}
-          imageStyle={styles.backgroundImage}
-        >
+          imageStyle={styles.backgroundImage}>
           <View style={styles.topContainer}>
             <Image
               style={[styles.Logo, {height: height * 0.15}]}

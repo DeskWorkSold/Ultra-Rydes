@@ -71,6 +71,7 @@ function PassengerRoutes() {
         component={PassengerHomeScreen}
         options={{
           headerShown: false,
+          unmountOnBlur:true
         }}
       />
       <Drawer.Screen

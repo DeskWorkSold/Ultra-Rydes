@@ -1812,7 +1812,7 @@ export default function DriverBiddingScreen({navigation}) {
                       }}
                     >
                       {passengerData.mobileNumber ??
-                        data?.passengerPersonalDetails?.mobileNumber}
+                        passengerData?.passengerPersonalDetails?.mobileNumber}
                     </Text>
                     <View style={{marginRight: 160}}>
                       <Icon name="phone" size={30} color={Colors.secondary} />

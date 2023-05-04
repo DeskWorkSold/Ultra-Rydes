@@ -14,8 +14,12 @@ import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
 import {TextInput} from 'react-native-paper';
 import CustomButton from '../Components/CustomButton';
+import { useNavigation } from '@react-navigation/native';
 
-export default function OtpScreen({navigation, route}) {
+export default function OtpScreen({route}) {
+
+  const navigation = useNavigation()
+
   const {height} = useWindowDimensions();
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
@@ -25,7 +29,15 @@ export default function OtpScreen({navigation, route}) {
     try {
       const response = await confirmation
         .confirm(code)
-        .then(navigation.navigate('AskScreen'));
+        // .then(navigation.navigate('AskScreen'));
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'AskScreen',
+            },
+          ],
+        });
     } catch (error) {
       console.log('Invalid code.' + error);
     }

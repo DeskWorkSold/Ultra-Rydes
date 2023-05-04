@@ -23,6 +23,7 @@ import Icon from 'react-native-vector-icons/AntDesign';
 import {BackHandler} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function PassengerFindRide({navigation, route}) {
   let passengerData = route.params;
   const [driverData, setDriverData] = useState([]);
@@ -49,10 +50,8 @@ export default function PassengerFindRide({navigation, route}) {
     cvc: null,
   });
 
-  const [
-    showPaymentConfirmationModal,
-    setShowPaymentConfirmationModal,
-  ] = useState(false);
+  const [showPaymentConfirmationModal, setShowPaymentConfirmationModal] =
+    useState(false);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -83,7 +82,7 @@ export default function PassengerFindRide({navigation, route}) {
             data.myDriversData.distance = mileDistance;
 
             const speed = 10; // meters per second
-            data.myDriversData.minutes = Math.round(dis / speed / 60);
+            data.myDriversData.minutes = Math.round(mileDistance / speed / 60);
             console.log('hello');
             setDriverData([data.myDriversData]);
           } else if (
@@ -163,6 +162,48 @@ export default function PassengerFindRide({navigation, route}) {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const checkRouteFromCancelRide = () => {
+    let id = auth().currentUser.uid;
+
+    firestore()
+      .collection('Request')
+      .doc(id)
+      .get()
+      .then(doc => {
+        if (doc._exists) {
+          let data = doc.data();
+
+          console.log(data, 'dataa');
+
+          if (data.rideCancelByDriver) {
+            const backAction = () => {
+              Alert.alert(
+                'Hold on!',
+                'You can not go back from here Cancel your request from top right cancel button ',
+                [
+                  {
+                    text: 'Cancel',
+                    onPress: () => null,
+                    style: 'cancel',
+                  },
+                ],
+              );
+              return true;
+            };
+            const backHandler = BackHandler.addEventListener(
+              'hardwareBackPress',
+              backAction,
+            );
+            return () => backHandler.remove();
+          }
+        }
+      });
+  };
+
+  useEffect(() => {
+    checkRouteFromCancelRide();
+  }, [route.params]);
 
   useEffect(() => {
     if (request) {
@@ -425,13 +466,22 @@ export default function PassengerFindRide({navigation, route}) {
         setDriverData(nearedDrivers);
       });
   };
+
+  const backAction = () => {
+    navigation.navigate('AskScreen');
+    return true;
+  };
+
   const deleteBookingData = () => {
     firestore()
       .collection('Request')
       .doc(passengerData.id)
       .delete()
       .then(() => {
-        navigation.navigate('AskScreen');
+        const backHandler = BackHandler.addEventListener(
+          'hardwareBackPress',
+          backAction,
+        );
       })
       .catch(error => {
         console.log(error, 'error');
@@ -445,8 +495,7 @@ export default function PassengerFindRide({navigation, route}) {
             style={styles.cancelTextContainer}
             onPress={() => {
               deleteBookingData();
-            }}
-          >
+            }}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
@@ -672,6 +721,7 @@ export default function PassengerFindRide({navigation, route}) {
       driverNotAvailable.some((e, i) => e == item.id);
 
     let mileDistance = '';
+    let meterDistance = '';
 
     if (
       passengerData &&
@@ -690,11 +740,12 @@ export default function PassengerFindRide({navigation, route}) {
         },
       );
       mileDistance = (dis / 1609.34)?.toFixed(2);
+      meterDistance = dis;
     }
     item.distance = mileDistance;
 
     const speed = 10; // meters per second
-    item.minutes = Math.round(dis / speed / 60);
+    item.minutes = Math.round(meterDistance / speed / 60);
 
     let flag3 =
       driversRejected &&
@@ -762,7 +813,7 @@ export default function PassengerFindRide({navigation, route}) {
     );
   };
 
-  console.log(driverData, 'driver');
+  console.log(driverData, 'DRIVER');
 
   return (
     <View>
@@ -788,8 +839,7 @@ export default function PassengerFindRide({navigation, route}) {
             alignItems: 'center',
             justifyContent: 'center',
             height: '90%',
-          }}
-        >
+          }}>
           <ActivityIndicator color="black" size={100} />
           <Text style={{color: 'black', marginTop: 10}}>
             {' '}
