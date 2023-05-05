@@ -20,12 +20,14 @@ import auth, {firebase} from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal} from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import {useIsFocused} from '@react-navigation/native';
 
 export default function AskScreen({route}) {
   let email = route.params;
+  let isFocused = useIsFocused();
 
-  const navigation = useNavigation()
+  const navigation = useNavigation();
 
   const [loading, setLoading] = useState();
   const {height} = useWindowDimensions();
@@ -50,6 +52,17 @@ export default function AskScreen({route}) {
   useEffect(() => {
     getDriverData();
   }, []);
+
+  const backAction = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+    return true;
+  };
+  const backHandler = BackHandler.addEventListener(
+    'hardwareBackPress',
+    backAction,
+  );
 
   const getDriverBookingData = async () => {
     try {
@@ -316,12 +329,9 @@ export default function AskScreen({route}) {
         });
       });
   };
-
-
-
   useEffect(() => {
     getDriverBookingData();
-    // getPassengerBookingData();
+    getPassengerBookingData();
     checkPassengerRequestToDriver();
     checkDriverRequestToPassenger();
   }, []);
@@ -388,32 +398,24 @@ export default function AskScreen({route}) {
   const signOutHandler = async () => {
     await auth()
       .signOut()
-      .then(() =>
-        navigation.dispatch(StackActions.replace('GetStartedScreen')),
-      ).catch(()=>{
-        navigation.navigate("GetStartedScreen")
-      })
+      .then(() => navigation.dispatch(StackActions.replace('GetStartedScreen')))
+      .catch(() => {
+        navigation.navigate('GetStartedScreen');
+      });
   };
 
+  // useEffect(() => {
 
+  //   const backAction = () => {
+  //     return false;
+  //   };
+  //   const backHandler = BackHandler.addEventListener(
+  //     'hardwareBackPress',
+  //     backAction,
+  //   );
+  //   return () => backHandler.remove();
 
-
-// useEffect(() => {
-  
-//   const backAction = () => {
-//     return false;
-//   };
-//   const backHandler = BackHandler.addEventListener(
-//     'hardwareBackPress',
-//     backAction,
-//   );
-//   return () => backHandler.remove();
-
-  
-// }, [])
-
-
-
+  // }, [])
 
   return (
     <View style={styles.container}>
@@ -436,7 +438,7 @@ export default function AskScreen({route}) {
         onPress={() => {
           signOutHandler();
         }}>
-        <Text style={{color: Colors.red, fontSize: 18, textAlign: 'center'}}>
+        <Text style={{color: Colors.white, fontSize: 18, textAlign: 'center'}}>
           Log out
         </Text>
       </TouchableOpacity>

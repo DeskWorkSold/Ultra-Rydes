@@ -5,7 +5,9 @@ import {
   View,
   TouchableOpacity,
   Modal,
+  ToastAndroid,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
@@ -16,11 +18,10 @@ import COLORS from '../../Constants/Colors';
 import firestore from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/AntDesign';
 export default function SettingsPassenger() {
-  
-
   const [DriverData, setDriverData] = useState({});
+  const [loader, setLoader] = useState(false);
 
-  const navigation = useNavigation()
+  const navigation = useNavigation();
 
   useEffect(() => {
     let id = auth().currentUser.uid;
@@ -36,11 +37,28 @@ export default function SettingsPassenger() {
   }, []);
 
   const signOutHandler = async () => {
+    let id = auth().currentUser.uid;
+    setLoader(true);
     await auth()
       .signOut()
-      .then(() =>
-        navigation.dispatch(StackActions.replace('GetStartedScreen')),
-      );
+      .then(() => {
+        firestore()
+          .collection('Drivers')
+          .doc(id)
+          .update({
+            currentLocation: null,
+            status: 'offline',
+          })
+          .then(() => {
+            setLoader(false);
+            ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
+            navigation.dispatch(StackActions.replace('GetStartedScreen'));
+          })
+          .catch(error => {
+            setLoader(false);
+            ToastAndroid.show('Logout unSuccessfull', ToastAndroid.SHORT);
+          });
+      });
   };
 
   return (
@@ -107,7 +125,7 @@ export default function SettingsPassenger() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.button, {justifyContent: 'flex-start'}]}
-          onPress={signOutHandler}>
+          onPress={!loader && signOutHandler}>
           <MaterialCommunityIcons
             name="logout"
             size={25}
@@ -118,7 +136,11 @@ export default function SettingsPassenger() {
               styles.fieldItemText,
               {color: COLORS.secondary, fontWeight: '600', fontSize: 22},
             ]}>
-            Logout
+            {loader ? (
+              <ActivityIndicator color={Colors.black} size={'large'} />
+            ) : (
+              'Logout'
+            )}
           </Text>
         </TouchableOpacity>
       </View>

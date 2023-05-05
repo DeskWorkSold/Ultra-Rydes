@@ -6,9 +6,12 @@ import {
   FlatList,
   ActivityIndicator,
   ToastAndroid,
+  TouchableOpacity,
   Alert,
 } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
+import {StackActions} from '@react-navigation/native';
+import {AppState} from 'react-native';
 import Colors from '../../Constants/Colors';
 import SwitchSelector from 'react-native-switch-selector';
 import {
@@ -24,11 +27,12 @@ import {useCallback} from 'react';
 import Sound from 'react-native-sound';
 import mytone from '../../Assets/my_sound.mp3';
 import CustomButton from '../../Components/CustomButton';
-
+import {useNavigation} from '@react-navigation/native';
 import {BackHandler} from 'react-native';
 
-export default function DriverHomeScreen({navigation, route}) {
+export default function DriverHomeScreen({route}) {
   let reload = route.params;
+  let navigation = useNavigation();
 
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
@@ -59,6 +63,7 @@ export default function DriverHomeScreen({navigation, route}) {
   const [requestLoader, setRequestLoader] = useState(false);
   const [requestData, setRequestData] = useState({});
   const [acceptRequest, setAcceptRequest] = useState(false);
+  const [loader, setLoader] = useState(false);
 
   Sound.setCategory('Playback');
 
@@ -94,6 +99,178 @@ export default function DriverHomeScreen({navigation, route}) {
       // }
     });
   }, [passengerBookingData, requestLoader]);
+
+  // const HEARTBEAT_INTERVAL = 5000; // 30 seconds
+
+  // let heartbeatTimer = null;
+
+  // // Start the heartbeat timer
+  // function startHeartbeatTimer(driverId) {
+  //   heartbeatTimer = setInterval(() => {
+  //     sendHeartbeat(driverId);
+  //   }, HEARTBEAT_INTERVAL);
+  // }
+
+  // // Stop the heartbeat timer
+  // function stopHeartbeatTimer() {
+  //   if (heartbeatTimer !== null) {
+  //     clearInterval(heartbeatTimer);
+  //     heartbeatTimer = null;
+  //   }
+  // }
+
+  // // Send a heartbeat signal to Firestore
+  // function sendHeartbeat(driverId) {
+  //   firestore()
+  //     .collection('Drivers')
+  //     .doc(driverId)
+  //     .update({
+  //       lastHeartbeat: Date.now(),
+  //     })
+  //     .then(() => {
+  //       console.log('Heartbeat sent');
+  //       getLocationUpdates();
+  //     })
+  //     .catch(error => {
+  //       console.error('Error sending heartbeat:', error);
+  //     });
+  // }
+
+  // // Listen for app state changes
+  // AppState.addEventListener('change', nextAppState => {
+  //   console.log(nextAppState, 'next');
+  //   const currentUser = auth().currentUser;
+  //   if (!currentUser) {
+  //     return;
+  //   }
+
+  //   const driverId = currentUser.uid;
+
+  //   if (nextAppState === 'background') {
+  //     // Stop the heartbeat timer
+  //     stopHeartbeatTimer();
+
+  //     firestore()
+  //       .collection('Drivers')
+  //       .doc(driverId)
+  //       .get()
+  //       .then(driverDoc => {
+  //         if (!driverDoc.exists) {
+  //           return;
+  //         }
+
+  //         const driverData = driverDoc.data();
+  //         if (driverData.status === 'online') {
+  //           firestore()
+  //             .collection('inlinedDriver')
+  //             .doc(driverId)
+  //             .get()
+  //             .then(inlinedDoc => {
+  //               const inlinedData = inlinedDoc.data();
+  //               if (!inlinedData?.inlined) {
+  //                 // Update the driver's status to offline and clear their location
+  //                 removeLocationUpdates();
+  //               }
+  //             })
+  //             .catch(error => {
+  //               console.error('Error getting inlined driver document:', error);
+  //             });
+  //         }
+  //       })
+  //       .catch(error => {
+  //         console.error('Error getting driver document:', error);
+  //       });
+  //   } else if (nextAppState === 'active') {
+  //     // Start the heartbeat timer
+  //     startHeartbeatTimer(driverId);
+  //   }
+  // });
+
+  // useEffect(() => {
+  //   removeLocationUpdates();
+  // }, []);
+
+  AppState.addEventListener('change', nextAppState => {
+    const currentUser = auth().currentUser;
+    if (!currentUser) {
+      return;
+    }
+    const driverId = currentUser.uid;
+    if (nextAppState === 'background' || nextAppState == 'inactive') {
+      firestore()
+        .collection('Drivers')
+        .doc(driverId)
+        .get()
+        .then(driverDoc => {
+          if (!driverDoc.exists) {
+            return;
+          }
+
+          const driverData = driverDoc.data();
+          if (driverData.status === 'online') {
+            firestore()
+              .collection('inlinedDriver')
+              .doc(driverId)
+              .get()
+              .then(inlinedDoc => {
+                const inlinedData = inlinedDoc.data();
+                if (!inlinedData?.inlined) {
+                  // Update the driver's status to offline and clear their location
+                  removeLocationUpdates();
+                }
+              })
+              .catch(error => {
+                console.error('Error getting inlined driver document:', error);
+              });
+          }
+        })
+        .catch(error => {
+          console.error('Error getting driver document:', error);
+        });
+    }
+  });
+  AppState.addEventListener('change', nextAppState => {
+    const currentUser = auth().currentUser;
+    if (!currentUser) {
+      return;
+    }
+    const driverId = currentUser.uid;
+
+    console.log(nextAppState, 'mext appp');
+
+    if (nextAppState === 'active') {
+      firestore()
+        .collection('Drivers')
+        .doc(driverId)
+        .get()
+        .then(driverDoc => {
+          if (!driverDoc.exists) {
+            return;
+          }
+
+          const driverData = driverDoc.data();
+          if (driverData.status === 'offline') {
+            firestore()
+              .collection('inlinedDriver')
+              .doc(driverId)
+              .get()
+              .then(inlinedDoc => {
+                const inlinedData = inlinedDoc.data();
+                if (!inlinedData?.inlined) {
+                  // Update the driver's status to offline and clear their location
+                  getLocationUpdates();
+                }
+              })
+              .catch(error => {
+                console.error('Error getting inlined driver document:', error);
+              });
+          }
+        })
+        .catch(error => {
+          console.error('Error getting driver document:', error);
+        });
+    }
+  });
 
   useEffect(() => {
     if (requestLoader) {
@@ -244,7 +421,7 @@ export default function DriverHomeScreen({navigation, route}) {
         updateOnlineOnFirebase();
       },
       error => {
-        console.log(error);
+        console.log(error, 'erorr');
       },
       {
         enableHighAccuracy: true,
@@ -313,7 +490,7 @@ export default function DriverHomeScreen({navigation, route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus) {
+              if (!data?.requestStatus && differenceSeconds > 0) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -602,7 +779,6 @@ export default function DriverHomeScreen({navigation, route}) {
                   id: driverData.id,
                 })
                 .then(() => {
-                  console.log('Driver has been inlined');
                   navigation.navigate('DriverRoutes', {
                     screen: 'DriverBiddingScreen',
                     params: {
@@ -630,10 +806,6 @@ export default function DriverHomeScreen({navigation, route}) {
         });
     }
   };
-
-  console.log(acceptRequest, 'acceptRequest');
-  console.log(requestLoader, 'locatio');
-  console.log(driverData, 'driver');
 
   useEffect(() => {
     if (requestLoader && driverData && !acceptRequest) {
@@ -927,7 +1099,7 @@ export default function DriverHomeScreen({navigation, route}) {
   const removeLocationUpdates = () => {
     if (watchId !== null) {
       Geolocation.clearWatch(watchId);
-      Geolocation.stopObserving();
+      // Geolocation.stopObserving();
       updateOfflineOnFirebase();
     }
   };
@@ -1143,6 +1315,34 @@ export default function DriverHomeScreen({navigation, route}) {
     [passengerBookingData],
   );
 
+  const signOutHandler = async () => {
+    setLoader(true);
+    let id = auth().currentUser.uid;
+    await auth()
+      .signOut()
+      .then(() => {
+        firestore()
+          .collection('Drivers')
+          .doc(id)
+          .update({
+            currentLocation: null,
+            status: 'offline',
+          })
+          .then(() => {
+            setLoader(false);
+            ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
+            navigation.dispatch(StackActions.replace('GetStartedScreen'));
+          })
+          .catch(error => {
+            setLoader(false);
+            ToastAndroid.show('Logout unSuccessfull', ToastAndroid.SHORT);
+          });
+      })
+      .catch(() => {
+        navigation.navigate('GetStartedScreen');
+      });
+  };
+
   return (
     <>
       {loading || requestLoader ? (
@@ -1160,6 +1360,30 @@ export default function DriverHomeScreen({navigation, route}) {
               }}
               source={require('../../Assets/Images/URWhiteLogo.png')}
             />
+            <TouchableOpacity
+              style={{
+                width: 100,
+                padding: 10,
+                position: 'absolute',
+                top: 2,
+                right: 5,
+              }}
+              onPress={() => {
+                signOutHandler();
+              }}>
+              <Text
+                style={{
+                  color: Colors.white,
+                  fontSize: 18,
+                  textAlign: 'center',
+                }}>
+                {loader ? (
+                  <ActivityIndicator size={'large'} color={Colors.white} />
+                ) : (
+                  'Logout'
+                )}
+              </Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.statusContainer}>
             <SwitchSelector

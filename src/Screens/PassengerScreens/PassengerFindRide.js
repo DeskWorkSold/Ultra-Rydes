@@ -24,8 +24,13 @@ import {BackHandler} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-export default function PassengerFindRide({navigation, route}) {
+import {useNavigation} from '@react-navigation/native';
+import {StackActions} from '@react-navigation/native';
+export default function PassengerFindRide({route}) {
   let passengerData = route.params;
+
+  const navigation = useNavigation();
+
   const [driverData, setDriverData] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState('');
   const [request, setRequest] = useState(false);
@@ -467,25 +472,24 @@ export default function PassengerFindRide({navigation, route}) {
       });
   };
 
-  const backAction = () => {
-    navigation.navigate('AskScreen');
-    return true;
-  };
-
   const deleteBookingData = () => {
+    const backAction = () => {
+      navigation.goBack();
+      return true;
+    };
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
     firestore()
       .collection('Request')
       .doc(passengerData.id)
       .delete()
-      .then(() => {
-        const backHandler = BackHandler.addEventListener(
-          'hardwareBackPress',
-          backAction,
-        );
-      })
+      .then(() => {navigation.navigate("AskScreen")})
       .catch(error => {
         console.log(error, 'error');
       });
+    return () => backHandler.remove();
   };
   useLayoutEffect(() => {
     navigation.setOptions({
