@@ -490,7 +490,7 @@ export default function DriverHomeScreen({route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus) {
+              if (!data?.requestStatus && differenceSeconds > 0) {
                 let dis = getPreciseDistance(
                   {
                     latitude:

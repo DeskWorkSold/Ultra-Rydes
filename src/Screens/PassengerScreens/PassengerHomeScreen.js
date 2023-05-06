@@ -740,8 +740,7 @@ export default function PassengerHomeScreen({navigation}) {
     }
   };
   const handlePayPress = () => {
-
-    console.log("hello")
+    console.log('hello');
 
     setButtonLoader(true);
     let id = auth().currentUser.uid;
@@ -755,14 +754,12 @@ export default function PassengerHomeScreen({navigation}) {
       tip = Number(tip)?.toFixed(2);
     }
 
-
-
     let totalCharges = Number(rideFare);
     totalCharges = totalCharges.toFixed(2);
 
     let myWallet = wallet;
     myWallet = Number(myWallet.toFixed(2));
-  
+
     if (myWallet >= totalCharges) {
       firestore()
         .collection('Request')

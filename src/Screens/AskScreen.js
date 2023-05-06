@@ -387,7 +387,7 @@ export default function AskScreen({route}) {
             navigation.navigate('DriverRoutes', {screen: 'DriverVehicleAdd'});
           } else {
             setLoading(false);
-            navigation.navigate('DriverRoutes', {screen: 'DriverHomeScreen'});
+            navigation.navigate("DriverRideOption");
           }
         });
     } catch (err) {
