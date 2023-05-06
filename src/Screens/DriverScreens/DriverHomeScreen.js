@@ -490,7 +490,7 @@ export default function DriverHomeScreen({route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus && differenceSeconds > 0) {
+              if (!data?.requestStatus) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -1099,7 +1099,7 @@ export default function DriverHomeScreen({route}) {
   const removeLocationUpdates = () => {
     if (watchId !== null) {
       Geolocation.clearWatch(watchId);
-      // Geolocation.stopObserving();
+      Geolocation.stopObserving();
       updateOfflineOnFirebase();
     }
   };

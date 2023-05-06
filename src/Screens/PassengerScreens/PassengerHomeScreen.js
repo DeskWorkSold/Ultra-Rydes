@@ -439,7 +439,13 @@ export default function PassengerHomeScreen({navigation}) {
       .doc('8w6hVPveXKR6kTvYVWwy')
       .onSnapshot(documentSnapshot => {
         const GetUserData = documentSnapshot.data();
-        setDummyDataCat(GetUserData.categories);
+        let carsData = {...GetUserData};
+        carsData = carsData?.categories;
+        let first3Data = carsData.slice(0, 3);
+        let greenCar = carsData.slice(5);
+        let other2Data = carsData.slice(3, 5);
+        let categoriesToShow = [...first3Data, ...greenCar, ...other2Data];
+        setDummyDataCat(categoriesToShow);
       });
   };
   const fetchDrivers = async () => {
@@ -619,7 +625,9 @@ export default function PassengerHomeScreen({navigation}) {
             source={{uri: item.carImage}}
             resizeMode="cover"
           />
-          <Text style={styles.labelTextStyle}>{item.carName}</Text>
+          <Text numberOfLines={2} style={styles.labelTextStyle}>
+            {item.carName}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -731,23 +739,30 @@ export default function PassengerHomeScreen({navigation}) {
       ToastAndroid.show('Kindly Select car first', ToastAndroid.SHORT);
     }
   };
-  const handlePayPress = async () => {
+  const handlePayPress = () => {
+
+    console.log("hello")
+
     setButtonLoader(true);
     let id = auth().currentUser.uid;
     let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
     let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
-    if (tip && tip.includes('%')) {
+    if (tip && tip?.includes('%')) {
       let tipPercent = tip.slice(0, 2);
       tipPercent = Number(tipPercent);
       tip = (Number(rideFare) * tipPercent) / 100;
     } else {
-      tip = Number(tip).toFixed(2);
+      tip = Number(tip)?.toFixed(2);
     }
-    let totalCharges = Number(rideFare) + Number(tip);
-    totalCharges = totalCharges.toFixed(2);
-    let myWallet = wallet;
-    myWallet = myWallet.toFixed(2);
 
+
+
+    let totalCharges = Number(rideFare);
+    totalCharges = totalCharges.toFixed(2);
+
+    let myWallet = wallet;
+    myWallet = Number(myWallet.toFixed(2));
+  
     if (myWallet >= totalCharges) {
       firestore()
         .collection('Request')
@@ -762,6 +777,7 @@ export default function PassengerHomeScreen({navigation}) {
             ...driverArrive,
             pickupLocation: false,
           });
+          AsyncStorage.setItem('driverArrive', 'driverArriveAtPickupLocation');
           setDriverArriveAtPickUpLocation(true);
           ToastAndroid.show(
             'You have succesfully confirm driver request',
@@ -802,7 +818,7 @@ export default function PassengerHomeScreen({navigation}) {
             amount: differenceAmount,
           };
 
-          const timeout = 30000; // 5 seconds
+          const timeout = 10000; // 5 seconds
           let timedOut = false;
 
           // Set a timeout for the API request
@@ -857,6 +873,10 @@ export default function PassengerHomeScreen({navigation}) {
                         ...driverArrive,
                         pickupLocation: false,
                       });
+                      AsyncStorage.setItem(
+                        'driverArrive',
+                        'driverArriveAtPickupLocation',
+                      );
                       setDriverArriveAtPickUpLocation(true);
                       ToastAndroid.show(
                         'You have succesfully confirm driver request',
@@ -940,18 +960,6 @@ export default function PassengerHomeScreen({navigation}) {
 
   const confirmationByPassenger = (rideFare, tip) => {
     if (carRatingStar && driverRatingStar) {
-      // console.log(tip,"tip")
-      // let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
-      // let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
-
-      // if (tip.includes('%')) {
-      //   let tipPercent = tip?.slice(0, 2);
-      //   tipPercent = Number(tipPercent);
-      //   tip = (rideFare * tipPercent) / 100;
-      // } else {
-      //   tip = Number(tip);
-      // }
-
       setButtonLoader(true);
 
       let remainingWallet = Number(rideFare) + Number(tip);
@@ -1043,108 +1051,54 @@ export default function PassengerHomeScreen({navigation}) {
 
   const bookingComplete = () => {
     let id = auth().currentUser.uid;
-    if (!feedBack) {
-      ToastAndroid.show('Kindly give Feedback', ToastAndroid.SHORT);
+
+    setButtonLoader(true);
+
+    let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
+    let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
+
+    if (tip.includes('%')) {
+      let tipPercent = tip.slice(0, 2);
+      tipPercent = Number(tipPercent);
+      tip = (rideFare * tipPercent) / 100;
     } else {
-      setButtonLoader(true);
-
-      // let id = auth().currentUser.uid;
-      // let totalFare =
-      //   data.passengerData && data.passengerData.bidFare
-      //     ? data.passengerData.bidFare
-      //     : data.passengerData.fare;
-      // let remainingWallet = 0 - Number(totalFare) - tipAmount;
-      // let sendWalletData = {
-      //   fare: totalFare,
-      //   wallet: remainingWallet.toFixed(2),
-      //   tip: tipAmount,
-      //   date: new Date(),
-      // };
-      // firestore()
-      //   .collection('wallet')
-      //   .doc(id)
-      //   .set(
-      //     {
-      //       wallet: firestore.FieldValue.arrayUnion(sendWalletData),
-      //     },
-      //     {merge: true},
-      //   )
-      //   .then(() => {
-      //     console.log('wallet successfully updated');
-      //   })
-      //   .catch(error => {
-      //     console.log(error);
-      //   });
-
-      let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
-      let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
-
-      if (tip.includes('%')) {
-        let tipPercent = tip.slice(0, 2);
-        tipPercent = Number(tipPercent);
-        tip = (rideFare * tipPercent) / 100;
-      } else {
-        tip = Number(tip);
-      }
-
-      // let driverWallet = {
-      //   tip: tip,
-      //   fare: 0,
-      //   date: new Date(),
-      //   withdraw: 0,
-      //   remainingWallet: tip,
-      // };
-      // firestore()
-      //   .collection('driverWallet')
-      //   .doc(route.params.driverData.id)
-      //   .set(
-      //     {
-      //       driverWallet: firestore.FieldValue.arrayUnion(driverWallet),
-      //     },
-      //     {merge: true},
-      //   )
-      //   .then(res => {
-      //     console.log('driver Wallet successfully updated');
-      //   })
-      //   .catch(error => {
-      //     console.log(error);
-      //   });
-
-      firestore().collection('Request').doc(id).update({
-        bookingStatus: 'complete',
-      });
-
-      let myData = {
-        booking: 'complete',
-        passengerData: route.params.passengerData,
-        driverData: route.params.driverData,
-        carRating: carRatingStar,
-        driverRating: driverRatingStar,
-        tip: tip,
-        feedBack: feedBack,
-        date: new Date(),
-      };
-      firestore()
-        .collection('Booking')
-        .doc(route.params.passengerData.id)
-        .set(
-          {
-            bookingData: firestore.FieldValue.arrayUnion(myData),
-          },
-          {merge: true},
-        )
-        .then(() => {
-          setButtonLoader(false);
-          ToastAndroid.show('Thanks for your feedBack', ToastAndroid.SHORT);
-          navigation.navigate('AskScreen');
-          AsyncStorage.removeItem('passengerBooking');
-          AsyncStorage.removeItem('driverArrive');
-        })
-        .catch(error => {
-          setButtonLoader(false);
-          console.log(error, 'error');
-        });
+      tip = Number(tip);
     }
+
+    firestore().collection('Request').doc(id).update({
+      bookingStatus: 'complete',
+    });
+
+    let myData = {
+      booking: 'complete',
+      passengerData: route.params.passengerData,
+      driverData: route.params.driverData,
+      carRating: carRatingStar,
+      driverRating: driverRatingStar,
+      tip: tip,
+      feedBack: feedBack,
+      date: new Date(),
+    };
+    firestore()
+      .collection('Booking')
+      .doc(route.params.passengerData.id)
+      .set(
+        {
+          bookingData: firestore.FieldValue.arrayUnion(myData),
+        },
+        {merge: true},
+      )
+      .then(() => {
+        setButtonLoader(false);
+        ToastAndroid.show('your ride has been completed', ToastAndroid.SHORT);
+        navigation.navigate('AskScreen');
+        AsyncStorage.removeItem('passengerBooking');
+        AsyncStorage.removeItem('driverArrive');
+      })
+      .catch(error => {
+        setButtonLoader(false);
+        console.log(error, 'error');
+      });
   };
 
   const dropOffModal = useCallback(() => {
@@ -1728,6 +1682,8 @@ export default function PassengerHomeScreen({navigation}) {
     );
   }, [cancelRide, reasonForCancelRide, input, buttonLoader]);
 
+  console.log(route.params, 'params');
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -1740,7 +1696,14 @@ export default function PassengerHomeScreen({navigation}) {
             <CustomHeader
               iconname={'menu'}
               color={Colors.white}
-              rightButton={selectedDriver ? 'show' : ''}
+              rightButton={
+                driverArriveAtPickUpLocation ||
+                route.params?.driverArriveAtPickupLocation
+                  ? ''
+                  : selectedDriver
+                  ? 'show'
+                  : ''
+              }
               onPress={() => {
                 !selectedDriver && navigation.toggleDrawer();
               }}
@@ -1964,6 +1927,63 @@ export default function PassengerHomeScreen({navigation}) {
                           />{' '}
                         </Text>
                       </TouchableOpacity>
+                      <View>
+                        <Text
+                          style={{
+                            color: Colors.black,
+                            fontWeight: '400',
+                            fontSize: 14,
+                            marginRight: 5,
+                          }}>
+                          Vehicle Name:
+                          <Text
+                            style={{
+                              color: Colors.black,
+                              fontWeight: '500',
+                              fontSize: 15,
+                            }}>
+                            {selectedDriver &&
+                              selectedDriver?.vehicleDetails?.vehicleName}
+                          </Text>
+                        </Text>
+
+                        <Text
+                          style={{
+                            color: Colors.black,
+                            fontWeight: '400',
+                            fontSize: 14,
+                            marginRight: 5,
+                          }}>
+                          Vehicle Model:
+                          <Text
+                            style={{
+                              color: Colors.black,
+                              fontWeight: '500',
+                              fontSize: 15,
+                            }}>
+                            {selectedDriver &&
+                              selectedDriver?.vehicleDetails?.vehicleModel}
+                          </Text>
+                        </Text>
+                        <Text
+                          style={{
+                            color: Colors.black,
+                            fontWeight: '400',
+                            fontSize: 14,
+                            marginRight: 5,
+                          }}>
+                          Vehicle Color:
+                          <Text
+                            style={{
+                              color: Colors.black,
+                              fontWeight: '500',
+                              fontSize: 15,
+                            }}>
+                            {selectedDriver &&
+                              selectedDriver?.vehicleDetails?.vehicleColor}
+                          </Text>
+                        </Text>
+                      </View>
                     </View>
                   )}
                 </View>
@@ -2138,10 +2158,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
   },
   cards: {
-    maxWidth: 80,
+    maxWidth: 100,
     width: 70,
     height: 80,
-    maxHeight: 90,
+    maxHeight: Dimensions.get('window').height / 5,
     borderWidth: 1,
     margin: 5,
     padding: 4,

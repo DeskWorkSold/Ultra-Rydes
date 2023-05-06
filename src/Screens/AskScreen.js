@@ -418,7 +418,7 @@ export default function AskScreen({route}) {
   // }, [])
 
   return (
-    <View style={styles.container}>
+    <View style={{flex: 1, backgroundColor: Colors.white}}>
       <CustomHeader
         iconname={navigation.canGoBack() ? 'chevron-back-circle' : null}
         color={Colors.fontColor}
@@ -438,51 +438,67 @@ export default function AskScreen({route}) {
         onPress={() => {
           signOutHandler();
         }}>
-        <Text style={{color: Colors.white, fontSize: 18, textAlign: 'center'}}>
-          Log out
+        <Text
+          style={{
+            color: Colors.black,
+            fontSize: 18,
+            textAlign: 'center',
+            fontWeight: '800',
+          }}>
+          Logout
         </Text>
       </TouchableOpacity>
-      <View style={styles.topContainer}>
-        <Text style={[styles.textStyle]}>Are You a Driver or a Passenger</Text>
+      <View style={styles.container}>
+        <View style={styles.topContainer}>
+          <Text style={[styles.textStyle]}>
+            Are You a Driver or a Passenger
+          </Text>
+        </View>
+        <View style={styles.midContainer}>
+          <Image
+            style={[styles.img, {height: height * 0.2}]}
+            resizeMode="contain"
+            source={require('../Assets/Images/askImg.png')}
+          />
+        </View>
+        <View style={styles.bottomContainer}>
+          <Text style={styles.textStyle}>Who are You</Text>
+          <CustomButton text="Driver" onPress={driverModeHandler} />
+          <View style={{marginVertical: 10}}></View>
+          <CustomButton
+            text="Passenger"
+            onPress={passengerModeHandler}
+            bgColor
+          />
+        </View>
+        {warningData && warningData.length > 0 && warningModal()}
       </View>
-      <View style={styles.midContainer}>
-        <Image
-          style={[styles.img, {height: height * 0.2}]}
-          resizeMode="contain"
-          source={require('../Assets/Images/askImg.png')}
-        />
-      </View>
-      <View style={styles.bottomContainer}>
-        <Text style={styles.textStyle}>Who are You</Text>
-        <CustomButton text="Driver" onPress={driverModeHandler} />
-        <View style={{marginVertical: 10}}></View>
-        <CustomButton text="Passenger" onPress={passengerModeHandler} bgColor />
-      </View>
-      {warningData && warningData.length > 0 && warningModal()}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   bottomContainer: {
-    flex: 1,
     alignItems: 'center',
+    width: '100%',
   },
   container: {
     flex: 1,
     backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'space-around',
   },
   img: {
     width: '100%',
   },
   midContainer: {
-    flex: 1,
     alignItems: 'center',
+    width: '100%',
   },
   topContainer: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   textStyle: {
     fontSize: 20,

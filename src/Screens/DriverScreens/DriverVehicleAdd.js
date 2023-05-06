@@ -49,6 +49,8 @@ export default function DriverVehicleAdd({navigation}) {
   const [vehicleModel, setVehicleModel] = useState('');
   const [vehicleNumPlate, setVehicleNumPlate] = useState('');
   const [vehicleCategory, setVehicleCategory] = useState('');
+  const [vehicleColor, setVehicleColor] = useState('');
+  const [vehicleColorError, setVehicleColorError] = useState(false);
   const [showDropDown, setShowDropDown] = useState(false);
   //error state
   const [vehicleNameError, setVehicleNameError] = useState(false);
@@ -241,7 +243,8 @@ export default function DriverVehicleAdd({navigation}) {
       vehicleCategory == '' ||
       vehiclePicFront == '' ||
       vehiclePicBack == '' ||
-      vehicleNumPlatePic == ''
+      vehicleNumPlatePic == '' ||
+      vehicleColor == ''
     ) {
       if (vehicleName == '') {
         setToastMsg('Vehicle Name cannot be empty');
@@ -256,6 +259,11 @@ export default function DriverVehicleAdd({navigation}) {
       if (vehicleNumPlate == '') {
         setToastMsg('please enter vehicle number plate');
         setVehicleNumPlateError(true);
+        return false;
+      }
+      if (vehicleColor == '') {
+        setToastMsg('Please enter vehicle color');
+        setVehicleColorError(true);
         return false;
       }
       if (vehicleCategory == '') {
@@ -293,6 +301,7 @@ export default function DriverVehicleAdd({navigation}) {
               vehicleName: vehicleName,
               vehicleModel: vehicleModel,
               vehicleNumPlate: vehicleNumPlate,
+              vehicleColor: vehicleColor,
               vehicleCategory: vehicleCategory,
               vehiclePicFront: vehiclePicFront,
               vehiclePicBack: vehiclePicBack,
@@ -374,6 +383,20 @@ export default function DriverVehicleAdd({navigation}) {
                   activeUnderlineColor={Colors.fontColor}
                   onFocus={() => {
                     setVehicleNumPlateError(false);
+                  }}
+                />
+                <TextInput
+                  style={styles.fieldStyles}
+                  label="Vehicle Color"
+                  value={vehicleColor}
+                  error={vehicleColorError}
+                  onChangeText={setVehicleColor}
+                  selectionColor={Colors.black}
+                  underlineColor={Colors.black}
+                  activeOutlineColor={Colors.fontColor}
+                  activeUnderlineColor={Colors.fontColor}
+                  onFocus={() => {
+                    setVehicleColorError(false);
                   }}
                 />
                 <View style={styles.dropDownContainer}>

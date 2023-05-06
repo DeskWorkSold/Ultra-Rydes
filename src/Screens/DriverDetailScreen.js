@@ -495,7 +495,7 @@ export default function DriverDetailScreen({navigation}) {
             licenseBackImg: licenseBackImg,
             id: CurrentUser.uid,
             date: new Date(),
-            rating: rating,
+            rating: 5,
           })
           .then(() => {
             console.log('User added!');
