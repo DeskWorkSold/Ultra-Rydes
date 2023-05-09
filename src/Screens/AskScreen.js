@@ -305,6 +305,7 @@ export default function AskScreen({route}) {
               'ArrivedAtpickUpLocation',
             );
             let startRide = await AsyncStorage.getItem('startRide');
+
             let endRide = await AsyncStorage.getItem('EndRide');
 
             navigation.navigate('DriverRoutes', {
@@ -329,11 +330,29 @@ export default function AskScreen({route}) {
         });
       });
   };
+
+  const checkOnTheWayDriver = async () => {
+    try {
+      let startRide = await AsyncStorage.getItem('onTheWayRideStart');
+      JSON.parse(startRide);
+      if (startRide && Object.keys(startRide.length > 0)) {
+        navigation.navigate('DriverRoutes', {
+          screen: 'DriverOnTheWayScreen',
+          params: {
+            data: startRide,
+          },
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
   useEffect(() => {
     getDriverBookingData();
     getPassengerBookingData();
     checkPassengerRequestToDriver();
     checkDriverRequestToPassenger();
+    // checkOnTheWayDriver();
   }, []);
 
   const passengerModeHandler = async () => {
@@ -387,7 +406,7 @@ export default function AskScreen({route}) {
             navigation.navigate('DriverRoutes', {screen: 'DriverVehicleAdd'});
           } else {
             setLoading(false);
-            navigation.navigate("DriverRideOption");
+            navigation.navigate('DriverRideOption');
           }
         });
     } catch (err) {

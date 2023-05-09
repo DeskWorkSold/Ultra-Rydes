@@ -23,9 +23,6 @@ function DriverRideOption({navigation}) {
   const routeToOnTheWay = () => {
     navigation.navigate('DriverRoutes', {
       screen: 'DriverOnTheWayScreen',
-      param:{
-        
-      }
     });
   };
   return (

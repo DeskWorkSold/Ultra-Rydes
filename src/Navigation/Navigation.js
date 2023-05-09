@@ -150,7 +150,7 @@ function DriverRoutes() {
       <Drawer.Screen
         name="DriverOnTheWayScreen"
         component={DriverOnTheWay}
-        options={{headerShown: false, unmountOnBlur: true}}
+        options={{headerShown: false}}
       />
       <Drawer.Screen
         name="SettingsDriver"
@@ -247,7 +247,7 @@ export default function Navigation() {
         <Stack.Screen name="GetStartedScreen" component={GetStartedScreen} />
         <Stack.Screen name="EmailSignInScreen" component={EmailSignInScreen} />
         <Stack.Screen name="EmailSignUpScreen" component={EmailSignUpScreen} />
-        <Stack.Screen name="AskScreen" component={AskScreen} />
+        <Stack.Screen name="AskScreen" component={AskScreen} options={{unmountOnBlur:true}} />
         <Stack.Screen
           name="PassengerDetailScreen"
           component={PassengerDetailScreen}

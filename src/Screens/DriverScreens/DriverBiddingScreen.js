@@ -653,7 +653,27 @@ export default function DriverBiddingScreen({navigation}) {
       .update({
         driverArriveAtDropoffLocation: true,
       })
-      .then(() => {
+      .then(async () => {
+        let startRide = await AsyncStorage.getItem('onTheWayRideStart');
+
+        if (startRide) {
+          setButtonLoader(false);
+          setArrivePickupLocation(false);
+          setArriveDropOffLocation(false);
+          setStartRide(false);
+          setSelectedDriver([]);
+          AsyncStorage.removeItem('driverBooking');
+          AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+          AsyncStorage.removeItem('startRide');
+          AsyncStorage.removeItem('EndRide');
+          navigation.navigate('DriverRoutes', {
+            screen: 'DriverOnTheWayScreen',
+            params: {
+              data: startRide,
+            },
+          });
+          return;
+        }
         setButtonLoader(false);
         AsyncStorage.removeItem('driverBooking');
         AsyncStorage.removeItem('ArrivedAtpickUpLocation');

@@ -100,96 +100,6 @@ export default function DriverHomeScreen({route}) {
     });
   }, [passengerBookingData, requestLoader]);
 
-  // const HEARTBEAT_INTERVAL = 5000; // 30 seconds
-
-  // let heartbeatTimer = null;
-
-  // // Start the heartbeat timer
-  // function startHeartbeatTimer(driverId) {
-  //   heartbeatTimer = setInterval(() => {
-  //     sendHeartbeat(driverId);
-  //   }, HEARTBEAT_INTERVAL);
-  // }
-
-  // // Stop the heartbeat timer
-  // function stopHeartbeatTimer() {
-  //   if (heartbeatTimer !== null) {
-  //     clearInterval(heartbeatTimer);
-  //     heartbeatTimer = null;
-  //   }
-  // }
-
-  // // Send a heartbeat signal to Firestore
-  // function sendHeartbeat(driverId) {
-  //   firestore()
-  //     .collection('Drivers')
-  //     .doc(driverId)
-  //     .update({
-  //       lastHeartbeat: Date.now(),
-  //     })
-  //     .then(() => {
-  //       console.log('Heartbeat sent');
-  //       getLocationUpdates();
-  //     })
-  //     .catch(error => {
-  //       console.error('Error sending heartbeat:', error);
-  //     });
-  // }
-
-  // // Listen for app state changes
-  // AppState.addEventListener('change', nextAppState => {
-  //   console.log(nextAppState, 'next');
-  //   const currentUser = auth().currentUser;
-  //   if (!currentUser) {
-  //     return;
-  //   }
-
-  //   const driverId = currentUser.uid;
-
-  //   if (nextAppState === 'background') {
-  //     // Stop the heartbeat timer
-  //     stopHeartbeatTimer();
-
-  //     firestore()
-  //       .collection('Drivers')
-  //       .doc(driverId)
-  //       .get()
-  //       .then(driverDoc => {
-  //         if (!driverDoc.exists) {
-  //           return;
-  //         }
-
-  //         const driverData = driverDoc.data();
-  //         if (driverData.status === 'online') {
-  //           firestore()
-  //             .collection('inlinedDriver')
-  //             .doc(driverId)
-  //             .get()
-  //             .then(inlinedDoc => {
-  //               const inlinedData = inlinedDoc.data();
-  //               if (!inlinedData?.inlined) {
-  //                 // Update the driver's status to offline and clear their location
-  //                 removeLocationUpdates();
-  //               }
-  //             })
-  //             .catch(error => {
-  //               console.error('Error getting inlined driver document:', error);
-  //             });
-  //         }
-  //       })
-  //       .catch(error => {
-  //         console.error('Error getting driver document:', error);
-  //       });
-  //   } else if (nextAppState === 'active') {
-  //     // Start the heartbeat timer
-  //     startHeartbeatTimer(driverId);
-  //   }
-  // });
-
-  // useEffect(() => {
-  //   removeLocationUpdates();
-  // }, []);
-
   AppState.addEventListener('change', nextAppState => {
     const currentUser = auth().currentUser;
     if (!currentUser) {
@@ -227,18 +137,7 @@ export default function DriverHomeScreen({route}) {
         .catch(error => {
           console.error('Error getting driver document:', error);
         });
-    }
-  });
-  AppState.addEventListener('change', nextAppState => {
-    const currentUser = auth().currentUser;
-    if (!currentUser) {
-      return;
-    }
-    const driverId = currentUser.uid;
-
-    console.log(nextAppState, 'mext appp');
-
-    if (nextAppState === 'active') {
+    } else if (nextAppState === 'active') {
       firestore()
         .collection('Drivers')
         .doc(driverId)
@@ -1139,7 +1038,7 @@ export default function DriverHomeScreen({route}) {
 
           let myDistance = 0;
 
-          if (item.distance > 3) {
+          if (items.distance > 3) {
             myDistance = items.distance - 3;
           }
 

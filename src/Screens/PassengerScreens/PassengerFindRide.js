@@ -336,6 +336,7 @@ export default function PassengerFindRide({route}) {
         let myDriversTemp = [];
         querySnapshot.forEach(documentSnapshot => {
           // console.log('User ID: ', documentSnapshot.id, documentSnapshot.data());
+
           const myDriverData = documentSnapshot.data();
 
           let driverRequestedButNotRespond =
@@ -398,7 +399,116 @@ export default function PassengerFindRide({route}) {
             driversRejected &&
             driversRejected.length > 0 &&
             driversRejected.some((e, i) => e.id == myDriverData?.id);
-          if (!driverRequestedButNotRespond && !flag3) {
+
+          if (
+            myDriverData?.onTheWay &&
+            !driverRequestedButNotRespond &&
+            !flag3
+          ) {
+            console.log('jhe;;p');
+
+            let pickupLocationDistance = getPreciseDistance(
+              {
+                latitude: passengerData.pickupCords?.latitude,
+                longitude: passengerData?.pickupCords?.longitude,
+              },
+              {
+                latitude: myDriverData?.currentLocation?.latitude,
+                longitude: myDriverData?.currentLocation?.longitude,
+              },
+            );
+
+            let pickupMileDistance = (pickupLocationDistance / 1609.34).toFixed(
+              2,
+            );
+
+            let passengerPickupAndDriverDropDis = getPreciseDistance(
+              {
+                latitude: passengerData.pickupCords?.latitude,
+                longitude: passengerData?.pickupCords?.longitude,
+              },
+              {
+                latitude:
+                  myDriverData?.dropLocationCords &&
+                  myDriverData?.dropLocationCords?.latitude,
+                longitude: myDriverData?.dropLocationCords?.longitude,
+              },
+            );
+
+            let passengerpickAndDriverDropMileDis = (
+              passengerPickupAndDriverDropDis / 1609.34
+            ).toFixed(2);
+
+            let passengerDropAndDriverDropDis = getPreciseDistance(
+              {
+                latitude: passengerData?.dropLocationCords?.latitude,
+                longitude: passengerData?.dropLocationCords?.longitude,
+              },
+              {
+                latitude:
+                  myDriverData?.dropLocationCords &&
+                  myDriverData?.dropLocationCords?.latitude,
+                longitude: myDriverData?.dropLocationCords?.longitude,
+              },
+            );
+
+            let passengerDropAndDriverDropMileDis = (
+              passengerDropAndDriverDropDis / 1609.34
+            ).toFixed(2);
+            let passengerPickupAndPassengerDropDis = getPreciseDistance(
+              {
+                latitude: passengerData?.pickupCords?.latitude,
+
+                longitude: passengerData?.pickupCords?.longitude,
+              },
+              {
+                latitude: passengerData?.dropLocationCords?.latitude,
+                longitude: passengerData?.dropLocationCords?.longitude,
+              },
+            );
+
+            let passengerPickAndPassengerDropMileDis = (
+              passengerPickupAndPassengerDropDis / 1609.34
+            ).toFixed(2);
+            let driverPickAndDriverDropDis = getPreciseDistance(
+              {
+                latitude: passengerData?.pickupCords?.latitude,
+                longitude: passengerData?.pickupCords?.longitude,
+              },
+              {
+                latitude:
+                  myDriverData.dropLocationCords &&
+                  myDriverData.dropLocationCords?.latitude,
+                longitude: myDriverData.dropLocationCords?.longitude,
+              },
+            );
+
+            let DriverPickAndDriveDropMileDis = (
+              driverPickAndDriverDropDis / 1609.34
+            ).toFixed(2);
+
+            if (
+              Number(pickupMileDistance) <= 5 &&
+              Number(passengerDropAndDriverDropMileDis) <
+                Number(passengerpickAndDriverDropMileDis) &&
+              Number(DriverPickAndDriveDropMileDis) >=
+                Number(passengerPickAndPassengerDropMileDis) &&
+              myDriverData.status == 'online' &&
+              flag &&
+              !isInlined &&
+              !driverRequestedButNotRespond &&
+              !flag2
+            ) {
+              myDriverData.fare = passengerData.fare;
+              myDriversTemp.push(myDriverData);
+            }
+            
+          }
+          if (
+            !driverRequestedButNotRespond &&
+            !flag3 &&
+            !myDriverData?.onTheWay
+          ) {
             if (
               myDriverData.status == 'online' &&
               mileDistance <= 3 &&
@@ -485,7 +595,9 @@ export default function PassengerFindRide({route}) {
       .collection('Request')
       .doc(passengerData.id)
       .delete()
-      .then(() => {navigation.navigate("AskScreen")})
+      .then(() => {
+        navigation.navigate('AskScreen');
+      })
       .catch(error => {
         console.log(error, 'error');
       });
