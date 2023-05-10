@@ -65,6 +65,7 @@ export default function PassengerHomeScreen({navigation}) {
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
   const [wallet, setWallet] = useState(0);
   const [bidFare, setBidFare] = useState(null);
+  const [toll, setToll] = useState(null);
   const [driverArrive, setDriverArrive] = useState({
     pickupLocation: false,
     dropoffLocation: false,
@@ -384,7 +385,6 @@ export default function PassengerHomeScreen({navigation}) {
         setSelectedLocation(data.driverData.currentLocation);
       }
     }
-
     if (data) {
       let myData = JSON.stringify(data);
       AsyncStorage.setItem('passengerBooking', myData);
@@ -740,149 +740,203 @@ export default function PassengerHomeScreen({navigation}) {
     }
   };
   const handlePayPress = () => {
-    console.log('hello');
-
     setButtonLoader(true);
-    let id = auth().currentUser.uid;
-    let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
-    let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
-    if (tip && tip?.includes('%')) {
-      let tipPercent = tip.slice(0, 2);
-      tipPercent = Number(tipPercent);
-      tip = (Number(rideFare) * tipPercent) / 100;
-    } else {
-      tip = Number(tip)?.toFixed(2);
-    }
+    const apiKey = 'LDTjNFPH4pfhF7Q4PQbPHQnJn9RhpLRM';
+    const origin = 'Chicago,IL';
+    const destination = 'Detroit,MI';
+    const apiEndpoint =
+      'https://apis.tollguru.com/toll/v2/origin-destination-waypoints';
+    const vehicleType = '2AxlesAuto';
+    const vehicleNumber = 1;
+    fetch(apiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        from: {
+          address: origin,
+        },
+        to: {
+          address: destination,
+        },
+        vehicleType: vehicleType,
+      }),
+    })
+      .then(response => response.json())
+      .then(res => {
+        let tolls = res?.routes[0]?.tolls;
+        let totalToll =
+          tolls && tolls.length > 0 && tolls.map((e, i) => e.cashCost);
+        let totalTollChargeToPassenger =
+          totalToll && totalToll.length > 0
+            ? totalToll.reduce((previous, current) => {
+                return previous + current;
+              })
+            : 0;
+        let id = auth().currentUser.uid;
 
-    let totalCharges = Number(rideFare);
-    totalCharges = totalCharges.toFixed(2);
+        let stringToll = JSON.stringify(totalTollChargeToPassenger.toString());
+        AsyncStorage.setItem('tollCharges', stringToll);
 
-    let myWallet = wallet;
-    myWallet = Number(myWallet.toFixed(2));
+        let tip =
+          data?.passengerData?.passengerPersonalDetails?.tipOffered ??
+          data.passengerPersonalDetails?.tipOffered;
+        console.log(tip, 'tip');
+        let rideFare =
+          data?.passengerData?.bidFare ?? data?.passengerData?.fare;
+        if (tip && tip?.includes('%')) {
+          let tipPercent = tip.slice(0, 2);
+          tipPercent = Number(tipPercent);
+          tip = (Number(rideFare) * tipPercent) / 100;
+        } else {
+          tip = Number(tip)?.toFixed(2);
+        }
 
-    if (myWallet >= totalCharges) {
-      firestore()
-        .collection('Request')
-        .doc(id)
-        .update({
-          confirmByPassenger: true,
-          tipAmount: tip,
-        })
-        .then(() => {
-          setButtonLoader(false);
-          setDriverArrive({
-            ...driverArrive,
-            pickupLocation: false,
-          });
-          AsyncStorage.setItem('driverArrive', 'driverArriveAtPickupLocation');
-          setDriverArriveAtPickUpLocation(true);
-          ToastAndroid.show(
-            'You have succesfully confirm driver request',
-            ToastAndroid.SHORT,
-          );
-        })
-        .catch(error => {
-          setButtonLoader(false);
-          ToastAndroid.show(error.message, ToastAndroid.SHORT);
-        });
-      return;
-    } else if (myWallet < totalCharges) {
-      let differenceAmount = Number(totalCharges) - Number(myWallet);
+        let totalCharges =
+          Number(rideFare) + Number(tip) + Number(totalTollChargeToPassenger);
+        totalCharges = totalCharges.toFixed(2);
 
-      differenceAmount = Number(differenceAmount).toFixed(2);
+        let myWallet = wallet;
+        myWallet = Number(myWallet.toFixed(2));
 
-      firestore()
-        .collection('passengerCards')
-        .doc(id)
-        .get()
-        .then(doc => {
-          let myData = doc.data();
-
-          let savedCards = myData?.savedCards;
-
-          savedCards =
-            savedCards &&
-            savedCards.length > 0 &&
-            savedCards.filter((e, i) => {
-              return e.default;
+        if (myWallet >= totalCharges) {
+          firestore()
+            .collection('Request')
+            .doc(id)
+            .update({
+              confirmByPassenger: true,
+              tipAmount: tip,
+              tollAmount: totalTollChargeToPassenger,
+            })
+            .then(() => {
+              setButtonLoader(false);
+              setDriverArrive({
+                ...driverArrive,
+                pickupLocation: false,
+              });
+              AsyncStorage.setItem(
+                'driverArrive',
+                'driverArriveAtPickupLocation',
+              );
+              setDriverArriveAtPickUpLocation(true);
+              ToastAndroid.show(
+                'You have succesfully confirm driver request',
+                ToastAndroid.SHORT,
+              );
+            })
+            .catch(error => {
+              setButtonLoader(false);
+              ToastAndroid.show(error.message, ToastAndroid.SHORT);
             });
+          return;
+        } else if (myWallet < totalCharges) {
+          let differenceAmount = Number(totalCharges) - Number(myWallet);
+          differenceAmount = Number(differenceAmount).toFixed(2);
 
-          let customerData = {
-            cardNumber: savedCards[0].cardNumber,
-            expiryMonth: Number(savedCards[0].expiryMonth),
-            expiryYear: Number(savedCards[0].expiryYear),
-            cvc: savedCards[0].cvc,
-            amount: differenceAmount,
-          };
+          firestore()
+            .collection('passengerCards')
+            .doc(id)
+            .get()
+            .then(doc => {
+              let myData = doc.data();
+              let savedCards = myData?.savedCards;
+              savedCards =
+                savedCards &&
+                savedCards.length > 0 &&
+                savedCards.filter((e, i) => {
+                  return e.default;
+                });
 
-          const timeout = 10000; // 5 seconds
-          let timedOut = false;
-
-          // Set a timeout for the API request
-          const timeoutId = setTimeout(() => {
-            timedOut = true;
-            // Show an error message to the user
-            setButtonLoader(false);
-            ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
-            console.log('Request timed out');
-          }, timeout);
-          console.log(timedOut, 'timeoUT');
-          axios
-            .post(`${BASE_URI}dopayment`, customerData)
-            .then(res => {
-              clearTimeout(timeoutId);
-              let data = res.data;
-              console.log(typeof data.amount);
-              let {result, status} = data;
-              if (!status && !timedOut) {
-                setButtonLoader(false);
-                ToastAndroid.show(data.message, ToastAndroid.SHORT);
-                return;
-              }
-              let walletData = {
-                payment: result.amount / 100,
-                fare: 0,
-                wallet: result.amount / 100,
-                date: new Date(),
-                tip: 0,
+              let customerData = {
+                cardNumber: savedCards[0].cardNumber,
+                expiryMonth: Number(savedCards[0].expiryMonth),
+                expiryYear: Number(savedCards[0].expiryYear),
+                cvc: savedCards[0].cvc,
+                amount: differenceAmount,
               };
-              let id = auth().currentUser.uid;
-              firestore()
-                .collection('wallet')
-                .doc(id)
-                .set(
-                  {
-                    wallet: firestore.FieldValue.arrayUnion(walletData),
-                  },
-                  {merge: true},
-                )
-                .then(() => {
+
+              const timeout = 10000; // 5 seconds
+              let timedOut = false;
+
+              // Set a timeout for the API request
+              const timeoutId = setTimeout(() => {
+                timedOut = true;
+                // Show an error message to the user
+                setButtonLoader(false);
+                ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
+                console.log('Request timed out');
+              }, timeout);
+              console.log(timedOut, 'timeoUT');
+              axios
+                .post(`${BASE_URI}dopayment`, customerData)
+                .then(res => {
+                  clearTimeout(timeoutId);
+                  let data = res.data;
+                  console.log(typeof data.amount);
+                  let {result, status} = data;
+                  if (!status && !timedOut) {
+                    setButtonLoader(false);
+                    ToastAndroid.show(data.message, ToastAndroid.SHORT);
+                    return;
+                  }
+                  let walletData = {
+                    payment: result.amount / 100,
+                    fare: 0,
+                    wallet: result.amount / 100,
+                    date: new Date(),
+                    tip: 0,
+                  };
+                  let id = auth().currentUser.uid;
                   firestore()
-                    .collection('Request')
+                    .collection('wallet')
                     .doc(id)
-                    .update({
-                      confirmByPassenger: true,
-                      tipAmount: tip,
-                    })
+                    .set(
+                      {
+                        wallet: firestore.FieldValue.arrayUnion(walletData),
+                      },
+                      {merge: true},
+                    )
                     .then(() => {
-                      setButtonLoader(false);
-                      setDriverArrive({
-                        ...driverArrive,
-                        pickupLocation: false,
-                      });
-                      AsyncStorage.setItem(
-                        'driverArrive',
-                        'driverArriveAtPickupLocation',
-                      );
-                      setDriverArriveAtPickUpLocation(true);
-                      ToastAndroid.show(
-                        'You have succesfully confirm driver request',
-                        ToastAndroid.SHORT,
-                      );
+                      firestore()
+                        .collection('Request')
+                        .doc(id)
+                        .update({
+                          confirmByPassenger: true,
+                          tipAmount: tip,
+                          tollAmount: totalTollChargeToPassenger,
+                        })
+                        .then(() => {
+                          setButtonLoader(false);
+                          setDriverArrive({
+                            ...driverArrive,
+                            pickupLocation: false,
+                          });
+                          AsyncStorage.setItem(
+                            'driverArrive',
+                            'driverArriveAtPickupLocation',
+                          );
+                          setDriverArriveAtPickUpLocation(true);
+                          ToastAndroid.show(
+                            'You have succesfully confirm driver request',
+                            ToastAndroid.SHORT,
+                          );
+                        })
+                        .catch(error => {
+                          if (!timedOut) {
+                            setButtonLoader(false);
+                            ToastAndroid.show(
+                              error.message,
+                              ToastAndroid.SHORT,
+                            );
+                          }
+                        });
                     })
                     .catch(error => {
                       if (!timedOut) {
                         setButtonLoader(false);
+                        console.log(error);
                         ToastAndroid.show(error.message, ToastAndroid.SHORT);
                       }
                     });
@@ -890,20 +944,17 @@ export default function PassengerHomeScreen({navigation}) {
                 .catch(error => {
                   if (!timedOut) {
                     setButtonLoader(false);
-                    console.log(error);
-                    ToastAndroid.show(error.message, ToastAndroid.SHORT);
+                    console.log(error, 'error');
+                    ToastAndroid.show('error occurs', ToastAndroid.SHORT);
                   }
                 });
-            })
-            .catch(error => {
-              if (!timedOut) {
-                setButtonLoader(false);
-                console.log(error, 'error');
-                ToastAndroid.show('error occurs', ToastAndroid.SHORT);
-              }
             });
-        });
-    }
+        }
+      })
+      .catch(error => {
+        setButtonLoader(false);
+        ToastAndroid.show('Network Error', ToastAndroid.SHORT);
+      });
   };
 
   const ArriveModal = useCallback(() => {
@@ -1099,6 +1150,9 @@ export default function PassengerHomeScreen({navigation}) {
   };
 
   const dropOffModal = useCallback(() => {
+    console.log(toll, 'toll');
+
+    let id = auth().currentUser?.uid;
     let tip = data?.passengerData?.passengerPersonalDetails?.tipOffered;
     let rideFare = data?.passengerData?.bidFare ?? data?.passengerData?.fare;
 
@@ -1109,9 +1163,7 @@ export default function PassengerHomeScreen({navigation}) {
     } else {
       tip = Number(tip);
     }
-
-    let totalCharges = (Number(rideFare) + tip).toFixed(2);
-
+    let totalCharges = (Number(rideFare) + tip + toll).toFixed(2);
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -1119,7 +1171,7 @@ export default function PassengerHomeScreen({navigation}) {
           transparent={true}
           visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
           <View style={[styles.centeredView]}>
-            <View style={[styles.modalView, {width: '90%', height: '70%'}]}>
+            <View style={[styles.modalView, {width: '90%', height: '75%'}]}>
               <Text style={[styles.modalText, {fontSize: 26}]}>
                 Congratulations!
               </Text>
@@ -1183,12 +1235,28 @@ export default function PassengerHomeScreen({navigation}) {
                     alignSelf: 'flex-start',
                   },
                 ]}>
+                Your Toll Amount:{' '}
+                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  ${toll && toll?.toFixed(2)}
+                </Text>
+              </Text>
+              <Text
+                style={[
+                  styles.modalText,
+                  {
+                    marginTop: 0,
+                    paddingHorizontal: 2,
+                    marginHorizontal: 5,
+                    fontWeight: '500',
+                    fontSize: 14,
+                    alignSelf: 'flex-start',
+                  },
+                ]}>
                 Total Charges:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   ${totalCharges}
                 </Text>
               </Text>
-
               <Text
                 style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}>
                 Kindly give rating to driver
@@ -1268,8 +1336,6 @@ export default function PassengerHomeScreen({navigation}) {
     buttonLoader,
   ]);
 
-  console.log(bookingData, 'booking');
-
   const FeedBackModal = useCallback(() => {
     return (
       <View style={styles.centeredView}>
@@ -1336,9 +1402,6 @@ export default function PassengerHomeScreen({navigation}) {
       </View>
     );
   }, [showFeedBackModal, feedBack, buttonLoader]);
-
-  console.log(driverRatingStar, 'rating');
-  console.log(carRatingStar, 'carRating');
 
   const getMinutesAndDistance = result => {
     setMinutesAndDistanceDifference({
@@ -1460,8 +1523,6 @@ export default function PassengerHomeScreen({navigation}) {
         ToastAndroid.show(error.message, ToastAndroid.SHORT);
       });
   };
-
-  console.log(routeData, 'ROUTE', 'parmas');
 
   const cancelRideByDriver = () => {
     const id = auth().currentUser.uid;
@@ -1679,7 +1740,18 @@ export default function PassengerHomeScreen({navigation}) {
     );
   }, [cancelRide, reasonForCancelRide, input, buttonLoader]);
 
-  console.log(route.params, 'params');
+  const getTollAmount = () => {
+    let id = auth().currentUser.uid;
+    firestore()
+      .collection('Request')
+      .doc(id)
+      .get()
+      .then(res => {
+        let toll = res.data();
+        toll = toll.tollAmount;
+        setToll(toll);
+      });
+  };
 
   return (
     <View style={styles.container}>
@@ -2092,8 +2164,8 @@ export default function PassengerHomeScreen({navigation}) {
                     />
                   )}
                   {driverArrive && driverArrive.pickupLocation && ArriveModal()}
-                  {driverArriveAtdropoffLocation && dropOffModal()}
-
+                  {driverArriveAtdropoffLocation && getTollAmount()}
+                  {toll && dropOffModal()}
                   {showFeedBackModal && FeedBackModal()}
 
                   {cancelRide && cancelRideModal()}

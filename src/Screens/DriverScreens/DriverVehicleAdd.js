@@ -312,7 +312,7 @@ export default function DriverVehicleAdd({navigation}) {
             console.log('User added!');
           });
         setLoading(false);
-        navigation.replace('DriverRoutes', {screen: 'DriverHomeScreen'});
+        navigation.replace('DriverRideOption');
       } catch (err) {
         console.log(err);
       }

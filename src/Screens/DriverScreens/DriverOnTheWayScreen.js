@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   TouchableOpacityBase,
   BackHandler,
+  AppState,
   Alert,
 } from 'react-native';
 import MapView, {Marker} from 'react-native-maps';
@@ -21,7 +22,10 @@ import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import CustomButton from '../../Components/CustomButton';
 import auth from '@react-native-firebase/auth';
-import {getCurrentLocation} from '../../Helper/HelperFunction';
+import {
+  getCurrentLocation,
+  locationPermission,
+} from '../../Helper/HelperFunction';
 import Geocoder from 'react-native-geocoding';
 import firestore from '@react-native-firebase/firestore';
 import {ActivityIndicator} from 'react-native-paper';
@@ -80,73 +84,96 @@ export default function DriverOnTheWay() {
 
   Sound.setCategory('Playback');
 
-  // AppState.addEventListener('change', nextAppState => {
-  //   const currentUser = auth().currentUser;
-  //   if (!currentUser) {
-  //     return;
-  //   }
-  //   const driverId = currentUser.uid;
-  //   if (nextAppState === 'background' || nextAppState == 'inactive') {
-  //     firestore()
-  //       .collection('Drivers')
-  //       .doc(driverId)
-  //       .get()
-  //       .then(driverDoc => {
-  //         if (!driverDoc.exists) {
-  //           return;
-  //         }
+  AppState.addEventListener('change', nextAppState => {
+    const currentUser = auth().currentUser;
+    if (!currentUser) {
+      return;
+    }
 
-  //         const driverData = driverDoc.data();
-  //         if (driverData.status === 'online') {
-  //           firestore()
-  //             .collection('inlinedDriver')
-  //             .doc(driverId)
-  //             .get()
-  //             .then(inlinedDoc => {
-  //               const inlinedData = inlinedDoc.data();
-  //               if (!inlinedData?.inlined) {
-  //                 removeLocationUpdates();
-  //               }
-  //             })
-  //             .catch(error => {
-  //               console.error('Error getting inlined driver document:', error);
-  //             });
-  //         }
-  //       })
-  //       .catch(error => {
-  //         console.error('Error getting driver document:', error);
-  //       });
-  //   } else if (nextAppState === 'active') {
-  //     firestore()
-  //       .collection('Drivers')
-  //       .doc(driverId)
-  //       .get()
-  //       .then(driverDoc => {
-  //         if (!driverDoc.exists) {
-  //           return;
-  //         }
-  //         const driverData = driverDoc.data();
-  //         if (driverData.status === 'offline') {
-  //           firestore()
-  //             .collection('inlinedDriver')
-  //             .doc(driverId)
-  //             .get()
-  //             .then(inlinedDoc => {
-  //               const inlinedData = inlinedDoc.data();
-  //               if (!inlinedData?.inlined) {
+    
 
-  //               }
-  //             })
-  //             .catch(error => {
-  //               console.error('Error getting inlined driver document:', error);
-  //             });
-  //         }
-  //       })
-  //       .catch(error => {
-  //         console.error('Error getting driver document:', error);
-  //       });
-  //   }
-  // });
+    const driverId = currentUser?.uid;
+    if (nextAppState === 'background' || nextAppState == 'inactive') {
+      firestore()
+        .collection('Drivers')
+        .doc(driverId)
+        .get()
+        .then(driverDoc => {
+
+          
+
+          if (!driverDoc.exists) {
+            return;
+          }
+
+          const driverData = driverDoc.data();
+
+
+          if (driverData?.status === 'online') {
+            firestore()
+              .collection('inlinedDriver')
+              .doc(driverId)
+              .get()
+              .then(inlinedDoc => {
+                const inlinedData = inlinedDoc.data();
+
+                
+
+                if (!inlinedData?.inlined) {
+                  firestore().collection('Drivers').doc(driverId).update({
+                    currentLocation: null,
+                    status: 'offline',
+                    onTheWay: false,
+                  });
+                }
+              })
+              .catch(error => {
+                console.error('Error getting inlined driver document:', error);
+              });
+          }
+        })
+        .catch(error => {
+          console.error('Error getting driver document:', error);
+        });
+    } else if (nextAppState === 'active') {
+      firestore()
+        .collection('Drivers')
+        .doc(driverId)
+        .get()
+        .then(driverDoc => {
+
+
+          if (!driverDoc?.exists) {
+            return;
+          }
+          const driverData = driverDoc.data();
+
+
+          if (driverData.status === 'offline') {
+            firestore()
+              .collection('inlinedDriver')
+              .doc(driverId)
+              .get()
+              .then(inlinedDoc => {
+                const inlinedData = inlinedDoc.data();
+                if (!inlinedData?.inlined) {
+                  firestore().collection('Drivers').doc(driverId).update({
+                    currentLocation: state,
+                    status: 'online',
+                    onTheWay: true,
+                  });
+                }
+              })
+              .catch(error => {
+                console.error('Error getting inlined driver document:', error);
+              });
+          }
+        })
+        .catch(error => {
+          console.error('Error getting driver document:', error);
+        });
+    }
+  });
 
   useEffect(() => {
     // Disable screen timeout when the component mounts
@@ -371,9 +398,16 @@ export default function DriverOnTheWay() {
     data && Object.keys(data).length > 0 && checkRouteData();
   }, [data]);
 
-  const getLocation = () => {
-    let id = auth().currentUser.uid;
+  const getLocation = async () => {
+    const hasLocationPermission = await locationPermission();
 
+    if (!hasLocationPermission) {
+      return;
+    }
+
+
+
+    let id = auth().currentUser.uid;
     getCurrentLocation().then(res => {
       if (startRide) {
         firestore()
@@ -408,6 +442,7 @@ export default function DriverOnTheWay() {
   };
 
   useEffect(() => {
+    getLocation();
     let interval = setInterval(() => {
       getLocation();
     }, 5000);
@@ -844,8 +879,6 @@ export default function DriverOnTheWay() {
   const AcceptRequest = item => {
     const Userid = item?.id ?? item?.passengerData?.id;
 
-    console.log(item, 'item');
-
     firestore()
       .collection('Request')
       .doc(Userid)
@@ -1120,6 +1153,9 @@ export default function DriverOnTheWay() {
       return () => backHandler.remove();
     }
   }, [requestLoader, startRide, data]);
+
+
+
 
   const stopRide = async () => {
     try {
