@@ -24,7 +24,7 @@ import {BackHandler} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {StackActions} from '@react-navigation/native';
 export default function PassengerFindRide({route}) {
   let passengerData = route.params;
@@ -55,8 +55,10 @@ export default function PassengerFindRide({route}) {
     cvc: null,
   });
 
-  const [showPaymentConfirmationModal, setShowPaymentConfirmationModal] =
-    useState(false);
+  const [
+    showPaymentConfirmationModal,
+    setShowPaymentConfirmationModal,
+  ] = useState(false);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -402,11 +404,12 @@ export default function PassengerFindRide({route}) {
 
           if (
             myDriverData?.onTheWay &&
+            myDriverData.status == 'online' &&
+            myDriverData.currentLocation &&
+            myDriverData.dropLocationCords &&
             !driverRequestedButNotRespond &&
             !flag3
           ) {
-            console.log('jhe;;p');
-
             let pickupLocationDistance = getPreciseDistance(
               {
                 latitude: passengerData.pickupCords?.latitude,
@@ -502,7 +505,6 @@ export default function PassengerFindRide({route}) {
               myDriverData.fare = passengerData.fare;
               myDriversTemp.push(myDriverData);
             }
-            
           }
           if (
             !driverRequestedButNotRespond &&
@@ -611,7 +613,8 @@ export default function PassengerFindRide({route}) {
             style={styles.cancelTextContainer}
             onPress={() => {
               deleteBookingData();
-            }}>
+            }}
+          >
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
@@ -728,6 +731,20 @@ export default function PassengerFindRide({route}) {
       return () => clearInterval(interval);
     }
   }, [request, selectedDriver, route.params]);
+
+  useFocusEffect(() => {
+   let interval =  setInterval(() => {
+      if (driverData.length == 0 && !passengerData.bidFare) {
+        ToastAndroid.show(
+          'Drivers are not available right now try after sometime',
+          ToastAndroid.SHORT,
+        );
+        clearInterval(interval)
+        navigation.navigate("PassengerHomeScreen")
+      }
+      return () => clearInterval(interval)
+    }, 30000);
+  }, []);
 
   const rejectOffer = rejectedDriver => {
     if (rejectedDriver && !passengerData.bidFare) {
@@ -929,9 +946,22 @@ export default function PassengerFindRide({route}) {
     );
   };
 
-  console.log(driverData, 'DRIVER');
-
-  return (
+  return driverData.length == 0 && !passengerData.bidFare ? (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '90%',
+      }}
+    >
+      <ActivityIndicator size={100} color={Colors.black} />
+      <Text style={{color: 'black', marginTop: 10}}>
+        {' '}
+        Finding Driver Please wait!{' '}
+      </Text>
+    </View>
+  ) : (
     <View>
       {(driverData && driverData.length > 0 && passengerData.bidFare) ||
       (!request && !loader) ? (
@@ -955,7 +985,8 @@ export default function PassengerFindRide({route}) {
             alignItems: 'center',
             justifyContent: 'center',
             height: '90%',
-          }}>
+          }}
+        >
           <ActivityIndicator color="black" size={100} />
           <Text style={{color: 'black', marginTop: 10}}>
             {' '}

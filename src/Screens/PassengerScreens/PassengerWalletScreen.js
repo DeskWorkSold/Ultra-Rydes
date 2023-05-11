@@ -34,11 +34,9 @@ const CurrentBalanceScreen = ({navigation, route}) => {
   });
 
   let routeData = route.params;
-  console.log(routeData, 'data');
 
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
-    console.log(userId, 'iddddddddd');
 
     const myWallet = await firestore()
       .collection('wallet')
@@ -97,16 +95,15 @@ const CurrentBalanceScreen = ({navigation, route}) => {
     allData &&
       allData.length > 0 &&
       allData.map((e, i) => {
-        console.log(e, 'eee');
         if ((e && e.fare) || e.cancellationCharges) {
           mySpentData.push(
             Number(e?.fare ?? 0) +
               Number(e?.tip ?? 0) +
+              Number(e.toll ?? 0) +
               Number(e?.cancellationCharges ? e.cancellationCharges : 0),
           );
         }
       });
-    console.log(mySpentData, 'spentData');
     let mySpents =
       mySpentData &&
       mySpentData.length > 0 &&
@@ -145,7 +142,7 @@ const CurrentBalanceScreen = ({navigation, route}) => {
       monthlyWalletData.length > 0 &&
       monthlyWalletData.map((e, i) => {
         if (e && e.fare) {
-          mySpentData.push(Number(e.fare) + Number(e.tip));
+          mySpentData.push(Number(e.fare) + Number(e.tip) + Number(e?.toll));
         }
       });
     let mySpents =
@@ -161,7 +158,6 @@ const CurrentBalanceScreen = ({navigation, route}) => {
   useEffect(() => {
     if ((deposit && deposit.total) || spent.total) {
       let currentWalletAmount = Number(deposit.total) - Number(spent.total);
-      console.log(currentWalletAmount, 'current');
       setCurrentWallet(currentWalletAmount.toFixed(2));
     }
   }, [deposit, spent, routeData, allWalletData]);

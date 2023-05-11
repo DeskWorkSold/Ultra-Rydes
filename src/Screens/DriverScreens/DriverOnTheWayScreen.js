@@ -74,12 +74,14 @@ export default function DriverOnTheWay() {
   const {pickupCords, dropLocationCords} = location;
 
   const [myDriverData, setMyDriverData] = useState({});
-  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
-    useState({
-      minutes: '',
-      distance: '',
-      details: '',
-    });
+  const [
+    minutesAndDistanceDifference,
+    setMinutesAndDistanceDifference,
+  ] = useState({
+    minutes: '',
+    distance: '',
+    details: '',
+  });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
 
   Sound.setCategory('Playback');
@@ -90,8 +92,6 @@ export default function DriverOnTheWay() {
       return;
     }
 
-    
-
     const driverId = currentUser?.uid;
     if (nextAppState === 'background' || nextAppState == 'inactive') {
       firestore()
@@ -99,15 +99,11 @@ export default function DriverOnTheWay() {
         .doc(driverId)
         .get()
         .then(driverDoc => {
-
-          
-
           if (!driverDoc.exists) {
             return;
           }
 
           const driverData = driverDoc.data();
-
 
           if (driverData?.status === 'online') {
             firestore()
@@ -117,13 +113,10 @@ export default function DriverOnTheWay() {
               .then(inlinedDoc => {
                 const inlinedData = inlinedDoc.data();
 
-                
-
                 if (!inlinedData?.inlined) {
                   firestore().collection('Drivers').doc(driverId).update({
                     currentLocation: null,
                     status: 'offline',
-                    onTheWay: false,
                   });
                 }
               })
@@ -141,13 +134,10 @@ export default function DriverOnTheWay() {
         .doc(driverId)
         .get()
         .then(driverDoc => {
-
-
           if (!driverDoc?.exists) {
             return;
           }
           const driverData = driverDoc.data();
-
 
           if (driverData.status === 'offline') {
             firestore()
@@ -160,7 +150,6 @@ export default function DriverOnTheWay() {
                   firestore().collection('Drivers').doc(driverId).update({
                     currentLocation: state,
                     status: 'online',
-                    onTheWay: true,
                   });
                 }
               })
@@ -405,8 +394,6 @@ export default function DriverOnTheWay() {
       return;
     }
 
-
-
     let id = auth().currentUser.uid;
     getCurrentLocation().then(res => {
       if (startRide) {
@@ -580,7 +567,7 @@ export default function DriverOnTheWay() {
           let differenceSeconds = requestRespondSeconds - nowSeconds;
           data.timeLimit = differenceSeconds;
 
-          if (data && !data?.requestStatus) {
+          if (data && !data?.requestStatus && differenceSeconds > 0) {
             let pickupLocationDistance = getPreciseDistance(
               {
                 latitude:
@@ -598,7 +585,6 @@ export default function DriverOnTheWay() {
                 longitude: myDriverData?.currentLocation?.longitude,
               },
             );
-
             let pickupMileDistance = (pickupLocationDistance / 1609.34).toFixed(
               2,
             );
@@ -1154,9 +1140,6 @@ export default function DriverOnTheWay() {
     }
   }, [requestLoader, startRide, data]);
 
-
-
-
   const stopRide = async () => {
     try {
       firestore()
@@ -1211,14 +1194,16 @@ export default function DriverOnTheWay() {
             }}
             onPress={() => {
               stopRide();
-            }}>
+            }}
+          >
             <Text
               style={{
                 color: Colors.red,
                 fontSize: 18,
                 textAlign: 'center',
                 fontWeight: '800',
-              }}>
+              }}
+            >
               Stop Ride
             </Text>
           </TouchableOpacity>
@@ -1234,7 +1219,8 @@ export default function DriverOnTheWay() {
               ...state,
               latitudeDelta: 0.9,
               longitudeDelta: 0.09,
-            }}>
+            }}
+          >
             {state && state.latitude && state.longitude && (
               <Marker
                 coordinate={{
@@ -1243,7 +1229,8 @@ export default function DriverOnTheWay() {
                 }}
                 title="Your Location"
                 description={minutesAndDistanceDifference.details.start_address}
-                pinColor="blue">
+                pinColor="blue"
+              >
                 <Image
                   source={require('../../Assets/Images/mapCar.png')}
                   style={{
@@ -1323,7 +1310,8 @@ export default function DriverOnTheWay() {
           <KeyboardAvoidingView>
             <ScrollView
               nestedScrollEnabled={true}
-              keyboardShouldPersistTaps="handled">
+              keyboardShouldPersistTaps="handled"
+            >
               <KeyboardAvoidingView>
                 <AddressPickup
                   placeholderText={'Enter Destination Location'}
@@ -1406,14 +1394,16 @@ export default function DriverOnTheWay() {
                       borderBottomColor: Colors.secondary,
                       alignItems: 'center',
                       marginBottom: 10,
-                    }}>
+                    }}
+                  >
                     <Text
                       style={{
                         fontSize: 22,
                         color: Colors.black,
                         fontWeight: '400',
                         width: '54%',
-                      }}>
+                      }}
+                    >
                       Time Remaining:
                     </Text>
                     <Text
@@ -1422,7 +1412,8 @@ export default function DriverOnTheWay() {
                         color: Colors.secondary,
                         fontWeight: '400',
                         width: '46%',
-                      }}>
+                      }}
+                    >
                       {item?.timeLimit?.toFixed(0)} Seconds
                     </Text>
                   </View>
@@ -1449,12 +1440,14 @@ export default function DriverOnTheWay() {
                       width: '100%',
                       alignItems: 'center',
                       padding: 10,
-                    }}>
+                    }}
+                  >
                     <Text
                       style={[
                         styles.itemTextStyle,
                         {width: '50%', textAlign: 'center'},
-                      ]}>
+                      ]}
+                    >
                       Fare:
                       <Text style={styles.itemLocStyle}>
                         $
@@ -1467,7 +1460,8 @@ export default function DriverOnTheWay() {
                       style={[
                         styles.itemTextStyle,
                         {width: '50%', textAlign: 'center'},
-                      ]}>
+                      ]}
+                    >
                       Distance:
                       <Text style={[styles.itemLocStyle, {fontSize: 18}]}>
                         {item.passengerData
@@ -1484,13 +1478,15 @@ export default function DriverOnTheWay() {
                       alignItems: 'center',
                       width: '100%',
                       padding: 10,
-                    }}>
+                    }}
+                  >
                     {items && items.bidFare > 0 && (
                       <Text
                         style={[
                           styles.itemTextStyle,
                           {width: '50%', textAlign: 'center'},
-                        ]}>
+                        ]}
+                      >
                         Bid Fare:
                         <Text style={styles.itemLocStyle}>
                           ${items.bidFare}
@@ -1501,7 +1497,8 @@ export default function DriverOnTheWay() {
                       style={[
                         styles.itemTextStyle,
                         {width: '50%', textAlign: 'center'},
-                      ]}>
+                      ]}
+                    >
                       Minutes:
                       <Text style={styles.itemLocStyle}>
                         {items?.passengerData
@@ -1516,7 +1513,8 @@ export default function DriverOnTheWay() {
                       width: '100%',
                       justifyContent: 'space-around',
                       padding: 5,
-                    }}>
+                    }}
+                  >
                     <CustomButton
                       onPress={() => AcceptRequest(item)}
                       text={'Accept'}

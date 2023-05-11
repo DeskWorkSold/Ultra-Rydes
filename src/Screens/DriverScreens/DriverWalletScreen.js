@@ -148,14 +148,16 @@ const CurrentBalanceScreen = ({navigation}) => {
     allData &&
       allData.length > 0 &&
       allData.map((e, i) => {
-        console.log(e, 'eee');
-        if ((e && e.fare) || (e && e.tip)) {
+        if ((e && e.fare) || (e && e.tip) || (e && e.toll)) {
           let tip = 0;
+          let toll = 0;
           if (e?.tip) {
             tip = e.tip;
           }
-
-          mySpentData.push(Number(e.fare) + Number(tip));
+          if (e?.toll) {
+            toll = e.toll;
+          }
+          mySpentData.push(Number(e.fare) + Number(tip) + Number(toll));
         }
       });
     let mySpents =
@@ -208,12 +210,16 @@ const CurrentBalanceScreen = ({navigation}) => {
       monthlyWalletData.map((e, i) => {
         if (e && e.fare) {
           let tip = 0;
+          let toll = 0;
 
           if (e?.tip) {
             tip = e.tip;
           }
+          if (e?.toll) {
+            toll = e.toll;
+          }
 
-          mySpentData.push(Number(e.fare) + Number(tip));
+          mySpentData.push(Number(e.fare) + Number(tip) + Number(toll));
         }
       });
     let mySpents =
@@ -228,7 +234,6 @@ const CurrentBalanceScreen = ({navigation}) => {
 
   useEffect(() => {
     if ((earn && earn.total) || withdraw.total) {
-      console.log(earn.total, 'total');
       let currentWalletAmount = earn.total - withdraw.total;
       currentWalletAmount && setCurrentWallet(currentWalletAmount.toFixed(2));
     }
@@ -263,7 +268,6 @@ const CurrentBalanceScreen = ({navigation}) => {
             setOpenCreateAccountModal(true);
           })
           .catch(error => {
-            console.log(error);
             setLoading(false);
           })
           .catch(error => {
@@ -338,16 +342,13 @@ const CurrentBalanceScreen = ({navigation}) => {
           navigation.navigate('AskScreen');
         })
         .catch(error => {
-          console.log(error);
           setLoading(false);
         })
         .catch(error => {
           setLoading(false);
-          console.log(error);
         });
     }
   };
-
   const getStripeAccountDetailsFromDriver = () => {
     let id = auth().currentUser.uid;
     setModalLoading(true);

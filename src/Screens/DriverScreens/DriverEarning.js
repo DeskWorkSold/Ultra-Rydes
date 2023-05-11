@@ -16,7 +16,7 @@ function DriverEarningScreen({route, navigation}) {
   const renderDepositData = ({item, index}) => {
     let date = item.date.toDate().toString().slice(0, 15);
 
-    if ((item && item.fare) || item.tip) {
+    if ((item && item.fare) || item.tip || item?.toll) {
       return (
         <View>
           <TouchableOpacity
@@ -50,6 +50,18 @@ function DriverEarningScreen({route, navigation}) {
               <Text style={{color: Colors.secondary}}>
                 {' '}
                 ${item?.tip ? item?.tip : 0}{' '}
+              </Text>
+            </Text>
+            <Text
+              style={[
+                styles.text,
+                {paddingTop: 5, marginBottom: 5, fontSize: 14},
+              ]}
+            >
+              Toll:
+              <Text style={{color: Colors.secondary}}>
+                {' '}
+                ${item?.toll ? item?.toll : 0}{' '}
               </Text>
             </Text>
           </TouchableOpacity>

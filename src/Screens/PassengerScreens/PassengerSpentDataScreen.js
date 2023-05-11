@@ -52,6 +52,18 @@ function DepositDataScreen({route, navigation}) {
                 ${item.tip ? Number(item?.tip).toFixed(2) : 0}
               </Text>
             </Text>
+            <Text
+              style={[
+                styles.text,
+                {paddingTop: 5, marginBottom: 5, fontSize: 14},
+              ]}
+            >
+              Toll:{' '}
+              <Text style={{color: Colors.secondary}}>
+                {' '}
+                ${item.toll ? Number(item?.toll).toFixed(2) : 0}
+              </Text>
+            </Text>
             {item.cancellationCharges && (
               <Text
                 style={[
