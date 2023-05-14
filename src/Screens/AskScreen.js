@@ -128,45 +128,49 @@ export default function AskScreen({route}) {
   }, []);
 
   const hideModal = () => {
-    let uid = auth().currentUser.uid;
+    let currentUser = auth().currentUser;
 
-    firestore()
-      .collection('warning')
-      .doc(uid)
-      .get()
-      .then(doc => {
-        if (doc.exists) {
-          let data = doc.data().warningToDriver;
-          if (data && data.length > 0) {
-            data = data.filter((e, i) => {
-              return e.acknowledged;
-            });
+    if (currentUser) {
+      let uid = currentUser.uid;
 
-            let myData = warningData[0];
-            myData.acknowledged = true;
-
-            let mergeData = [...data, myData];
-
-            firestore()
-              .collection('warning')
-              .doc(uid)
-              .set({warningToDriver: mergeData})
-              .then(() => {
-                setWarningData([]);
-                ToastAndroid.show(
-                  'You have successfully acknowledge this warning',
-                  ToastAndroid.SHORT,
-                );
-              })
-              .catch(error => {
-                console.log(error);
+      firestore()
+        .collection('warning')
+        .doc(uid)
+        .get()
+        .then(doc => {
+          if (doc.exists) {
+            let data = doc.data().warningToDriver;
+            if (data && data.length > 0) {
+              data = data.filter((e, i) => {
+                return e.acknowledged;
               });
+
+              let myData = warningData[0];
+              myData.acknowledged = true;
+
+              let mergeData = [...data, myData];
+
+              firestore()
+                .collection('warning')
+                .doc(uid)
+                .set({warningToDriver: mergeData})
+                .then(() => {
+                  setWarningData([]);
+                  ToastAndroid.show(
+                    'You have successfully acknowledge this warning',
+                    ToastAndroid.SHORT,
+                  );
+                })
+                .catch(error => {
+                  console.log(error);
+                });
+            }
           }
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      });
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    }
   };
 
   let warningModal = useCallback(() => {
@@ -352,7 +356,7 @@ export default function AskScreen({route}) {
     getPassengerBookingData();
     checkPassengerRequestToDriver();
     checkDriverRequestToPassenger();
-    // checkOnTheWayDriver();
+    checkOnTheWayDriver();
   }, []);
 
   const passengerModeHandler = async () => {

@@ -29,7 +29,7 @@ import mytone from '../../Assets/my_sound.mp3';
 import CustomButton from '../../Components/CustomButton';
 import {useNavigation} from '@react-navigation/native';
 import {BackHandler} from 'react-native';
-import { diff } from 'react-native-reanimated';
+import {diff} from 'react-native-reanimated';
 
 export default function DriverHomeScreen({route}) {
   let reload = route.params;
@@ -390,7 +390,7 @@ export default function DriverHomeScreen({route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus && differenceSeconds > 0)  {
+              if (!data?.requestStatus && differenceSeconds > 0) {
                 let dis = getPreciseDistance(
                   {
                     latitude:

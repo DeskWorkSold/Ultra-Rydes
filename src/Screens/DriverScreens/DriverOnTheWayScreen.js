@@ -16,6 +16,7 @@ import {
   Alert,
 } from 'react-native';
 import MapView, {Marker} from 'react-native-maps';
+import moment from 'moment-timezone';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Colors from '../../Constants/Colors';
@@ -54,6 +55,7 @@ export default function DriverOnTheWay() {
   const LATITUDE_DELTA = 0.04;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
   const [state, setState] = useState({});
+  const [myTimeZone, setTimeZone] = useState('');
   const [passengersData, setPassengersData] = useState([]);
   const [rejectLoader, setRejectLoader] = useState(false);
   const [ding, setDing] = useState({});
@@ -61,7 +63,6 @@ export default function DriverOnTheWay() {
   const [requestIds, setRequestIds] = useState([]);
   const [acceptRequest, setAcceptRequest] = useState(false);
   const [requestData, setRequestData] = useState([]);
-
   const [location, setLocation] = useState({
     pickupCords: state,
     dropLocationCords: {
@@ -69,19 +70,16 @@ export default function DriverOnTheWay() {
       longitude: null,
     },
   });
-
   const [startRide, setStartRide] = useState(false);
   const {pickupCords, dropLocationCords} = location;
 
   const [myDriverData, setMyDriverData] = useState({});
-  const [
-    minutesAndDistanceDifference,
-    setMinutesAndDistanceDifference,
-  ] = useState({
-    minutes: '',
-    distance: '',
-    details: '',
-  });
+  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
+    useState({
+      minutes: '',
+      distance: '',
+      details: '',
+    });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
 
   Sound.setCategory('Playback');
@@ -163,6 +161,25 @@ export default function DriverOnTheWay() {
         });
     }
   });
+
+  const getTimeZone = async () => {
+    if (state.latitude && state.longitude) {
+      let {latitude, longitude} = state;
+      const timestamp = Math.floor(Date.now() / 1000);
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/timezone/json?location=${latitude},${longitude}&timestamp=${timestamp}&key=${GoogleMapKey.GOOGLE_MAP_KEY}`,
+      );
+      // parse the response as JSON
+      const data = await response.json();
+      // extract the state or province from the response
+      const timeZone = data.timeZoneId;
+      setTimeZone(timeZone);
+    }
+  };
+
+  useEffect(() => {
+    getTimeZone();
+  }, [state]);
 
   useEffect(() => {
     // Disable screen timeout when the component mounts
@@ -427,12 +444,11 @@ export default function DriverOnTheWay() {
       }
     });
   };
-
   useEffect(() => {
     getLocation();
     let interval = setInterval(() => {
       getLocation();
-    }, 5000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [startRide]);
 
@@ -556,18 +572,26 @@ export default function DriverOnTheWay() {
         querySnapshot?.forEach(documentSnapshot => {
           let data = documentSnapshot?.data();
 
-          //driver current location and passenger current location should be within 5miles
-
+          const deviceTime = moment(); // get current time in device's time zone
+          const convertedTime = myTimeZone && moment.tz(myTimeZone);
+          const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
+          const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
           let date = data?.requestDate?.toDate();
+
           let time = date?.getTime();
-          let nowTime = new Date().getTime();
+          let nowTime = dateObj.getTime();
           let requestSeconds = time / 1000;
           let nowSeconds = nowTime / 1000;
           let requestRespondSeconds = requestSeconds + 32;
           let differenceSeconds = requestRespondSeconds - nowSeconds;
           data.timeLimit = differenceSeconds;
 
-          if (data && !data?.requestStatus && differenceSeconds > 0) {
+          if (
+            data &&
+            !data?.requestStatus &&
+            differenceSeconds > 0 &&
+            startRide
+          ) {
             let pickupLocationDistance = getPreciseDistance(
               {
                 latitude:
@@ -677,12 +701,18 @@ export default function DriverOnTheWay() {
               driverPickAndDriverDropDis / 1609.34
             ).toFixed(2);
 
+            let remainingDis =
+              DriverPickAndDriveDropMileDis -
+              passengerPickAndPassengerDropMileDis;
+            remainingDis = remainingDis + 2;
+
             if (
               Number(pickupMileDistance) <= 5 &&
               Number(passengerDropAndDriverDropMileDis) <
                 Number(passengerpickAndDriverDropMileDis) &&
               Number(DriverPickAndDriveDropMileDis) >=
-                Number(passengerPickAndPassengerDropMileDis)
+                Number(passengerPickAndPassengerDropMileDis) &&
+              Number(passengerDropAndDriverDropMileDis) < remainingDis
             ) {
               if (data) {
                 let matchUid = false;
@@ -1156,6 +1186,7 @@ export default function DriverOnTheWay() {
           data = [];
           route.params = [];
           setStartRide(false);
+          setPassengersData([]);
           ToastAndroid.show('Your ride has been stopped', ToastAndroid.SHORT);
         })
         .catch(error => {
@@ -1194,16 +1225,14 @@ export default function DriverOnTheWay() {
             }}
             onPress={() => {
               stopRide();
-            }}
-          >
+            }}>
             <Text
               style={{
                 color: Colors.red,
                 fontSize: 18,
                 textAlign: 'center',
                 fontWeight: '800',
-              }}
-            >
+              }}>
               Stop Ride
             </Text>
           </TouchableOpacity>
@@ -1219,8 +1248,7 @@ export default function DriverOnTheWay() {
               ...state,
               latitudeDelta: 0.9,
               longitudeDelta: 0.09,
-            }}
-          >
+            }}>
             {state && state.latitude && state.longitude && (
               <Marker
                 coordinate={{
@@ -1229,8 +1257,7 @@ export default function DriverOnTheWay() {
                 }}
                 title="Your Location"
                 description={minutesAndDistanceDifference.details.start_address}
-                pinColor="blue"
-              >
+                pinColor="blue">
                 <Image
                   source={require('../../Assets/Images/mapCar.png')}
                   style={{
@@ -1310,8 +1337,7 @@ export default function DriverOnTheWay() {
           <KeyboardAvoidingView>
             <ScrollView
               nestedScrollEnabled={true}
-              keyboardShouldPersistTaps="handled"
-            >
+              keyboardShouldPersistTaps="handled">
               <KeyboardAvoidingView>
                 <AddressPickup
                   placeholderText={'Enter Destination Location'}
@@ -1363,6 +1389,8 @@ export default function DriverOnTheWay() {
                 }
               });
 
+              item.timeLimit = item.timeLimit - 2;
+
               return (
                 <View
                   style={styles.listItemContainer}
@@ -1394,16 +1422,14 @@ export default function DriverOnTheWay() {
                       borderBottomColor: Colors.secondary,
                       alignItems: 'center',
                       marginBottom: 10,
-                    }}
-                  >
+                    }}>
                     <Text
                       style={{
                         fontSize: 22,
                         color: Colors.black,
                         fontWeight: '400',
                         width: '54%',
-                      }}
-                    >
+                      }}>
                       Time Remaining:
                     </Text>
                     <Text
@@ -1412,8 +1438,7 @@ export default function DriverOnTheWay() {
                         color: Colors.secondary,
                         fontWeight: '400',
                         width: '46%',
-                      }}
-                    >
+                      }}>
                       {item?.timeLimit?.toFixed(0)} Seconds
                     </Text>
                   </View>
@@ -1440,14 +1465,12 @@ export default function DriverOnTheWay() {
                       width: '100%',
                       alignItems: 'center',
                       padding: 10,
-                    }}
-                  >
+                    }}>
                     <Text
                       style={[
                         styles.itemTextStyle,
                         {width: '50%', textAlign: 'center'},
-                      ]}
-                    >
+                      ]}>
                       Fare:
                       <Text style={styles.itemLocStyle}>
                         $
@@ -1460,8 +1483,7 @@ export default function DriverOnTheWay() {
                       style={[
                         styles.itemTextStyle,
                         {width: '50%', textAlign: 'center'},
-                      ]}
-                    >
+                      ]}>
                       Distance:
                       <Text style={[styles.itemLocStyle, {fontSize: 18}]}>
                         {item.passengerData
@@ -1478,15 +1500,13 @@ export default function DriverOnTheWay() {
                       alignItems: 'center',
                       width: '100%',
                       padding: 10,
-                    }}
-                  >
+                    }}>
                     {items && items.bidFare > 0 && (
                       <Text
                         style={[
                           styles.itemTextStyle,
                           {width: '50%', textAlign: 'center'},
-                        ]}
-                      >
+                        ]}>
                         Bid Fare:
                         <Text style={styles.itemLocStyle}>
                           ${items.bidFare}
@@ -1497,8 +1517,7 @@ export default function DriverOnTheWay() {
                       style={[
                         styles.itemTextStyle,
                         {width: '50%', textAlign: 'center'},
-                      ]}
-                    >
+                      ]}>
                       Minutes:
                       <Text style={styles.itemLocStyle}>
                         {items?.passengerData
@@ -1513,8 +1532,7 @@ export default function DriverOnTheWay() {
                       width: '100%',
                       justifyContent: 'space-around',
                       padding: 5,
-                    }}
-                  >
+                    }}>
                     <CustomButton
                       onPress={() => AcceptRequest(item)}
                       text={'Accept'}

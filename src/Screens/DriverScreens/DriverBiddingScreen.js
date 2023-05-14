@@ -77,9 +77,8 @@ export default function DriverBiddingScreen({navigation}) {
   const [loading, setLoading] = useState(false);
   const [offerFare, setOfferFare] = useState(null);
   const [reasonForCancelRide, setReasonForCancelRide] = useState(false);
-  const [driverReasonForCancelRide, setDriverReasonForCancelRide] = useState(
-    '',
-  );
+  const [driverReasonForCancelRide, setDriverReasonForCancelRide] =
+    useState('');
   const [input, setInput] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(
     route.params.selectedDriver ?? myDriverData,
@@ -110,14 +109,12 @@ export default function DriverBiddingScreen({navigation}) {
     dropOffLocation: false,
   });
   const [startRide, setStartRide] = useState(false);
-  const [
-    minutesAndDistanceDifference,
-    setMinutesAndDistanceDifference,
-  ] = useState({
-    minutes: '',
-    distance: '',
-    details: '',
-  });
+  const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
+    useState({
+      minutes: '',
+      distance: '',
+      details: '',
+    });
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
   const [endRide, setEndRide] = useState(false);
   const [buttonLoader, setButtonLoader] = useState(false);
@@ -561,8 +558,7 @@ export default function DriverBiddingScreen({navigation}) {
           visible={arrivePickUpLocation}
           onRequestClose={() => {
             setArrivePickupLocation(false);
-          }}
-        >
+          }}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View>
@@ -576,8 +572,7 @@ export default function DriverBiddingScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => sendArriveMessageToPassenger()}
-              >
+                onPress={() => !buttonLoader && sendArriveMessageToPassenger()}>
                 <Text style={styles.textStyle}>
                   {buttonLoader ? (
                     <ActivityIndicator size={'large'} color={Colors.black} />
@@ -716,16 +711,14 @@ export default function DriverBiddingScreen({navigation}) {
           visible={endRide || route.params.endRide}
           onRequestClose={() => {
             setInput(false);
-          }}
-        >
+          }}>
           <View style={styles.centeredView}>
             <View style={[styles.modalView, {height: 370}]}>
               <Text
                 style={[
                   styles.modalText,
                   {fontSize: 26, fontWeight: '600', color: 'white'},
-                ]}
-              >
+                ]}>
                 Congratulations!
               </Text>
               <Text
@@ -737,8 +730,7 @@ export default function DriverBiddingScreen({navigation}) {
                     color: 'white',
                     marginTop: 0,
                   },
-                ]}
-              >
+                ]}>
                 You have arrived at destination
               </Text>
               <Text
@@ -752,8 +744,7 @@ export default function DriverBiddingScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}
-              >
+                ]}>
                 Bill Amount:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   $
@@ -773,11 +764,10 @@ export default function DriverBiddingScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}
-              >
+                ]}>
                 Tip Amount:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  ${tipAmount ?? 0}
+                  ${Number(tipAmount).toFixed(2) ?? 0}
                 </Text>
               </Text>
               <Text
@@ -791,8 +781,7 @@ export default function DriverBiddingScreen({navigation}) {
                     fontSize: 14,
                     alignSelf: 'flex-start',
                   },
-                ]}
-              >
+                ]}>
                 Toll Amount:
                 <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
                   ${tollAmount ?? 0}
@@ -809,8 +798,7 @@ export default function DriverBiddingScreen({navigation}) {
                     fontSize: 22,
                     alignSelf: 'flex-start',
                   },
-                ]}
-              >
+                ]}>
                 Total Earning:
                 <Text style={{fontSize: 20, color: 'yellow', width: '100%'}}>
                   ${(Number(toll) + Number(tip) + Number(myFare)).toFixed(2)}
@@ -821,8 +809,7 @@ export default function DriverBiddingScreen({navigation}) {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => bookingComplete()}
-              >
+                onPress={() => !buttonLoader && bookingComplete()}>
                 <Text style={styles.textStyle}>
                   {buttonLoader ? (
                     <ActivityIndicator size={'large'} color={Colors.black} />
@@ -837,7 +824,7 @@ export default function DriverBiddingScreen({navigation}) {
       </View>
     );
   }, [endRide, buttonLoader]);
-
+  
   const cancelBookingByDriver = () => {
     setButtonLoader(true);
 
@@ -872,7 +859,7 @@ export default function DriverBiddingScreen({navigation}) {
               .update({
                 inlined: false,
               })
-              .then(() => {
+              .then(async () => {
                 setButtonLoader(false);
                 AsyncStorage.removeItem('driverBooking');
                 AsyncStorage.removeItem('ArrivedAtpickUpLocation');
@@ -882,7 +869,18 @@ export default function DriverBiddingScreen({navigation}) {
                   'Your ride has been succesfully cancelled',
                   ToastAndroid.SHORT,
                 );
-                navigation.navigate('AskScreen');
+                let startRide = await AsyncStorage.getItem('onTheWayRideStart');
+                JSON.parse(startRide);
+                if (startRide) {
+                  navigation.navigate('DriverRoutes', {
+                    screen: 'DriverOnTheWayScreen',
+                    params: {
+                      data: startRide,
+                    },
+                  });
+                } else {
+                  navigation.navigate('AskScreen');
+                }
               })
               .catch(error => {
                 console.log(error);
@@ -912,8 +910,7 @@ export default function DriverBiddingScreen({navigation}) {
               setCancelRide(false);
               setInput(false);
               setReasonForCancelRide(false);
-            }}
-          >
+            }}>
             <View style={styles.centeredView}>
               <View
                 style={[
@@ -922,8 +919,7 @@ export default function DriverBiddingScreen({navigation}) {
                     height: input ? '65%' : reasonForCancelRide ? '40%' : '45%',
                     width: '90%',
                   },
-                ]}
-              >
+                ]}>
                 {!reasonForCancelRide && (
                   <MaterialCommunityIcons
                     size={80}
@@ -943,8 +939,7 @@ export default function DriverBiddingScreen({navigation}) {
                         marginTop: 0,
                         textAlign: 'left',
                       },
-                    ]}
-                  >
+                    ]}>
                     Are you sure You want to cancel Ride!
                   </Text>
                 )}
@@ -958,8 +953,7 @@ export default function DriverBiddingScreen({navigation}) {
                         marginTop: 0,
                         fontWeight: '400',
                       },
-                    ]}
-                  >
+                    ]}>
                     Your Passenger is waiting for you!
                   </Text>
                 )}
@@ -970,8 +964,7 @@ export default function DriverBiddingScreen({navigation}) {
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       width: '100%',
-                    }}
-                  >
+                    }}>
                     <TouchableOpacity
                       style={[
                         styles.button,
@@ -983,14 +976,12 @@ export default function DriverBiddingScreen({navigation}) {
                           bottom: -40,
                         },
                       ]}
-                      onPress={() => setCancelRide(false)}
-                    >
+                      onPress={() => setCancelRide(false)}>
                       <Text
                         style={[
                           styles.textStyle,
                           {backgroundColor: Colors.black},
-                        ]}
-                      >
+                        ]}>
                         Cancel
                       </Text>
                     </TouchableOpacity>
@@ -1005,14 +996,12 @@ export default function DriverBiddingScreen({navigation}) {
                           bottom: -40,
                         },
                       ]}
-                      onPress={() => setReasonForCancelRide(true)}
-                    >
+                      onPress={() => setReasonForCancelRide(true)}>
                       <Text
                         style={[
                           styles.textStyle,
                           {backgroundColor: Colors.primary},
-                        ]}
-                      >
+                        ]}>
                         confirm
                       </Text>
                     </TouchableOpacity>
@@ -1030,8 +1019,7 @@ export default function DriverBiddingScreen({navigation}) {
                           marginTop: 0,
                           textAlign: 'left',
                         },
-                      ]}
-                    >
+                      ]}>
                       Kindly Write below the reasons for cancelling Ride!
                     </Text>
                     <TextInput
@@ -1062,14 +1050,12 @@ export default function DriverBiddingScreen({navigation}) {
                             bottom: -40,
                           },
                         ]}
-                        onPress={() => cancelBookingByDriver()}
-                      >
+                        onPress={() => cancelBookingByDriver()}>
                         <Text
                           style={[
                             styles.textStyle,
                             {backgroundColor: Colors.primary},
-                          ]}
-                        >
+                          ]}>
                           {buttonLoader ? (
                             <ActivityIndicator
                               size={'small'}
@@ -1227,7 +1213,7 @@ export default function DriverBiddingScreen({navigation}) {
             .update({
               inlined: false,
             })
-            .then(() => {
+            .then(async () => {
               ToastAndroid.show(
                 'Ride has been cancelled by passenger',
                 ToastAndroid.SHORT,
@@ -1236,7 +1222,19 @@ export default function DriverBiddingScreen({navigation}) {
               AsyncStorage.removeItem('startRide');
               AsyncStorage.removeItem('EndRide');
               AsyncStorage.removeItem("'ArrivedAtpickUpLocation'");
-              navigation.navigate('AskScreen');
+
+              let startRide = await AsyncStorage.getItem('onTheWayRideStart');
+              JSON.parse(startRide);
+              if (startRide) {
+                navigation.navigate('DriverRoutes', {
+                  screen: 'DriverOnTheWayScreen',
+                  params: {
+                    data: startRide,
+                  },
+                });
+              } else {
+                navigation.navigate('AskScreen');
+              }
             })
             .catch(error => {
               console.log(error);
@@ -1609,8 +1607,7 @@ export default function DriverBiddingScreen({navigation}) {
 
   return loading ? (
     <View
-      style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}
-    >
+      style={{alignItems: 'center', justifyContent: 'center', height: '90%'}}>
       <ActivityIndicator size={100} color="black" />
       <Text style={{color: 'black', marginTop: 20}}>
         Processing Your request Please Wait!
@@ -1646,8 +1643,7 @@ export default function DriverBiddingScreen({navigation}) {
               ...pickupCords,
               latitudeDelta: LATITUDE_DELTA,
               longitudeDelta: LONGITUDE_DELTA,
-            }}
-          >
+            }}>
             <Marker
               coordinate={pickupCords}
               title="pickup Location"
@@ -1677,8 +1673,7 @@ export default function DriverBiddingScreen({navigation}) {
                   description={
                     minutesAndDistanceDifference.details.start_address
                   }
-                  pinColor="blue"
-                >
+                  pinColor="blue">
                   <Image
                     source={require('../../Assets/Images/mapCar.png')}
                     style={{
@@ -1754,8 +1749,7 @@ export default function DriverBiddingScreen({navigation}) {
               borderRadius: 10,
               paddingHorizontal: 20,
             }}
-            onPress={() => rideStartByDriver()}
-          >
+            onPress={() => rideStartByDriver()}>
             <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
               Start Ride
             </Text>
@@ -1774,8 +1768,7 @@ export default function DriverBiddingScreen({navigation}) {
               borderRadius: 10,
               paddingHorizontal: 20,
             }}
-            onPress={() => rideEndByDriver()}
-          >
+            onPress={() => rideEndByDriver()}>
             <Text style={{fontSize: 16, color: 'white', fontWeight: '600'}}>
               End Ride
             </Text>
@@ -1789,8 +1782,7 @@ export default function DriverBiddingScreen({navigation}) {
               fontSize: 18,
               fontWeight: '900',
               marginTop: 10,
-            }}
-          >
+            }}>
             Duration:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
@@ -1806,8 +1798,7 @@ export default function DriverBiddingScreen({navigation}) {
               fontSize: 18,
               fontWeight: '900',
               marginTop: 5,
-            }}
-          >
+            }}>
             Distance:{' '}
             {arrivePickUpLocation ||
             arrive.pickUpLocation ||
@@ -1825,8 +1816,7 @@ export default function DriverBiddingScreen({navigation}) {
         <KeyboardAvoidingView>
           <ScrollView
             nestedScrollEnabled={true}
-            keyboardShouldPersistTaps="handled"
-          >
+            keyboardShouldPersistTaps="handled">
             <KeyboardAvoidingView>
               {selectedDriver && (
                 <View>
@@ -1835,8 +1825,7 @@ export default function DriverBiddingScreen({navigation}) {
                       fontSize: 18,
                       fontWeight: '600',
                       color: Colors.secondary,
-                    }}
-                  >
+                    }}>
                     Contact Passenger:
                   </Text>
                   <TouchableOpacity
@@ -1850,15 +1839,13 @@ export default function DriverBiddingScreen({navigation}) {
                     }}
                     onPress={() => {
                       Linking.openURL(`tel:${passengerData.mobileNumber}`);
-                    }}
-                  >
+                    }}>
                     <Text
                       style={{
                         fontSize: 18,
                         fontWeight: '600',
                         color: Colors.primary,
-                      }}
-                    >
+                      }}>
                       {passengerData.mobileNumber ??
                         passengerData?.passengerPersonalDetails?.mobileNumber}
                     </Text>

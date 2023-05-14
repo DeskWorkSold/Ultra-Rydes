@@ -13,6 +13,7 @@ import {
   Modal,
   Settings,
 } from 'react-native';
+
 import CustomButton from '../../Components/CustomButton';
 import Colors from '../../Constants/Colors';
 import firestore from '@react-native-firebase/firestore';
@@ -490,12 +491,16 @@ export default function PassengerFindRide({route}) {
               driverPickAndDriverDropDis / 1609.34
             ).toFixed(2);
 
+              let remainingDis = DriverPickAndDriveDropMileDis - passengerPickAndPassengerDropMileDis
+              remainingDis = remainingDis + 2
+
             if (
               Number(pickupMileDistance) <= 5 &&
               Number(passengerDropAndDriverDropMileDis) <
                 Number(passengerpickAndDriverDropMileDis) &&
               Number(DriverPickAndDriveDropMileDis) >=
                 Number(passengerPickAndPassengerDropMileDis) &&
+                Number(passengerDropAndDriverDropMileDis) < remainingDis &&
               myDriverData.status == 'online' &&
               flag &&
               !isInlined &&
@@ -709,7 +714,12 @@ export default function PassengerFindRide({route}) {
   useEffect(() => {
     if (!passengerData.bidFare) {
     }
+
+
   }, [driverNotAvailable]);
+
+
+console.log(passengerData?.pickupCords,"pickupcords")
 
   useEffect(() => {
     let interval;
@@ -726,25 +736,25 @@ export default function PassengerFindRide({route}) {
       return () => clearInterval(interval);
     }
 
+
     if (passengerData.bidFare) {
       setRequest(true);
       return () => clearInterval(interval);
     }
   }, [request, selectedDriver, route.params]);
-
-  useFocusEffect(() => {
-   let interval =  setInterval(() => {
-      if (driverData.length == 0 && !passengerData.bidFare) {
-        ToastAndroid.show(
-          'Drivers are not available right now try after sometime',
-          ToastAndroid.SHORT,
-        );
-        clearInterval(interval)
-        navigation.navigate("PassengerHomeScreen")
-      }
-      return () => clearInterval(interval)
-    }, 30000);
-  }, []);
+  // useFocusEffect(() => {
+  //  let interval =  setInterval(() => {
+  //     if (driverData.length == 0 && !passengerData.bidFare) {
+  //       ToastAndroid.show(
+  //         'Drivers are not available right now try after sometime',
+  //         ToastAndroid.SHORT,
+  //       );
+  //       clearInterval(interval)
+  //       navigation.navigate("PassengerHomeScreen")
+  //     }
+  //     return () => clearInterval(interval)
+  //   }, 30000);
+  // }, []);
 
   const rejectOffer = rejectedDriver => {
     if (rejectedDriver && !passengerData.bidFare) {
@@ -949,7 +959,6 @@ export default function PassengerFindRide({route}) {
   return driverData.length == 0 && !passengerData.bidFare ? (
     <View
       style={{
-        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         height: '90%',
