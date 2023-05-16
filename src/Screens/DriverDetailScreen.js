@@ -34,7 +34,7 @@ export default function DriverDetailScreen({navigation}) {
   const [cnic, setCinic] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("+1 ");
   const [rating, setRating] = useState(4.9);
   //error fields start
   const [firstNameError, setFirstNameError] = useState(false);

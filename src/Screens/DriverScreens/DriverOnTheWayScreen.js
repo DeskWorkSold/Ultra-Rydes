@@ -22,6 +22,7 @@ import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import CustomButton from '../../Components/CustomButton';
+import { useIsFocused } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 import {
   getCurrentLocation,
@@ -41,7 +42,7 @@ import IdleTimerManager from 'react-native-idle-timer';
 
 export default function DriverOnTheWay() {
   const route = useRoute();
-
+  const focus = useIsFocused()
   let data = route?.params?.data;
   let navigation = useNavigation();
 
@@ -84,36 +85,43 @@ export default function DriverOnTheWay() {
 
   Sound.setCategory('Playback');
 
+
+console.log(focus,"focus")
+
   AppState.addEventListener('change', nextAppState => {
     const currentUser = auth().currentUser;
-    if (!currentUser) {
+    if (!currentUser && !focus) {
       return;
     }
 
     const driverId = currentUser?.uid;
     if (nextAppState === 'background' || nextAppState == 'inactive') {
+
+      console.log(nextAppState,"appstate")
+
+
       firestore()
         .collection('Drivers')
         .doc(driverId)
         .get()
         .then(driverDoc => {
-          if (!driverDoc.exists) {
+          if (!driverDoc._exists) {
             return;
           }
-
           const driverData = driverDoc.data();
 
-          if (driverData?.status === 'online') {
+          if (driverData?.status === 'online' && driverData?.onTheWay) {
             firestore()
               .collection('inlinedDriver')
               .doc(driverId)
               .get()
               .then(inlinedDoc => {
+                  console.log(inlinedDoc,"docccc")
                 const inlinedData = inlinedDoc.data();
-
-                if (!inlinedData?.inlined) {
+                if (!inlinedData?.inlined || !inlinedDoc._exists) {
                   firestore().collection('Drivers').doc(driverId).update({
                     currentLocation: null,
+                    dropLocationCords : null,
                     status: 'offline',
                   });
                 }
@@ -132,11 +140,10 @@ export default function DriverOnTheWay() {
         .doc(driverId)
         .get()
         .then(driverDoc => {
-          if (!driverDoc?.exists) {
+          if (!driverDoc?._exists || !focus) {
             return;
           }
           const driverData = driverDoc.data();
-
           if (driverData.status === 'offline') {
             firestore()
               .collection('inlinedDriver')
@@ -144,10 +151,11 @@ export default function DriverOnTheWay() {
               .get()
               .then(inlinedDoc => {
                 const inlinedData = inlinedDoc.data();
-                if (!inlinedData?.inlined) {
+                if (!inlinedData?.inlined || !inlinedDoc?._exists) {
                   firestore().collection('Drivers').doc(driverId).update({
                     currentLocation: state,
                     status: 'online',
+                    dropLocationCords : dropLocationCords
                   });
                 }
               })
@@ -1153,7 +1161,7 @@ export default function DriverOnTheWay() {
       const backAction = () => {
         Alert.alert('Hold on!', 'Stop your ride and then go back', [
           {
-            text: 'Cancel',
+        text: 'Cancel',
             onPress: () => null,
             style: 'cancel',
           },
@@ -1165,7 +1173,6 @@ export default function DriverOnTheWay() {
         'hardwareBackPress',
         backAction,
       );
-
       return () => backHandler.remove();
     }
   }, [requestLoader, startRide, data]);

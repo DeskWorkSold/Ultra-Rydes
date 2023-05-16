@@ -37,7 +37,7 @@ export default function PassengerDetailScreen({navigation}) {
   const [dateOfBirthError, setDateOfBirthError] = useState(false);
   const [EmailError, setEmailError] = useState(false);
   const [tipError, setTipError] = useState(false);
-  const [mobileNumber, setMobileNumber] = useState(null);
+  const [mobileNumber, setMobileNumber] = useState("+1 ");
   const [mobileNumberError, setMobileNumberError] = useState(false);
   const [tip, setTip] = useState('');
   const [open, setOpen] = useState(false);
@@ -206,7 +206,7 @@ export default function PassengerDetailScreen({navigation}) {
           .collection('Passengers')
           .doc(CurrentUser.uid)
           .set({
-            profilePicture: profilePicture.length > 0 ? profilePicture : '',
+            profilePicture: profilePicture,
             firstName: firstName,
             lastName: lastName,
             dateOfBirth: dateOfBirth,
@@ -240,20 +240,20 @@ export default function PassengerDetailScreen({navigation}) {
 
   const [item, setItem] = useState([
     {
-      label: '5%',
-      value: '5%',
-    },
-    {
       label: '10%',
       value: '10%',
     },
     {
-      label: '25%',
+      label: '15%',
       value: '15%',
     },
     {
-      label: '50%',
+      label: '20%',
       value: '20%',
+    },
+    {
+      label: '25%',
+      value: '25%',
     },
     {
       label: 'Custom',

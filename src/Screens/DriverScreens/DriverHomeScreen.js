@@ -29,7 +29,7 @@ import mytone from '../../Assets/my_sound.mp3';
 import CustomButton from '../../Components/CustomButton';
 import {useNavigation} from '@react-navigation/native';
 import {BackHandler} from 'react-native';
-import {diff} from 'react-native-reanimated';
+import IdleTimerManager from "react-native-idle-timer"
 
 export default function DriverHomeScreen({route}) {
   let reload = route.params;
@@ -333,6 +333,10 @@ export default function DriverHomeScreen({route}) {
     return () => Geolocation.clearWatch(watchId);
   };
 
+
+  console.log(passengerBookingData,"data")
+
+
   const getDriverBookingData = async () => {
     try {
       let data = await AsyncStorage.getItem('driverBooking');
@@ -390,7 +394,7 @@ export default function DriverHomeScreen({route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus && differenceSeconds > 0) {
+              if (!data?.requestStatus) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -995,6 +999,17 @@ export default function DriverHomeScreen({route}) {
       console.log(err);
     }
   };
+  
+  useEffect(() => {
+    // Disable screen timeout when the component mounts
+    IdleTimerManager.setIdleTimerDisabled(true);
+
+    // Re-enable screen timeout when the component unmounts
+    return () => {
+      IdleTimerManager.setIdleTimerDisabled(false);
+    };
+  }, []);
+
 
   const removeLocationUpdates = () => {
     if (watchId !== null) {

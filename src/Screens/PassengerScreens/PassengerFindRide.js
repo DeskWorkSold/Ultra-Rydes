@@ -21,6 +21,7 @@ import {getPreciseDistance} from 'geolib';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Icon from 'react-native-vector-icons/AntDesign';
+import { useIsFocused } from '@react-navigation/native';
 import {BackHandler} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
@@ -29,6 +30,8 @@ import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {StackActions} from '@react-navigation/native';
 export default function PassengerFindRide({route}) {
   let passengerData = route.params;
+
+  const focus = useIsFocused()
 
   const navigation = useNavigation();
 
@@ -184,7 +187,7 @@ export default function PassengerFindRide({route}) {
 
           console.log(data, 'dataa');
 
-          if (data.rideCancelByDriver) {
+          if (data.rideCancelByDriver || data.rideCancelByPassenger) {
             const backAction = () => {
               Alert.alert(
                 'Hold on!',
@@ -211,7 +214,7 @@ export default function PassengerFindRide({route}) {
 
   useEffect(() => {
     checkRouteFromCancelRide();
-  }, [route.params]);
+  }, [route.params,focus]);
 
   useEffect(() => {
     if (request) {
@@ -346,7 +349,7 @@ export default function PassengerFindRide({route}) {
             driverNotAvailable &&
             driverNotAvailable.length > 0 &&
             driverNotAvailable.some((e, i) => {
-              return e == myDriverData.id;
+              return e == myDriverData?.id;
             });
 
           let selectedVehicleName = passengerData.selectedCar.map((e, i) => {
@@ -355,24 +358,24 @@ export default function PassengerFindRide({route}) {
 
           let selectedCar = selectedVehicleName[0];
           let flag = '';
-          if (myDriverData && myDriverData.vehicleDetails) {
+          if (myDriverData && myDriverData?.vehicleDetails) {
             flag = selectedCar == myDriverData.vehicleDetails.vehicleCategory;
           }
           let mileDistance = '';
           if (
             myDriverData &&
-            myDriverData.currentLocation &&
+            myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
             myDriverData.status == 'online' &&
             flag
           ) {
             let dis = getPreciseDistance(
               {
-                latitude: passengerData.pickupCords.latitude,
-                longitude: passengerData.pickupCords.longitude,
+                latitude: passengerData?.pickupCords?.latitude,
+                longitude: passengerData?.pickupCords?.longitude,
               },
               {
-                latitude: myDriverData.currentLocation.latitude,
-                longitude: myDriverData.currentLocation.longitude,
+                latitude: myDriverData?.currentLocation?.latitude,
+                longitude: myDriverData?.currentLocation?.longitude,
               },
             );
 
@@ -406,8 +409,8 @@ export default function PassengerFindRide({route}) {
           if (
             myDriverData?.onTheWay &&
             myDriverData.status == 'online' &&
-            myDriverData.currentLocation &&
-            myDriverData.dropLocationCords &&
+            myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
+            myDriverData?.dropLocationCords?.latitude && myDriverData?.dropLocationCords?.longitude &&
             !driverRequestedButNotRespond &&
             !flag3
           ) {
@@ -428,7 +431,7 @@ export default function PassengerFindRide({route}) {
 
             let passengerPickupAndDriverDropDis = getPreciseDistance(
               {
-                latitude: passengerData.pickupCords?.latitude,
+                latitude: passengerData?.pickupCords?.latitude,
                 longitude: passengerData?.pickupCords?.longitude,
               },
               {
@@ -848,8 +851,8 @@ console.log(passengerData?.pickupCords,"pickupcords")
     let data = route.params;
     if (data.bidFare) {
       data?.selectedCar[0]?.carMiles?.map((e, i) => {
-        if (data.distance >= e.rangeMin && data.distance <= e.rangeMax) {
-          let serviceCharges = e.serviceCharge;
+        if (data?.distance >= e?.rangeMin && data?.distance <= e.rangeMax) {
+          let serviceCharges = e?.serviceCharge;
           let creditCardFee = (Number(data.fare) * 5) / 100;
           let totalCharges = serviceCharges + creditCardFee;
           item.bidFare = (Number(data.bidFare) + Number(totalCharges)).toFixed(
@@ -870,7 +873,7 @@ console.log(passengerData?.pickupCords,"pickupcords")
       passengerData &&
       passengerData.pickupCords &&
       item &&
-      item.currentLocation
+      item?.currentLocation?.latitude && item?.currentLocation?.longitude
     ) {
       let dis = getPreciseDistance(
         {

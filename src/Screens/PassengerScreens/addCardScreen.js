@@ -19,6 +19,9 @@ import axios from 'axios';
 import {BASE_URI} from '../../Constants/Base_uri';
 
 function AddCard({navigation}) {
+
+console.log(auth().currentUser.uid)
+
   const [cardDetail, setCardDetail] = useState({
     cardHolderName: '',
     cardNumber: null,

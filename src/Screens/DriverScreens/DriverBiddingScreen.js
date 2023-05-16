@@ -231,7 +231,7 @@ export default function DriverBiddingScreen({navigation}) {
   useEffect(() => {
     const interval = setInterval(() => {
       getLocationUpdates();
-    }, 10000);
+    }, 15000);
 
     return () => clearInterval(interval);
   });
@@ -689,8 +689,9 @@ export default function DriverBiddingScreen({navigation}) {
         setArriveDropOffLocation(false);
         setStartRide(false);
         setSelectedDriver([]);
-
-        navigation.navigate('AskScreen');
+        navigation.navigate('DriverRoutes', {
+          screen: 'DriverHomeScreen',
+        });
       })
       .catch(error => {
         setButtonLoader(false);
@@ -824,7 +825,7 @@ export default function DriverBiddingScreen({navigation}) {
       </View>
     );
   }, [endRide, buttonLoader]);
-  
+
   const cancelBookingByDriver = () => {
     setButtonLoader(true);
 
@@ -879,7 +880,9 @@ export default function DriverBiddingScreen({navigation}) {
                     },
                   });
                 } else {
-                  navigation.navigate('AskScreen');
+                  navigation.navigate('DriverRoutes', {
+                    screen: 'DriverHomeScreen',
+                  });
                 }
               })
               .catch(error => {
@@ -1233,7 +1236,9 @@ export default function DriverBiddingScreen({navigation}) {
                   },
                 });
               } else {
-                navigation.navigate('AskScreen');
+                navigation.navigate('DriverRoutes', {
+                  screen: 'DriverHomeScreen',
+                });
               }
             })
             .catch(error => {
@@ -1439,7 +1444,7 @@ export default function DriverBiddingScreen({navigation}) {
       .get()
       .then(async doc => {
         let data = doc.data();
-
+        console.log(data, 'dataaa');
         if (data && data.confirmByPassenger) {
           try {
             await AsyncStorage.setItem('startRide', 'Ride has been started');
@@ -1838,7 +1843,12 @@ export default function DriverBiddingScreen({navigation}) {
                       justifyContent: 'space-between',
                     }}
                     onPress={() => {
-                      Linking.openURL(`tel:${passengerData.mobileNumber}`);
+                      Linking.openURL(
+                        `tel:${
+                          passengerData.mobileNumber ??
+                          passengerData?.passengerPersonalDetails?.mobileNumber
+                        }`,
+                      );
                     }}>
                     <Text
                       style={{
@@ -1865,7 +1875,9 @@ export default function DriverBiddingScreen({navigation}) {
                 onChangeText={setpickUpLocation}
                 selectionColor={Colors.black}
                 activeUnderlineColor={Colors.gray}
-                style={styles.textInputStyle}
+                multiline={true}
+                numberOfLines={2}
+                style={[styles.textInputStyle]}
                 editable={false}
               />
               <TextInput
@@ -1876,6 +1888,8 @@ export default function DriverBiddingScreen({navigation}) {
                 }
                 onChangeText={setdropOffLocation}
                 selectionColor={Colors.black}
+                multiline={true}
+                numberOfLines={2}
                 activeUnderlineColor={Colors.gray}
                 style={styles.textInputStyle}
                 editable={false}

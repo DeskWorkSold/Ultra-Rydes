@@ -27,7 +27,8 @@ import Icon from 'react-native-vector-icons/AntDesign';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
+import IdleTimerManager from 'react-native-idle-timer';
+import {useIsFocused} from '@react-navigation/native';
 import {LogBox} from 'react-native';
 import {
   locationPermission,
@@ -99,6 +100,8 @@ export default function PassengerHomeScreen({navigation}) {
       ? route.params?.passengerData?.dropLocationCords
       : {},
   });
+
+  const focus = useIsFocused();
 
   const [driverRating, setDriverRating] = useState([
     {
@@ -190,6 +193,16 @@ export default function PassengerHomeScreen({navigation}) {
       fetchDrivers();
       getCurrentUserUid();
     }
+  }, []);
+
+  useEffect(() => {
+    // Disable screen timeout when the component mounts
+    IdleTimerManager.setIdleTimerDisabled(true);
+
+    // Re-enable screen timeout when the component unmounts
+    return () => {
+      IdleTimerManager.setIdleTimerDisabled(false);
+    };
   }, []);
 
   const getDriverLocationUpdates = () => {
@@ -311,11 +324,12 @@ export default function PassengerHomeScreen({navigation}) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      getDriverLocationUpdates();
+      if (focus) {
+        getDriverLocationUpdates();
+      }
     }, 15000);
-
     return () => clearInterval(interval);
-  });
+  }, [focus]);
 
   const getCurrentUserUid = () => {
     const currentUser = auth().currentUser;
@@ -1741,7 +1755,10 @@ export default function PassengerHomeScreen({navigation}) {
                   'Your ride has been succesfully cancelled',
                   ToastAndroid.SHORT,
                 );
-                navigation.navigate('AskScreen');
+                let routeToFindDriver =
+                  route.params?.passengerData ??
+                  route.params?.data?.passengerData;
+                navigation.navigate('PassengerFindRide', routeToFindDriver);
               })
               .catch(error => {
                 setButtonLoader(false);
@@ -1785,15 +1802,14 @@ export default function PassengerHomeScreen({navigation}) {
         }
       });
   };
-
   useEffect(() => {
-    if (selectedDriver) {
+    if ((selectedDriver, focus)) {
       let interval = setInterval(() => {
         cancelRideByDriver();
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, [selectedDriver]);
+  }, [selectedDriver, focus]);
 
   const cancelRideModal = useCallback(() => {
     return (

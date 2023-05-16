@@ -38,34 +38,29 @@ function DriverHistory({navigation}) {
     setLoading(true);
     const id = auth().currentUser.uid;
 
-   await firestore()
+    await firestore()
       .collection('Booking')
       .onSnapshot(querySnapshot => {
-        console.log(querySnapshot,"querySnap")
-        if(querySnapshot._exists){
+        console.log(querySnapshot, 'exist');
         let driverBookingData = [];
         querySnapshot.forEach(documentSnapshot => {
-          let data = documentSnapshot.data().bookingData;
-
-          data &&
-            data.length > 0 &&
-            data.map((e, i) => {
-              
-              if (e.driverData && e.driverData.id == id) {
-                driverBookingData.push(e);
-              }
-            });
+          if (documentSnapshot._exists) {
+            let data = documentSnapshot.data();
+            data = data.bookingData;
+            data &&
+              data.length > 0 &&
+              data.map((e, i) => {
+                if (e.driverData && e.driverData.id == id) {
+                  driverBookingData.push(e);
+                }
+              });
+          } else {
+            setLoading(false);
+          }
         });
-        
         setBookingData(driverBookingData);
         setLoading(false);
-        }
-        else{
-          setLoading(false)
-        }        
-
       });
-    
   };
 
   const getCancelRidesData = async () => {
@@ -155,39 +150,34 @@ function DriverHistory({navigation}) {
               item,
               fare: fare,
             })
-          }
-        >
+          }>
           {/* Date is mentioned Here */}
           <Text style={[styles.text, {marginTop: 5}]}>
             {item.date.toDate().toString().slice(0, 15)}
           </Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}
-          >
+            numberOfLines={1}>
             {item.passengerData.pickupAddress}
           </Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}
-          >
+            numberOfLines={1}>
             {item.passengerData.dropOffAddress}
           </Text>
           <Text style={[styles.text, {paddingTop: 5, fontSize: 14}]}>
-            Fare:{' '}
-            ${fare
+            Fare: $
+            {fare
               ? fare
               : item.passengerData.bidFare
               ? item.passengerData.bidFare
               : item.passengerData.fare}
-            
           </Text>
           <Text
             style={[
               styles.text,
               {paddingTop: 5, marginBottom: 5, fontSize: 14},
-            ]}
-          >
+            ]}>
             Payment: ${item.payment}
           </Text>
         </TouchableOpacity>
@@ -231,36 +221,30 @@ function DriverHistory({navigation}) {
               item,
               fare: fare,
             })
-          }
-        >
+          }>
           {/* Date is mentioned Here */}
           <Text style={[styles.text, {marginTop: 5}]}>abc</Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}
-          >
+            numberOfLines={1}>
             {item.passengerData.pickupAddress}
           </Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
-            numberOfLines={1}
-          >
+            numberOfLines={1}>
             {item.passengerData.dropOffAddress}
           </Text>
           <Text
             style={[
               styles.text,
               {paddingTop: 5, fontSize: 14, marginBottom: 10},
-            ]}
-          >
-            Fare:{' '}
-            
-            ${fare
+            ]}>
+            Fare: $
+            {fare
               ? fare
               : item.passengerData.bidFare
               ? item.passengerData.bidFare
               : item.passengerData.fare}
-            
           </Text>
         </TouchableOpacity>
       </View>
@@ -277,8 +261,7 @@ function DriverHistory({navigation}) {
               justifyContent: 'center',
               height: Dimensions.get('window').height / 2,
               width: Dimensions.get('window').width,
-            }}
-          >
+            }}>
             <Text
               style={{
                 color: 'black',
@@ -286,8 +269,7 @@ function DriverHistory({navigation}) {
                 textAlign: 'center',
                 width: '100%',
                 fontWeight: '800',
-              }}
-            >
+              }}>
               There is no booking data yet
             </Text>
           </View>
@@ -312,8 +294,7 @@ function DriverHistory({navigation}) {
               justifyContent: 'center',
               height: Dimensions.get('window').height / 2,
               width: Dimensions.get('window').width,
-            }}
-          >
+            }}>
             <Text
               style={{
                 color: 'black',
@@ -321,8 +302,7 @@ function DriverHistory({navigation}) {
                 textAlign: 'center',
                 width: '100%',
                 fontWeight: '800',
-              }}
-            >
+              }}>
               There is no cancel booking data
             </Text>
           </View>
@@ -357,8 +337,7 @@ function DriverHistory({navigation}) {
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
-          }}
-        >
+          }}>
           <TouchableOpacity
             onPress={() => activateTab(0)}
             style={{
@@ -373,8 +352,7 @@ function DriverHistory({navigation}) {
               )
                 ? Colors.black
                 : 'white',
-            }}
-          >
+            }}>
             <Text
               style={[
                 styles.text,
@@ -383,8 +361,7 @@ function DriverHistory({navigation}) {
                     ? Colors.primary
                     : Colors.secondary,
                 },
-              ]}
-            >
+              ]}>
               Completed
             </Text>
           </TouchableOpacity>
@@ -402,8 +379,7 @@ function DriverHistory({navigation}) {
               )
                 ? Colors.black
                 : 'white',
-            }}
-          >
+            }}>
             <Text
               style={[
                 styles.text,
@@ -412,8 +388,7 @@ function DriverHistory({navigation}) {
                     ? Colors.primary
                     : Colors.secondary,
                 },
-              ]}
-            >
+              ]}>
               Cancelled
             </Text>
           </TouchableOpacity>
@@ -425,8 +400,7 @@ function DriverHistory({navigation}) {
               height: Dimensions.get('window').height / 2 + 20,
               alignItems: 'center',
               justifyContent: 'center',
-            }}
-          >
+            }}>
             <ActivityIndicator size="large" color={Colors.secondary} />
           </View>
         ) : currentTab &&
