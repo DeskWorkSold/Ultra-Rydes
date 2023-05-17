@@ -63,6 +63,8 @@ function DriverHistory({navigation}) {
       });
   };
 
+  console.log(bookingData[0].passengerData);
+
   const getCancelRidesData = async () => {
     setLoading(true);
     await firestore()
@@ -115,25 +117,58 @@ function DriverHistory({navigation}) {
   };
 
   const renderBookingData = ({item, index}) => {
+    let myFare = null;
+
+    let items = item.passengerData ?? item;
+
+    console.log(items, 'items');
+
+    items.selectedCar[0].carMiles.map((e, i) => {
+      if (
+        Number(items.distance) >= e.rangeMin &&
+        items.distance <= e.rangeMax
+      ) {
+        let percentageBid = Math.round(
+          (Number(items?.bidFare) / Number(items?.fare)) * 100,
+        );
+
+        let baseCharge = items?.selectedCar[0]?.carMiles[0]?.mileCharge;
+        let myDistance = 0;
+        if (items.distance > 3) {
+          myDistance = items.distance - 3;
+        }
+        let milesCharge = myDistance * e.mileCharge;
+        let totalCharges = baseCharge + milesCharge;
+        items.fare = Number(totalCharges).toFixed(2);
+        if (items.bidFare) {
+          items.bidFare = (
+            (Number(totalCharges) * Number(percentageBid)) /
+            100
+          ).toFixed(2);
+        }
+      }
+    });
+
     let fare = null;
     if (
-      item.driverData &&
-      item.driverData.bidFare &&
-      item.driverData.bidFare > 0
+      item.passengerData &&
+      item.passengerData.bidFare &&
+      item.passengerData.bidFare > 0
     ) {
-      console.log(item.driverData.bidFare, 'bidFare');
       item.passengerData.selectedCar[0].carMiles.map((e, i) => {
         if (
           item.passengerData.distance >= e.rangeMin &&
           item.passengerData.distance <= e.rangeMax
         ) {
           let serviceCharges = e.serviceCharge;
-          let creditCardFee = (Number(item.passengerData.fare) * 5) / 100;
+          let creditCardFee = (Number(item?.passengerData?.fare) * 5) / 100;
           let totalCharges = Number(serviceCharges) + Number(creditCardFee);
-          fare = (Number(item.driverData.bidFare) + totalCharges).toFixed(2);
+          fare = (Number(item.passengerData.bidFare) - totalCharges).toFixed(2);
         }
       });
     }
+
+    console.log(fare, 'fare');
 
     return (
       <View>
@@ -167,19 +202,19 @@ function DriverHistory({navigation}) {
           </Text>
           <Text style={[styles.text, {paddingTop: 5, fontSize: 14}]}>
             Fare: $
-            {fare
-              ? fare
-              : item.passengerData.bidFare
-              ? item.passengerData.bidFare
+            {items.bidFare
+              ? items.bidFare
+              : items.fare
+              ? items.fare
               : item.passengerData.fare}
           </Text>
-          <Text
+          {/* <Text
             style={[
               styles.text,
               {paddingTop: 5, marginBottom: 5, fontSize: 14},
             ]}>
             Payment: ${item.payment}
-          </Text>
+          </Text> */}
         </TouchableOpacity>
       </View>
     );

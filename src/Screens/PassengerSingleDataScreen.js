@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import {useState} from 'react';
 import {useEffect} from 'react';
-import {View, Text, StyleSheet, Image, Dimensions} from 'react-native';
+import {View, Text, StyleSheet, Image, Dimensions, ScrollView} from 'react-native';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
 import storage from '@react-native-firebase/storage';
@@ -55,7 +55,9 @@ function PassengerHistorySingleData({navigation, route}) {
     driverProfilePicUrl &&
     LATITUDE_DELTA &&
     LONGITUDE_DELTA && (
-      <View>
+      <View style={{flex:1}} >
+        <ScrollView>
+      
         <View style={styles.headerContainer}>
           <CustomHeader
             iconname={'chevron-back-outline'}
@@ -157,11 +159,12 @@ function PassengerHistorySingleData({navigation, route}) {
             borderWidth: 2,
             borderColor: Colors.primary,
             height: '58%',
+            marginBottom:20
           }}>
           {data && data.passengerData && (
             <MapView
               ref={mapRef}
-              style={{width: '100%', height: '48%'}}
+              style={{width: '100%', height: 200}}
               initialRegion={{
                 latitude: data.passengerData.pickupCords.latitude,
                 longitude: data.passengerData.pickupCords.longitude,
@@ -252,6 +255,7 @@ function PassengerHistorySingleData({navigation, route}) {
             </View>
           </View>
         </View>
+        </ScrollView>
       </View>
     )
   );

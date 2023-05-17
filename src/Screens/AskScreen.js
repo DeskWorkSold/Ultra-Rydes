@@ -127,9 +127,6 @@ export default function AskScreen({route}) {
       });
   }, []);
 
-console.log(auth().currentUser.uid,"uid")
-
-
   const hideModal = () => {
     let currentUser = auth().currentUser;
 

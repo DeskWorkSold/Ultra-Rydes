@@ -5,16 +5,20 @@ import CustomHeader from '../../Components/CustomHeader';
 import {Colors} from 'react-native-paper';
 import Icon from 'react-native-vector-icons/AntDesign';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 
-function PassengerRulesAndTerms({navigation}) {
+function PassengerRulesAndTerms({}) {
+
+  const navigation = useNavigation()
+
   return (
     <View>
       <View style={styles.headerContainer}>
         <CustomHeader
-          iconname={'menu'}
+          iconname={'arrow-back'}
           color={COLORS.white}
           onPress={() => {
-            navigation.toggleDrawer();
+            navigation.goBack();
           }}
           source={require('../../Assets/Images/URWhiteLogo.png')}
         />

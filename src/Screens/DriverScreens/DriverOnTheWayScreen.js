@@ -22,7 +22,7 @@ import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import CustomButton from '../../Components/CustomButton';
-import { useIsFocused } from '@react-navigation/native';
+import {useIsFocused} from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 import {
   getCurrentLocation,
@@ -42,7 +42,7 @@ import IdleTimerManager from 'react-native-idle-timer';
 
 export default function DriverOnTheWay() {
   const route = useRoute();
-  const focus = useIsFocused()
+  const focus = useIsFocused();
   let data = route?.params?.data;
   let navigation = useNavigation();
 
@@ -85,8 +85,7 @@ export default function DriverOnTheWay() {
 
   Sound.setCategory('Playback');
 
-
-console.log(focus,"focus")
+  console.log(focus, 'focus');
 
   AppState.addEventListener('change', nextAppState => {
     const currentUser = auth().currentUser;
@@ -95,10 +94,8 @@ console.log(focus,"focus")
     }
 
     const driverId = currentUser?.uid;
-    if (nextAppState === 'background' || nextAppState == 'inactive') {
-
-      console.log(nextAppState,"appstate")
-
+    if (nextAppState === 'background' || nextAppState == 'inactive' || focus) {
+      console.log(nextAppState, 'appstate');
 
       firestore()
         .collection('Drivers')
@@ -116,12 +113,11 @@ console.log(focus,"focus")
               .doc(driverId)
               .get()
               .then(inlinedDoc => {
-                  console.log(inlinedDoc,"docccc")
+                console.log(inlinedDoc, 'docccc');
                 const inlinedData = inlinedDoc.data();
                 if (!inlinedData?.inlined || !inlinedDoc._exists) {
                   firestore().collection('Drivers').doc(driverId).update({
                     currentLocation: null,
-                    dropLocationCords : null,
                     status: 'offline',
                   });
                 }
@@ -155,7 +151,6 @@ console.log(focus,"focus")
                   firestore().collection('Drivers').doc(driverId).update({
                     currentLocation: state,
                     status: 'online',
-                    dropLocationCords : dropLocationCords
                   });
                 }
               })
@@ -170,24 +165,24 @@ console.log(focus,"focus")
     }
   });
 
-  const getTimeZone = async () => {
-    if (state.latitude && state.longitude) {
-      let {latitude, longitude} = state;
-      const timestamp = Math.floor(Date.now() / 1000);
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/timezone/json?location=${latitude},${longitude}&timestamp=${timestamp}&key=${GoogleMapKey.GOOGLE_MAP_KEY}`,
-      );
-      // parse the response as JSON
-      const data = await response.json();
-      // extract the state or province from the response
-      const timeZone = data.timeZoneId;
-      setTimeZone(timeZone);
-    }
-  };
+  // const getTimeZone = async () => {
+  //   if (state.latitude && state.longitude) {
+  //     let {latitude, longitude} = state;
+  //     const timestamp = Math.floor(Date.now() / 1000);
+  //     const response = await fetch(
+  //       `https://maps.googleapis.com/maps/api/timezone/json?location=${latitude},${longitude}&timestamp=${timestamp}&key=${GoogleMapKey.GOOGLE_MAP_KEY}`,
+  //     );
+  //     // parse the response as JSON
+  //     const data = await response.json();
+  //     // extract the state or province from the response
+  //     const timeZone = data.timeZoneId;
+  //     setTimeZone(timeZone);
+  //   }
+  // };
 
-  useEffect(() => {
-    getTimeZone();
-  }, [state]);
+  // useEffect(() => {
+  //   getTimeZone();
+  // }, [state]);
 
   useEffect(() => {
     // Disable screen timeout when the component mounts
@@ -579,13 +574,11 @@ console.log(focus,"focus")
 
         querySnapshot?.forEach(documentSnapshot => {
           let data = documentSnapshot?.data();
-
-          const deviceTime = moment(); // get current time in device's time zone
-          const convertedTime = myTimeZone && moment.tz(myTimeZone);
-          const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
-          const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
+          // const deviceTime = moment(); // get current time in device's time zone
+          // const convertedTime = myTimeZone && moment.tz(myTimeZone);
+          // const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
+          // const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
           let date = data?.requestDate?.toDate();
-
           let time = date?.getTime();
           let nowTime = dateObj.getTime();
           let requestSeconds = time / 1000;
@@ -1161,7 +1154,7 @@ console.log(focus,"focus")
       const backAction = () => {
         Alert.alert('Hold on!', 'Stop your ride and then go back', [
           {
-        text: 'Cancel',
+            text: 'Cancel',
             onPress: () => null,
             style: 'cancel',
           },

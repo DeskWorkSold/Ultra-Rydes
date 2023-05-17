@@ -149,34 +149,34 @@ export default function PassengerHomeScreen({navigation}) {
     },
   ]);
 
-  const getTimeZone = async () => {
-    if (
-      location &&
-      location?.pickupCords?.latitude &&
-      location?.pickupCords?.longitude
-    ) {
-      let {pickupCords, dropLocationCords} = location;
+  // const getTimeZone = async () => {
+  //   if (
+  //     location &&
+  //     location?.pickupCords?.latitude &&
+  //     location?.pickupCords?.longitude
+  //   ) {
+  //     let {pickupCords, dropLocationCords} = location;
 
-      if (Object.keys(pickupCords).length > 0) {
-        let {latitude, longitude} = pickupCords;
+  //     if (Object.keys(pickupCords).length > 0) {
+  //       let {latitude, longitude} = pickupCords;
 
-        const timestamp = Math.floor(Date.now() / 1000);
+  //       const timestamp = Math.floor(Date.now() / 1000);
 
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/timezone/json?location=${latitude},${longitude}&timestamp=${timestamp}&key=${GoogleMapKey.GOOGLE_MAP_KEY}`,
-        );
+  //       const response = await fetch(
+  //         `https://maps.googleapis.com/maps/api/timezone/json?location=${latitude},${longitude}&timestamp=${timestamp}&key=${GoogleMapKey.GOOGLE_MAP_KEY}`,
+  //       );
 
-        // parse the response as JSON
-        const data = await response.json();
-        // extract the state or province from the response
-        const timeZone = data.timeZoneId;
-        setTimeZone(timeZone);
-      }
-    }
-  };
-  useEffect(() => {
-    getTimeZone();
-  }, [pickupCords, pickupAddress, location]);
+  //       // parse the response as JSON
+  //       const data = await response.json();
+  //       // extract the state or province from the response
+  //       const timeZone = data.timeZoneId;
+  //       setTimeZone(timeZone);
+  //     }
+  //   }
+  // };
+  // useEffect(() => {
+  //   getTimeZone();
+  // }, [pickupCords, pickupAddress, location]);
 
   const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
     useState({
@@ -528,8 +528,6 @@ export default function PassengerHomeScreen({navigation}) {
       },
     });
   };
-
-  console.log(mytimeZone, 'time');
 
   const getPickUpAndDropOffAddress = () => {
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
@@ -1413,170 +1411,177 @@ export default function PassengerHomeScreen({navigation}) {
     let totalCharges = (Number(rideFare) + tip + myToll).toFixed(2);
     return (
       <View style={styles.centeredView}>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
-          <View style={[styles.centeredView]}>
-            <View style={[styles.modalView, {width: '90%', height: '75%'}]}>
-              <Text style={[styles.modalText, {fontSize: 26}]}>
-                Congratulations!
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {
-                    marginTop: 0,
-                    paddingHorizontal: 2,
-                    marginHorizontal: 0,
-                    fontWeight: '500',
-                  },
-                ]}>
-                You have arrived at your destination
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {
-                    marginTop: 0,
-                    paddingHorizontal: 2,
-                    marginHorizontal: 5,
-                    fontWeight: '500',
-                    fontSize: 14,
-                    alignSelf: 'flex-start',
-                  },
-                ]}>
-                Your Fare Amount:{' '}
-                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  $
-                  {route.params.passengerData.bidFare ??
-                    route.params.passengerData.fare}
+        <ScrollView style={{height: '100%'}}>
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
+            <View style={[styles.centeredView]}>
+              <View style={[styles.modalView, {width: '90%', height: 550}]}>
+                <Text style={[styles.modalText, {fontSize: 26}]}>
+                  Congratulations!
                 </Text>
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {
-                    marginTop: 0,
-                    paddingHorizontal: 2,
-                    marginHorizontal: 5,
-                    fontWeight: '500',
-                    fontSize: 14,
-                    alignSelf: 'flex-start',
-                  },
-                ]}>
-                Your Tip Amount:{' '}
-                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  ${tip.toFixed(2)}
-                </Text>
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {
-                    marginTop: 0,
-                    paddingHorizontal: 2,
-                    marginHorizontal: 5,
-                    fontWeight: '500',
-                    fontSize: 14,
-                    alignSelf: 'flex-start',
-                  },
-                ]}>
-                Your Toll Amount:{' '}
-                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  ${myToll && myToll?.toFixed(2)}
-                </Text>
-              </Text>
-              <Text
-                style={[
-                  styles.modalText,
-                  {
-                    marginTop: 0,
-                    paddingHorizontal: 2,
-                    marginHorizontal: 5,
-                    fontWeight: '500',
-                    fontSize: 14,
-                    alignSelf: 'flex-start',
-                  },
-                ]}>
-                Total Charges:
-                <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
-                  ${totalCharges}
-                </Text>
-              </Text>
-              <Text
-                style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}>
-                Kindly give rating to driver
-              </Text>
-              <View
-                style={{
-                  width: '100%',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                }}>
-                {driverRating &&
-                  driverRating.length > 0 &&
-                  driverRating.map((e, i) => {
-                    return (
-                      <TouchableOpacity
-                        key={i}
-                        onPress={() => getDriverRating(i)}>
-                        <Icon
-                          size={30}
-                          name="star"
-                          color={
-                            e.star <= driverRatingStar ? 'yellow' : 'white'
-                          }
-                        />
-                      </TouchableOpacity>
-                    );
-                  })}
-              </View>
-              <Text style={[styles.modalText, {fontWeight: '600'}]}>
-                Kindly give rating to Car
-              </Text>
-              <View
-                style={{
-                  width: '100%',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                }}>
-                {carRating &&
-                  carRating.length > 0 &&
-                  carRating.map((e, i) => {
-                    return (
-                      <TouchableOpacity key={i} onPress={() => getCarRating(i)}>
-                        <Icon
-                          size={30}
-                          name="star"
-                          color={e.star <= carRatingStar ? 'yellow' : 'white'}
-                        />
-                      </TouchableOpacity>
-                    );
-                  })}
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  {marginBottom: 5, backgroundColor: Colors.primary},
-                ]}
-                onPress={() =>
-                  !buttonLoader &&
-                  confirmationByPassenger(rideFare, tip, myToll)
-                }>
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
-                  {buttonLoader ? (
-                    <ActivityIndicator size={'large'} color={'black'} />
-                  ) : (
-                    'Confirm'
-                  )}
+                  style={[
+                    styles.modalText,
+                    {
+                      marginTop: 0,
+                      paddingHorizontal: 2,
+                      marginHorizontal: 0,
+                      fontWeight: '500',
+                    },
+                  ]}>
+                  You have arrived at your destination
                 </Text>
-              </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.modalText,
+                    {
+                      marginTop: 0,
+                      paddingHorizontal: 2,
+                      marginHorizontal: 5,
+                      fontWeight: '500',
+                      fontSize: 14,
+                      alignSelf: 'flex-start',
+                    },
+                  ]}>
+                  Your Fare Amount:{' '}
+                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                    $
+                    {route.params.passengerData.bidFare ??
+                      route.params.passengerData.fare}
+                  </Text>
+                </Text>
+                <Text
+                  style={[
+                    styles.modalText,
+                    {
+                      marginTop: 0,
+                      paddingHorizontal: 2,
+                      marginHorizontal: 5,
+                      fontWeight: '500',
+                      fontSize: 14,
+                      alignSelf: 'flex-start',
+                    },
+                  ]}>
+                  Your Tip Amount:{' '}
+                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                    ${tip.toFixed(2)}
+                  </Text>
+                </Text>
+                <Text
+                  style={[
+                    styles.modalText,
+                    {
+                      marginTop: 0,
+                      paddingHorizontal: 2,
+                      marginHorizontal: 5,
+                      fontWeight: '500',
+                      fontSize: 14,
+                      alignSelf: 'flex-start',
+                    },
+                  ]}>
+                  Your Toll Amount:{' '}
+                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                    ${myToll && myToll?.toFixed(2)}
+                  </Text>
+                </Text>
+                <Text
+                  style={[
+                    styles.modalText,
+                    {
+                      marginTop: 0,
+                      paddingHorizontal: 2,
+                      marginHorizontal: 5,
+                      fontWeight: '500',
+                      fontSize: 14,
+                      alignSelf: 'flex-start',
+                    },
+                  ]}>
+                  Total Charges:
+                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                    ${totalCharges}
+                  </Text>
+                </Text>
+                <Text
+                  style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}>
+                  Kindly give rating to driver
+                </Text>
+                <View
+                  style={{
+                    width: '100%',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                  }}>
+                  {driverRating &&
+                    driverRating.length > 0 &&
+                    driverRating.map((e, i) => {
+                      return (
+                        <TouchableOpacity
+                          key={i}
+                          onPress={() => getDriverRating(i)}>
+                          <Icon
+                            size={30}
+                            name="star"
+                            color={
+                              e.star <= driverRatingStar ? 'yellow' : 'white'
+                            }
+                          />
+                        </TouchableOpacity>
+                      );
+                    })}
+                </View>
+                <Text style={[styles.modalText, {fontWeight: '600'}]}>
+                  Kindly give rating to Car
+                </Text>
+                <View
+                  style={{
+                    width: '100%',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                  }}>
+                  {carRating &&
+                    carRating.length > 0 &&
+                    carRating.map((e, i) => {
+                      return (
+                        <TouchableOpacity
+                          key={i}
+                          onPress={() => getCarRating(i)}>
+                          <Icon
+                            size={30}
+                            name="star"
+                            color={e.star <= carRatingStar ? 'yellow' : 'white'}
+                          />
+                        </TouchableOpacity>
+                      );
+                    })}
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    {marginBottom: 5, backgroundColor: Colors.primary},
+                  ]}
+                  onPress={() =>
+                    !buttonLoader &&
+                    confirmationByPassenger(rideFare, tip, myToll)
+                  }>
+                  <Text
+                    style={[
+                      styles.textStyle,
+                      {backgroundColor: Colors.primary},
+                    ]}>
+                    {buttonLoader ? (
+                      <ActivityIndicator size={'large'} color={'black'} />
+                    ) : (
+                      'Confirm'
+                    )}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
+        </ScrollView>
       </View>
     );
   }, [
@@ -2378,9 +2383,11 @@ export default function PassengerHomeScreen({navigation}) {
                           : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
                           $
-                          {selectedDriver &&
-                          Object.keys(selectedDriver).length > 0 &&
-                          !selectedDriver.bidFare
+                          {data?.passengerData.bidFare
+                            ? data?.passengerData?.bidFare
+                            : selectedDriver &&
+                              Object.keys(selectedDriver).length > 0 &&
+                              !selectedDriver.bidFare
                             ? selectedDriver.fare
                             : Object.keys(selectedDriver).length > 0 &&
                               selectedDriver.bidFare

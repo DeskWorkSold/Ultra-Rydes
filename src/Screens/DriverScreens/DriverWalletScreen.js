@@ -14,7 +14,7 @@ import COLORS from '../../Constants/Colors';
 import CustomButton from '../../Components/CustomButton';
 import CustomHeader from '../../Components/CustomHeader';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {set, withSpring} from 'react-native-reanimated';
+import {useIsFocused} from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import Colors from '../../Constants/Colors';
@@ -48,6 +48,8 @@ const CurrentBalanceScreen = ({navigation}) => {
     monthly: null,
     total: null,
   });
+
+  const focus = useIsFocused();
 
   const getAccountId = async () => {
     let id = auth().currentUser.uid;
@@ -88,7 +90,7 @@ const CurrentBalanceScreen = ({navigation}) => {
 
   useEffect(() => {
     getAccountId();
-  }, []);
+  }, [focus]);
 
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
@@ -326,9 +328,8 @@ const CurrentBalanceScreen = ({navigation}) => {
             .doc(id)
             .set(
               {
-                driverWallet: firestore.FieldValue.arrayUnion(
-                  walletDataToUpdate,
-                ),
+                driverWallet:
+                  firestore.FieldValue.arrayUnion(walletDataToUpdate),
               },
               {merge: true},
             );
@@ -381,8 +382,7 @@ const CurrentBalanceScreen = ({navigation}) => {
           visible={openCreateAccountModal}
           onRequestClose={() => {
             setOpenCreateAccountModal(false);
-          }}
-        >
+          }}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <View>
@@ -397,8 +397,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                   styles.button,
                   {marginBottom: 10, backgroundColor: Colors.primary},
                 ]}
-                onPress={() => getStripeAccountDetailsFromDriver()}
-              >
+                onPress={() => getStripeAccountDetailsFromDriver()}>
                 {modalLoading ? (
                   <ActivityIndicator size={'small'} color={Colors.black} />
                 ) : (
@@ -406,8 +405,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                     style={[
                       styles.textStyle,
                       {backgroundColor: Colors.primary},
-                    ]}
-                  >
+                    ]}>
                     Get my Details
                   </Text>
                 )}
@@ -425,8 +423,7 @@ const CurrentBalanceScreen = ({navigation}) => {
       <ScrollView
         style={{height: '100%', backgroundColor: COLORS.white}}
         vertical
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.container}>
           <View style={styles.headerContainer}>
             <CustomHeader
@@ -447,16 +444,14 @@ const CurrentBalanceScreen = ({navigation}) => {
                 backgroundColor: COLORS.white,
                 height: 80,
                 paddingHorizontal: 20,
-              }}
-            >
+              }}>
               <View style={{width: '100%', alignItems: 'center'}}>
                 <Text
                   style={{
                     fontSize: 24,
                     fontWeight: 'bold',
                     color: COLORS.secondary,
-                  }}
-                >
+                  }}>
                   YOUR WALLET
                 </Text>
               </View>
@@ -466,16 +461,14 @@ const CurrentBalanceScreen = ({navigation}) => {
                   width: '20%',
                   alignItems: 'flex-end',
                   paddingHorizontal: 20,
-                }}
-              ></View>
+                }}></View>
             </View>
             <View
               style={{
                 paddingHorizontal: 20,
                 paddingTop: 20,
                 alignItems: 'center',
-              }}
-            >
+              }}>
               <View>
                 <View style={{width: '20%'}}>
                   <TouchableOpacity>
@@ -493,8 +486,7 @@ const CurrentBalanceScreen = ({navigation}) => {
               <View
                 style={{
                   paddingVertical: 10,
-                }}
-              >
+                }}>
                 <Text style={{color: COLORS.black}}>Current Balance</Text>
               </View>
               <View>
@@ -503,9 +495,8 @@ const CurrentBalanceScreen = ({navigation}) => {
                     fontWeight: 'bold',
                     fontSize: 18,
                     color: COLORS.black,
-                  }}
-                >
-                  ${currentwallet}
+                  }}>
+                  ${currentwallet ?? 0}
                 </Text>
               </View>
             </View>
@@ -517,16 +508,14 @@ const CurrentBalanceScreen = ({navigation}) => {
                 paddingHorizontal: 25,
                 paddingVertical: 20,
                 alignItems: 'center',
-              }}
-            >
+              }}>
               <View>
                 <Text
                   style={{
                     fontWeight: 'bold',
                     fontSize: 18,
                     color: COLORS.black,
-                  }}
-                >
+                  }}>
                   Details
                 </Text>
               </View>
@@ -535,14 +524,12 @@ const CurrentBalanceScreen = ({navigation}) => {
                   flexDirection: 'row',
                   alignItems: 'center',
                 }}
-                onPress={() => setAllWalletData(allWalletData ? false : true)}
-              >
+                onPress={() => setAllWalletData(allWalletData ? false : true)}>
                 <Text
                   style={{
                     color: COLORS.black,
                     paddingRight: 5,
-                  }}
-                >
+                  }}>
                   {allWalletData ? 'All Data' : 'This Month'}
                 </Text>
                 <TouchableOpacity>
@@ -556,8 +543,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 paddingHorizontal: 20,
-              }}
-            >
+              }}>
               <TouchableOpacity
                 style={{
                   backgroundColor: COLORS.white,
@@ -575,8 +561,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                       monthlyData: monthlyWalletData,
                     },
                   })
-                }
-              >
+                }>
                 <View>
                   <Image
                     source={require('../../Assets/Images/walletDeposit.jpg')}
@@ -591,16 +576,14 @@ const CurrentBalanceScreen = ({navigation}) => {
                   style={{
                     flexDirection: 'row',
                     paddingTop: 10,
-                  }}
-                >
+                  }}>
                   <Text
                     style={{
                       fontSize: 13,
                       textAlign: 'center',
                       paddingRight: 5,
                       color: COLORS.black,
-                    }}
-                  >
+                    }}>
                     Earnings:
                   </Text>
                   <Text
@@ -609,8 +592,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                       color: COLORS.black,
                       fontSize: 13,
                       textAlign: 'center',
-                    }}
-                  >
+                    }}>
                     $
                     {allWalletData
                       ? earn.total && (earn.total.toFixed(2) ?? 0)
@@ -636,8 +618,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                   paddingVertical: 20,
                   alignItems: 'center',
                   width: '49%',
-                }}
-              >
+                }}>
                 <View>
                   <Image
                     source={require('../../Assets/Images/walletSpent.png')}
@@ -652,16 +633,14 @@ const CurrentBalanceScreen = ({navigation}) => {
                   style={{
                     flexDirection: 'row',
                     paddingTop: 10,
-                  }}
-                >
+                  }}>
                   <Text
                     style={{
                       fontSize: 13,
                       textAlign: 'center',
                       paddingRight: 5,
                       color: COLORS.black,
-                    }}
-                  >
+                    }}>
                     Withdrawal:
                   </Text>
                   <Text
@@ -670,8 +649,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                       color: COLORS.black,
                       fontSize: 13,
                       textAlign: 'center',
-                    }}
-                  >
+                    }}>
                     $
                     {allWalletData
                       ? withdraw.total
@@ -688,20 +666,17 @@ const CurrentBalanceScreen = ({navigation}) => {
               style={{
                 paddingHorizontal: 25,
                 paddingVertical: 20,
-              }}
-            >
+              }}>
               <View
                 style={{
                   paddingBottom: 5,
-                }}
-              >
+                }}>
                 <Text
                   style={{
                     fontSize: 17,
                     fontWeight: 'bold',
                     color: COLORS.black,
-                  }}
-                >
+                  }}>
                   Withdraw Balance
                 </Text>
               </View>
@@ -729,8 +704,7 @@ const CurrentBalanceScreen = ({navigation}) => {
             style={{
               paddingTop: 20,
               alignItems: 'center',
-            }}
-          >
+            }}>
             <CustomButton
               onPress={checkStripeAccount}
               text={

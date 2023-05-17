@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import {useState} from 'react';
 import {useEffect} from 'react';
@@ -17,6 +16,7 @@ import Icon from 'react-native-vector-icons/AntDesign';
 import MapView, {Marker} from 'react-native-maps';
 import GoogleMapKey from '../Constants/GoogleMapKey';
 import {useRef} from 'react';
+import { ScrollView } from 'react-native-gesture-handler';
 
 function DriverHistorySingleDataScreen({navigation, route}) {
   const [driverProfilePicUrl, setDriverProfilePicUrl] = useState('');
@@ -25,10 +25,13 @@ function DriverHistorySingleDataScreen({navigation, route}) {
 
   const ref = useRef();
   const mapRef = useRef();
-  let data = route.params.item;
-  let profilePic = data.driverData.profilePicture;
+  let data = route?.params?.item;
+
+  console.log(data, 'dataa');
+
+  let profilePic = data?.driverData?.profilePicture;
   let passengerprofilePic =
-    data.passengerData.passengerPersonalDetails.profilePicture;
+    data?.passengerData?.passengerPersonalDetails?.profilePicture;
 
   let {fare} = route.params;
 
@@ -38,7 +41,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
   const getDriverProfilePic = async () => {
-    if (profilePic.length) {
+    if (profilePic?.length) {
       const url = await storage().ref(profilePic).getDownloadURL();
       setDriverProfilePicUrl(url);
     }
@@ -61,16 +64,13 @@ function DriverHistorySingleDataScreen({navigation, route}) {
       getDriverProfilePic();
     }
     if (passengerprofilePic) {
-      setLoader(true);
       getPassengerProfilePic();
     }
   }, [profilePic, passengerprofilePic]);
 
-  console.log(data, 'dataa');
-
   return loader ? (
     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-      <ActivityIndicator size={200} color={Colors.secondary} />{' '}
+      <ActivityIndicator size={200} color={Colors.secondary} />
     </View>
   ) : (
     data &&
@@ -78,7 +78,9 @@ function DriverHistorySingleDataScreen({navigation, route}) {
       driverProfilePicUrl &&
       LATITUDE_DELTA &&
       LONGITUDE_DELTA && (
-        <View>
+        <View style={{flex:1}} >
+          <ScrollView>
+          
           <View style={styles.headerContainer}>
             <CustomHeader
               iconname={'chevron-back-outline'}
@@ -115,8 +117,8 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                   alignItems: 'center',
                 }}>
                 <Text style={styles.text}>
-                  {data.driverData.firstName.toUpperCase()}{' '}
-                  {data.driverData.lastName.toUpperCase()}
+                  {data?.driverData?.firstName.toUpperCase()}
+                  {data?.driverData?.lastName.toUpperCase()}
                 </Text>
                 <View
                   style={{
@@ -125,17 +127,17 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                     alignItems: 'center',
                   }}>
                   <Text style={[styles.text, {fontSize: 20}]}>
-                    {data.driverData.rating}
+                    {data?.driverData?.rating}
                   </Text>
                   <Icon name={'star'} size={20} color="yellow" />
                 </View>
               </View>
               <Text style={styles.text}>
-                {data.driverData.vehicleDetails.vehicleCategory}{' '}
-                {data.driverData.vehicleDetails.vehicleName}{' '}
+                {data?.driverData?.vehicleDetails?.vehicleCategory}
+                {data?.driverData?.vehicleDetails?.vehicleName}
               </Text>
               <Text style={styles.text}>
-                {data.driverData.vehicleDetails.vehicleNumPlate}{' '}
+                {data?.driverData?.vehicleDetails?.vehicleNumPlate}
               </Text>
             </View>
           </View>
@@ -165,12 +167,12 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                   alignItems: 'center',
                 }}>
                 <Text style={styles.text}>
-                  {data.passengerData.passengerPersonalDetails.firstName.toUpperCase()}{' '}
+                  {data.passengerData.passengerPersonalDetails.firstName.toUpperCase()}
                   {data.passengerData.passengerPersonalDetails.lastName.toUpperCase()}
                 </Text>
               </View>
               <Text style={styles.text}>
-                {data.passengerData.passengerPersonalDetails.Email}{' '}
+                {data?.passengerData?.passengerPersonalDetails?.Email}
               </Text>
             </View>
           </View>
@@ -186,7 +188,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
             {data && data.passengerData && (
               <MapView
                 ref={mapRef}
-                style={{width: '100%', height: '48%'}}
+                style={{width: '100%', height: 200}}
                 initialRegion={{
                   latitude: data.passengerData.pickupCords.latitude,
                   longitude: data.passengerData.pickupCords.longitude,
@@ -235,45 +237,43 @@ function DriverHistorySingleDataScreen({navigation, route}) {
               </View>
               <View style={{flexDirection: 'row', marginTop: 3}}>
                 <Text style={[styles.text, {fontSize: 16}]}>
-                  pickup:{' '}
+                  pickup:
                   <Text style={{color: Colors.secondary, fontSize: 14}}>
-                    {' '}
-                    {data.passengerData.pickupAddress}{' '}
+                    
+                    {data?.passengerData?.pickupAddress}
                   </Text>
                 </Text>
               </View>
               <View style={{flexDirection: 'row', marginTop: 3}}>
                 <Text style={[styles.text, {fontSize: 16}]}>
-                  Dropoff:{' '}
+                  Dropoff:
                   <Text style={{color: Colors.secondary, fontSize: 14}}>
-                    {' '}
-                    {data.passengerData.dropOffAddress}{' '}
+                    {data?.passengerData?.dropOffAddress}
                   </Text>
                 </Text>
               </View>
 
               <View style={{flexDirection: 'row', marginTop: 3}}>
-                {data.payment && (
+                {data?.payment && (
                   <Text style={[styles.text, {fontSize: 16}]}>
-                    payment:{' '}
+                    payment:
                     <Text style={{color: Colors.secondary, fontSize: 16}}>
-                      {' '}
-                      ${data.payment}{' '}
+                      ${data?.payment}
                     </Text>
                   </Text>
                 )}
               </View>
               <View style={{flexDirection: 'row', marginTop: 3}}>
                 <Text style={[styles.text, {fontSize: 16}]}>
-                  Fare:{' '}
+                  Fare:
                   <Text style={{color: Colors.secondary, fontSize: 16}}>
-                    {' '}
-                    ${fare ? fare : data.driverData.fare}{' '}
+                    ${fare ? fare : data?.driverData?.fare}
                   </Text>
                 </Text>
               </View>
             </View>
           </View>
+          </ScrollView>
         </View>
       )
   );

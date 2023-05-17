@@ -15,6 +15,7 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import {Linking} from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function DrawerContentPassenger({navigation}) {
   const [passengerData, setPassengerData] = useState('');
@@ -76,6 +77,7 @@ export default function DrawerContentPassenger({navigation}) {
       ) : (
         <>
           <View style={styles.rootContainer}>
+            <ScrollView>
             <View style={styles.upperContainer}>
               <TouchableOpacity
                 onPress={() => {
@@ -215,6 +217,7 @@ export default function DrawerContentPassenger({navigation}) {
                 />
               </View>
             </View>
+            </ScrollView>
           </View>
         </>
       )}

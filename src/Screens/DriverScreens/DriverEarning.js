@@ -49,7 +49,7 @@ function DriverEarningScreen({route, navigation}) {
               Tip from Customer:
               <Text style={{color: Colors.secondary}}>
                 {' '}
-                ${item?.tip ? item?.tip : 0}{' '}
+                ${item?.tip ? (Number(item?.tip)).toFixed(2) : 0}{' '}
               </Text>
             </Text>
             <Text

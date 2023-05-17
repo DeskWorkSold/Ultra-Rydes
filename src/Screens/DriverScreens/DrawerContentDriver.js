@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {Text, StyleSheet, View, Image, TouchableOpacity} from 'react-native';
+import {Text, StyleSheet, View, Image, TouchableOpacity, ScrollView} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CustomButton from '../../Components/CustomButton';
@@ -19,7 +19,6 @@ export default function DrawerContentDriver({navigation}) {
       .doc(CurrentUser)
       .onSnapshot(async documentSnapshot => {
         const GetUserData = documentSnapshot.data();
-
         if (GetUserData.profilePicture.length) {
           const url = await storage()
             .ref(GetUserData.profilePicture)
@@ -34,22 +33,32 @@ export default function DrawerContentDriver({navigation}) {
   const passengerModeHandler = async () => {
     try {
       const CurrentUser = auth().currentUser;
-      const checkData = firestore()
-        .collection('Passengers')
-        .doc(CurrentUser.uid)
-        .onSnapshot(documentSnapshot => {
-          const checkEmpty = documentSnapshot.data();
-          if (checkEmpty == null) {
-            // setLoading(false)
-            navigation.navigate('PassengerDetailScreen', {
-              uid: CurrentUser.uid,
+
+      firestore()
+        .collection('Drivers')
+        .doc(CurrentUser?.uid)
+        .update({
+          status: 'offline',
+          currentLocation: null,
+        })
+        .then(() => {
+          const checkData = firestore()
+            .collection('Passengers')
+            .doc(CurrentUser.uid)
+            .onSnapshot(documentSnapshot => {
+              const checkEmpty = documentSnapshot.data();
+              if (checkEmpty == null) {
+                // setLoading(false)
+                navigation.navigate('PassengerDetailScreen', {
+                  uid: CurrentUser.uid,
+                });
+              } else {
+                // setLoading(false)
+                navigation.navigate('PassengerRoutes', {
+                  screen: 'PassengerHomeScreen',
+                });
+              }
             });
-          } else {
-            // setLoading(false)
-            navigation.navigate('PassengerRoutes', {
-              screen: 'PassengerHomeScreen',
-            });
-          }
         });
     } catch (err) {
       console.log(err);
@@ -58,6 +67,7 @@ export default function DrawerContentDriver({navigation}) {
 
   return (
     <View style={styles.rootContainer}>
+      <ScrollView>
       <View style={styles.upperContainer}>
         <TouchableOpacity
           onPress={() => {
@@ -159,7 +169,9 @@ export default function DrawerContentDriver({navigation}) {
           </TouchableOpacity>
         </View>
         <View style={styles.fieldItemContainer}>
-          <TouchableOpacity style={styles.fieldItem} onPress={()=>navigation.navigate("DriverFAQScreen")} >
+          <TouchableOpacity
+            style={styles.fieldItem}
+            onPress={() => navigation.navigate('DriverFAQScreen')}>
             <MaterialCommunityIcons
               name="message-question-outline"
               size={25}
@@ -184,6 +196,7 @@ export default function DrawerContentDriver({navigation}) {
           <CustomButton text="Passenger Mode" onPress={passengerModeHandler} />
         </View>
       </View>
+      </ScrollView>
     </View>
   );
 }

@@ -29,7 +29,8 @@ import mytone from '../../Assets/my_sound.mp3';
 import CustomButton from '../../Components/CustomButton';
 import {useNavigation} from '@react-navigation/native';
 import {BackHandler} from 'react-native';
-import IdleTimerManager from "react-native-idle-timer"
+import IdleTimerManager from 'react-native-idle-timer';
+import {useIsFocused} from '@react-navigation/native';
 
 export default function DriverHomeScreen({route}) {
   let reload = route.params;
@@ -68,6 +69,8 @@ export default function DriverHomeScreen({route}) {
 
   Sound.setCategory('Playback');
 
+  const focus = useIsFocused();
+
   useEffect(() => {
     if (requestLoader) {
       setDing('');
@@ -103,17 +106,18 @@ export default function DriverHomeScreen({route}) {
 
   AppState.addEventListener('change', nextAppState => {
     const currentUser = auth().currentUser;
-    if (!currentUser) {
+    if (!currentUser || !focus) {
       return;
     }
-    const driverId = currentUser.uid;
+
+    const driverId = currentUser?.uid;
     if (nextAppState === 'background' || nextAppState == 'inactive') {
       firestore()
         .collection('Drivers')
         .doc(driverId)
         .get()
         .then(driverDoc => {
-          if (!driverDoc.exists) {
+          if (!driverDoc._exists) {
             return;
           }
 
@@ -144,10 +148,9 @@ export default function DriverHomeScreen({route}) {
         .doc(driverId)
         .get()
         .then(driverDoc => {
-          if (!driverDoc.exists) {
+          if (!driverDoc._exists || !focus) {
             return;
           }
-
           const driverData = driverDoc.data();
           if (driverData.status === 'offline') {
             firestore()
@@ -156,7 +159,8 @@ export default function DriverHomeScreen({route}) {
               .get()
               .then(inlinedDoc => {
                 const inlinedData = inlinedDoc.data();
-                if (!inlinedData?.inlined) {
+
+                if (!inlinedData?.inlined || !inlinedDoc?._exists) {
                   // Update the driver's status to offline and clear their location
                   getLocationUpdates();
                 }
@@ -171,6 +175,39 @@ export default function DriverHomeScreen({route}) {
         });
     }
   });
+
+  useEffect(() => {
+    setStatus(1);
+    setDriverStatus('offline');
+  }, [focus]);
+
+  useEffect(() => {
+    const backAction = () => {
+      const currentUser = auth().currentUser;
+
+      if (!currentUser) {
+        return true;
+      } else {
+        firestore()
+          .collection('Drivers')
+          .doc(currentUser.uid)
+          .update({
+            status: 'offline',
+            currentLocation: null,
+          })
+          .then(() => {
+            return true;
+          });
+      }
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   useEffect(() => {
     if (requestLoader) {
@@ -333,10 +370,6 @@ export default function DriverHomeScreen({route}) {
     return () => Geolocation.clearWatch(watchId);
   };
 
-
-  console.log(passengerBookingData,"data")
-
-
   const getDriverBookingData = async () => {
     try {
       let data = await AsyncStorage.getItem('driverBooking');
@@ -394,7 +427,7 @@ export default function DriverHomeScreen({route}) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus) {
+              if (!data?.requestStatus && differenceSeconds > 0) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -527,7 +560,9 @@ export default function DriverHomeScreen({route}) {
       Object.keys(driverData.length > 0)
     ) {
       let interval = setInterval(() => {
-        getRequestFromPassengers();
+        if (focus) {
+          getRequestFromPassengers();
+        }
       }, 2000);
 
       return () => clearInterval(interval);
@@ -712,7 +747,7 @@ export default function DriverHomeScreen({route}) {
   };
 
   useEffect(() => {
-    if (requestLoader && driverData && !acceptRequest) {
+    if (requestLoader && driverData && !acceptRequest && focus) {
       let interval = setInterval(() => {
         checkRequestStatus();
       }, 10000);
@@ -977,10 +1012,11 @@ export default function DriverHomeScreen({route}) {
       });
   };
 
-  const updateOnlineOnFirebase = () => {
+  const updateOnlineOnFirebase = async () => {
     try {
       const CurrentUser = auth().currentUser;
-      firestore().collection('Drivers').doc(CurrentUser.uid).update({
+
+      firestore().collection('Drivers').doc(CurrentUser?.uid).update({
         status: 'online',
         currentLocation: pickupCords,
       });
@@ -999,7 +1035,7 @@ export default function DriverHomeScreen({route}) {
       console.log(err);
     }
   };
-  
+
   useEffect(() => {
     // Disable screen timeout when the component mounts
     IdleTimerManager.setIdleTimerDisabled(true);
@@ -1010,11 +1046,10 @@ export default function DriverHomeScreen({route}) {
     };
   }, []);
 
-
   const removeLocationUpdates = () => {
     if (watchId !== null) {
       Geolocation.clearWatch(watchId);
-      Geolocation.stopObserving();
+      Geolocation.stopObserving(watchId);
       updateOfflineOnFirebase();
     }
   };
@@ -1045,19 +1080,13 @@ export default function DriverHomeScreen({route}) {
           items.distance <= e.rangeMax
         ) {
           let percentageBid = Math.round(
-            (Number(items.bidFare) / Number(items.fare)) * 100,
+            (Number(items?.bidFare) / Number(items?.fare)) * 100,
           );
-
-          let baseCharge = items.selectedCar[0].carMiles[0].mileCharge;
-
-          console.log(baseCharge, 'baseCharge');
-
+          let baseCharge = items?.selectedCar[0]?.carMiles[0]?.mileCharge;
           let myDistance = 0;
-
           if (items.distance > 3) {
             myDistance = items.distance - 3;
           }
-
           let milesCharge = myDistance * e.mileCharge;
           let totalCharges = baseCharge + milesCharge;
           items.fare = totalCharges.toFixed(2);
@@ -1232,13 +1261,20 @@ export default function DriverHomeScreen({route}) {
 
   const signOutHandler = async () => {
     setLoader(true);
-    let id = auth().currentUser.uid;
+    let currentUser = auth().currentUser
+
+    if(!currentUser){
+      navigation.navigate('GetStartedScreen');
+      ToastAndroid.show('Logout Successfull', ToastAndroid.SHORT)
+      return
+    }
+
     await auth()
       .signOut()
       .then(() => {
         firestore()
           .collection('Drivers')
-          .doc(id)
+          .doc(currentUser?.uid)
           .update({
             currentLocation: null,
             status: 'offline',
