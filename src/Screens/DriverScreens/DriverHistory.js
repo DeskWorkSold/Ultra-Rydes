@@ -41,7 +41,6 @@ function DriverHistory({navigation}) {
     await firestore()
       .collection('Booking')
       .onSnapshot(querySnapshot => {
-        console.log(querySnapshot, 'exist');
         let driverBookingData = [];
         querySnapshot.forEach(documentSnapshot => {
           if (documentSnapshot._exists) {
@@ -63,8 +62,6 @@ function DriverHistory({navigation}) {
       });
   };
 
-  console.log(bookingData[0].passengerData);
-
   const getCancelRidesData = async () => {
     setLoading(true);
     await firestore()
@@ -73,7 +70,6 @@ function DriverHistory({navigation}) {
       .then(doc => {
         const id = auth().currentUser.uid;
         let data = doc._docs;
-        console.log(data, 'data');
         let myNames = [];
         data = data.forEach((e, i) => {
           let myData = e._data.cancelledRides;
@@ -121,8 +117,6 @@ function DriverHistory({navigation}) {
 
     let items = item.passengerData ?? item;
 
-    console.log(items, 'items');
-
     items.selectedCar[0].carMiles.map((e, i) => {
       if (
         Number(items.distance) >= e.rangeMin &&
@@ -167,8 +161,6 @@ function DriverHistory({navigation}) {
         }
       });
     }
-
-    console.log(fare, 'fare');
 
     return (
       <View>
@@ -227,7 +219,6 @@ function DriverHistory({navigation}) {
       item.driverData.bidFare &&
       item.driverData.bidFare > 0
     ) {
-      console.log(item.driverData.bidFare, 'bidFare');
       item.passengerData.selectedCar[0].carMiles.map((e, i) => {
         if (
           item.passengerData.distance >= e.rangeMin &&

@@ -516,7 +516,7 @@ export default function DriverBiddingScreen({navigation}) {
           axios(config)
             .then(res => {
               setButtonLoader(false);
-              console.log(res);
+              
             })
             .catch(error => {
               setButtonLoader(false);
@@ -701,6 +701,7 @@ export default function DriverBiddingScreen({navigation}) {
 
   const DropOffModal = useCallback(() => {
     let myFare = data.bidFare ?? data.passengerData.fare;
+
     let tip = tipAmount ?? 0;
     let toll = tollAmount ?? 0;
 
@@ -824,7 +825,7 @@ export default function DriverBiddingScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [endRide, buttonLoader]);
+  }, [endRide, buttonLoader,tipAmount,tollAmount]);
 
   const cancelBookingByDriver = () => {
     setButtonLoader(true);
@@ -1444,7 +1445,6 @@ export default function DriverBiddingScreen({navigation}) {
       .get()
       .then(async doc => {
         let data = doc.data();
-        console.log(data, 'dataaa');
         if (data && data.confirmByPassenger) {
           try {
             await AsyncStorage.setItem('startRide', 'Ride has been started');
@@ -1607,8 +1607,6 @@ export default function DriverBiddingScreen({navigation}) {
         });
     }
   };
-
-  console.log(arriveDropOffLocation, 'arrive', 'arrive');
 
   return loading ? (
     <View

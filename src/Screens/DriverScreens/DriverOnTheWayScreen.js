@@ -451,7 +451,7 @@ export default function DriverOnTheWay() {
     getLocation();
     let interval = setInterval(() => {
       getLocation();
-    }, 10000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [startRide]);
 
@@ -579,6 +579,7 @@ export default function DriverOnTheWay() {
           // const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
           // const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
           let date = data?.requestDate?.toDate();
+          let dateObj = new Date()
           let time = date?.getTime();
           let nowTime = dateObj.getTime();
           let requestSeconds = time / 1000;

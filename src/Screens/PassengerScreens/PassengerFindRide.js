@@ -21,7 +21,7 @@ import {getPreciseDistance} from 'geolib';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Icon from 'react-native-vector-icons/AntDesign';
-import { useIsFocused } from '@react-navigation/native';
+import {useIsFocused} from '@react-navigation/native';
 import {BackHandler} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
@@ -31,7 +31,7 @@ import {StackActions} from '@react-navigation/native';
 export default function PassengerFindRide({route}) {
   let passengerData = route.params;
 
-  const focus = useIsFocused()
+  const focus = useIsFocused();
 
   const navigation = useNavigation();
 
@@ -59,10 +59,8 @@ export default function PassengerFindRide({route}) {
     cvc: null,
   });
 
-  const [
-    showPaymentConfirmationModal,
-    setShowPaymentConfirmationModal,
-  ] = useState(false);
+  const [showPaymentConfirmationModal, setShowPaymentConfirmationModal] =
+    useState(false);
 
   const checkAvailableDriverStatus = () => {
     if (passengerData && passengerData.bidFare) {
@@ -133,7 +131,7 @@ export default function PassengerFindRide({route}) {
     }, 30000);
     return () => clearInterval(interval);
   }, [request]);
-
+  
   useEffect(() => {
     if (passengerData && !passengerData.bidFare && !request) {
       driverData && driverData.length == 0 ? setLoader(true) : '';
@@ -214,7 +212,7 @@ export default function PassengerFindRide({route}) {
 
   useEffect(() => {
     checkRouteFromCancelRide();
-  }, [route.params,focus]);
+  }, [route.params, focus]);
 
   useEffect(() => {
     if (request) {
@@ -364,7 +362,8 @@ export default function PassengerFindRide({route}) {
           let mileDistance = '';
           if (
             myDriverData &&
-            myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
+            myDriverData?.currentLocation?.latitude &&
+            myDriverData?.currentLocation?.longitude &&
             myDriverData.status == 'online' &&
             flag
           ) {
@@ -409,8 +408,10 @@ export default function PassengerFindRide({route}) {
           if (
             myDriverData?.onTheWay &&
             myDriverData.status == 'online' &&
-            myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
-            myDriverData?.dropLocationCords?.latitude && myDriverData?.dropLocationCords?.longitude &&
+            myDriverData?.currentLocation?.latitude &&
+            myDriverData?.currentLocation?.longitude &&
+            myDriverData?.dropLocationCords?.latitude &&
+            myDriverData?.dropLocationCords?.longitude &&
             !driverRequestedButNotRespond &&
             !flag3
           ) {
@@ -494,8 +495,10 @@ export default function PassengerFindRide({route}) {
               driverPickAndDriverDropDis / 1609.34
             ).toFixed(2);
 
-              let remainingDis = DriverPickAndDriveDropMileDis - passengerPickAndPassengerDropMileDis
-              remainingDis = remainingDis + 2
+            let remainingDis =
+              DriverPickAndDriveDropMileDis -
+              passengerPickAndPassengerDropMileDis;
+            remainingDis = remainingDis + 2;
 
             if (
               Number(pickupMileDistance) <= 5 &&
@@ -503,7 +506,7 @@ export default function PassengerFindRide({route}) {
                 Number(passengerpickAndDriverDropMileDis) &&
               Number(DriverPickAndDriveDropMileDis) >=
                 Number(passengerPickAndPassengerDropMileDis) &&
-                Number(passengerDropAndDriverDropMileDis) < remainingDis &&
+              Number(passengerDropAndDriverDropMileDis) < remainingDis &&
               myDriverData.status == 'online' &&
               flag &&
               !isInlined &&
@@ -621,8 +624,7 @@ export default function PassengerFindRide({route}) {
             style={styles.cancelTextContainer}
             onPress={() => {
               deleteBookingData();
-            }}
-          >
+            }}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         );
@@ -717,12 +719,9 @@ export default function PassengerFindRide({route}) {
   useEffect(() => {
     if (!passengerData.bidFare) {
     }
-
-
   }, [driverNotAvailable]);
 
-
-console.log(passengerData?.pickupCords,"pickupcords")
+  console.log(passengerData?.pickupCords, 'pickupcords');
 
   useEffect(() => {
     let interval;
@@ -738,7 +737,6 @@ console.log(passengerData?.pickupCords,"pickupcords")
 
       return () => clearInterval(interval);
     }
-
 
     if (passengerData.bidFare) {
       setRequest(true);
@@ -873,7 +871,8 @@ console.log(passengerData?.pickupCords,"pickupcords")
       passengerData &&
       passengerData.pickupCords &&
       item &&
-      item?.currentLocation?.latitude && item?.currentLocation?.longitude
+      item?.currentLocation?.latitude &&
+      item?.currentLocation?.longitude
     ) {
       let dis = getPreciseDistance(
         {
@@ -965,8 +964,7 @@ console.log(passengerData?.pickupCords,"pickupcords")
         alignItems: 'center',
         justifyContent: 'center',
         height: '90%',
-      }}
-    >
+      }}>
       <ActivityIndicator size={100} color={Colors.black} />
       <Text style={{color: 'black', marginTop: 10}}>
         {' '}
@@ -997,8 +995,7 @@ console.log(passengerData?.pickupCords,"pickupcords")
             alignItems: 'center',
             justifyContent: 'center',
             height: '90%',
-          }}
-        >
+          }}>
           <ActivityIndicator color="black" size={100} />
           <Text style={{color: 'black', marginTop: 10}}>
             {' '}

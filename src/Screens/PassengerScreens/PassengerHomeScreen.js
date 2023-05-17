@@ -24,11 +24,11 @@ import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
 import Icon from 'react-native-vector-icons/AntDesign';
+import { useIsFocused } from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import IdleTimerManager from 'react-native-idle-timer';
-import {useIsFocused} from '@react-navigation/native';
 import {LogBox} from 'react-native';
 import {
   locationPermission,
@@ -375,7 +375,7 @@ export default function PassengerHomeScreen({navigation}) {
     ) {
       getPickUpAndDropOffAddress();
     }
-  }, [location, location.dropLocationCords, pickupCords, dropLocationCords]);
+  }, [location, location.dropLocationCords.latitude, location.dropLocationCords.longitude,pickupCords, dropLocationCords]);
 
   useEffect(() => {
     if (data) {
@@ -2435,11 +2435,10 @@ export default function PassengerHomeScreen({navigation}) {
                       confirm={confirmBidFare}
                     />
                   )}
-                  {driverArrive && driverArrive.pickupLocation && ArriveModal()}
+                  {driverArrive && driverArrive.pickupLocation && focus && ArriveModal()}
                   {driverArriveAtdropoffLocation && getTollAmount()}
-                  {toll && dropOffModal()}
+                  {toll && focus && dropOffModal()}
                   {showFeedBackModal && FeedBackModal()}
-
                   {cancelRide && cancelRideModal()}
 
                   <TextInput

@@ -27,7 +27,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
   const mapRef = useRef();
   let data = route?.params?.item;
 
-  console.log(data, 'dataa');
+
 
   let profilePic = data?.driverData?.profilePicture;
   let passengerprofilePic =
@@ -53,6 +53,8 @@ function DriverHistorySingleDataScreen({navigation, route}) {
       setPassengerProfilePicUrl(url);
     }
   };
+
+
 
   useEffect(() => {
     driverProfilePicUrl && setLoader(false);
@@ -267,7 +269,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                 <Text style={[styles.text, {fontSize: 16}]}>
                   Fare:
                   <Text style={{color: Colors.secondary, fontSize: 16}}>
-                    ${fare ? fare : data?.driverData?.fare}
+                    ${fare ? fare : data?.passengerData?.bidFare ? data?.passengerData?.bidFare : data?.passengerData?.fare}
                   </Text>
                 </Text>
               </View>

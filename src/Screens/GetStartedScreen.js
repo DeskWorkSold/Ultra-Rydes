@@ -124,7 +124,7 @@ export default function GetStartedScreen({navigation}) {
                 text="Continue with Google"
                 bgColor={Colors.googleBtnColor}
                 onPress={() =>
-                  onGoogleButtonPress().then(() => afterGoogleLogin())
+                  onGoogleButtonPress().then(() => afterGoogleLogin()).catch((error)=>navigation.navigate("GetStartedScreen"))
                 }
               />
             </View>

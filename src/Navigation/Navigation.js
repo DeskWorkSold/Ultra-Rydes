@@ -149,7 +149,7 @@ function DriverRoutes() {
       <Drawer.Screen
         name="DriverOnTheWayScreen"
         component={DriverOnTheWay}
-        options={{headerShown: false}}
+        options={{headerShown: false,unmountOnBlur:true}}
       />
       <Drawer.Screen
         name="SettingsDriver"
