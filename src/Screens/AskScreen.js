@@ -353,9 +353,9 @@ export default function AskScreen({route}) {
   };
   useEffect(() => {
     getDriverBookingData();
-    getPassengerBookingData();
-    checkPassengerRequestToDriver();
-    checkDriverRequestToPassenger();
+    // getPassengerBookingData();
+    // checkPassengerRequestToDriver();
+    // checkDriverRequestToPassenger();
     checkOnTheWayDriver();
   }, []);
 

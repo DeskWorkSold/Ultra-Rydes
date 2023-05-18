@@ -186,7 +186,8 @@ const styles = StyleSheet.create({
   socialBtnContainer: {
     alignItems: 'center',
     justifyContent: 'space-evenly',
-    flex: 2,
+    height:200,
+    marginTop:30
   },
   signUpText: {
     color: Colors.fontColor,

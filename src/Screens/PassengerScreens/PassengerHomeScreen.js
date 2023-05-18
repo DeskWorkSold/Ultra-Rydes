@@ -24,7 +24,7 @@ import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
 import Icon from 'react-native-vector-icons/AntDesign';
-import { useIsFocused } from '@react-navigation/native';
+import {useIsFocused} from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -375,7 +375,13 @@ export default function PassengerHomeScreen({navigation}) {
     ) {
       getPickUpAndDropOffAddress();
     }
-  }, [location, location.dropLocationCords.latitude, location.dropLocationCords.longitude,pickupCords, dropLocationCords]);
+  }, [
+    location,
+    location.dropLocationCords.latitude,
+    location.dropLocationCords.longitude,
+    pickupCords,
+    dropLocationCords,
+  ]);
 
   useEffect(() => {
     if (data) {
@@ -399,8 +405,14 @@ export default function PassengerHomeScreen({navigation}) {
   }, [route.params]);
 
   useEffect(() => {
-    if (data && routeData !== null) {
-      setRouteData(data);
+    data?.driverData ? setRouteData(data) : setRouteData('');
+    data?.driverData
+      ? setSelectedDriver(data.driverData)
+      : setSelectedDriver('');
+  }, [data, focus]);
+
+  useEffect(() => {
+    if (data && routeData !== null && routeData !== '') {
       if (data && data.passengerData) {
         setLocation({
           ...location,
@@ -533,7 +545,6 @@ export default function PassengerHomeScreen({navigation}) {
     Geocoder.init(GoogleMapKey.GOOGLE_MAP_KEY);
     Geocoder.from(pickupCords.latitude, pickupCords.longitude)
       .then(json => {
-        console.log(json.results[0].geometry);
 
         var addressPickup = json.results[0].formatted_address;
         setPickUpAddress(addressPickup);
@@ -903,7 +914,6 @@ export default function PassengerHomeScreen({navigation}) {
               // Show an error message to the user
               setButtonLoader(false);
               ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
-              console.log('Request timed out');
             }, timeout);
             axios
               .post(`${BASE_URI}dopayment`, customerData)
@@ -1106,7 +1116,6 @@ export default function PassengerHomeScreen({navigation}) {
                 // Show an error message to the user
                 setButtonLoader(false);
                 ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
-                console.log('Request timed out');
               }, timeout);
               axios
                 .post(`${BASE_URI}dopayment`, customerData)
@@ -1741,6 +1750,7 @@ export default function PassengerHomeScreen({navigation}) {
           .doc(route.params.passengerData.id)
           .update({
             rideCancelByPassenger: true,
+            myDriversData: null,
           })
           .then(() => {
             firestore()
@@ -1760,6 +1770,21 @@ export default function PassengerHomeScreen({navigation}) {
                   'Your ride has been succesfully cancelled',
                   ToastAndroid.SHORT,
                 );
+                setSelectedDriver('');
+                setSelectedLocation({
+                  pickupCords: '',
+                  dropLocationCords: '',
+                });
+                setDriverArrive({
+                  pickupLocation: false,
+                  dropoffLocation: false,
+                });
+                setRouteData('');
+                setReasonForCancelRide(false);
+                setPassengerReasonForCancelRide('');
+                setDriverArriveAtPickUpLocation(false);
+                setCancelRide(false);
+
                 let routeToFindDriver =
                   route.params?.passengerData ??
                   route.params?.data?.passengerData;
@@ -1792,25 +1817,41 @@ export default function PassengerHomeScreen({navigation}) {
       .then(doc => {
         let data = doc.data();
 
-        if (data && data.rideCancelByDriver) {
+        if (data && data.rideCancelByDriver && selectedDriver && Object.keys(selectedDriver).length>0) {
           ToastAndroid.show(
             'Ride has been cancelled by Driver',
             ToastAndroid.SHORT,
           );
-
           AsyncStorage.removeItem('passengerBooking');
           AsyncStorage.removeItem('driverArrive');
-
+          setSelectedDriver('');
+          setSelectedLocation({
+            pickupCords: '',
+            dropLocationCords: '',
+          });
+          setDriverArrive({
+            pickupLocation: false,
+            dropoffLocation: false,
+          });
+          setRouteData('');
+          setReasonForCancelRide(false);
+          setPassengerReasonForCancelRide('');
+          setDriverArriveAtPickUpLocation(false);
+          setCancelRide(false);
           let routeToFindDriver =
             route.params?.passengerData ?? route.params?.data?.passengerData;
           navigation.navigate('PassengerFindRide', routeToFindDriver);
         }
       });
   };
+
+
   useEffect(() => {
-    if ((selectedDriver, focus)) {
+    if ((Object.keys(selectedDriver).length>0, focus)) {
       let interval = setInterval(() => {
+        if(selectedDriver && Object.keys(selectedDriver).length>0, focus){
         cancelRideByDriver();
+      }
       }, 10000);
       return () => clearInterval(interval);
     }
@@ -2226,8 +2267,11 @@ export default function PassengerHomeScreen({navigation}) {
                   }}>
                   <FlatList
                     data={
-                      data && data.passengerData.selectedCar
-                        ? data.passengerData.selectedCar
+                      data &&
+                      Object.keys(data).length > 0 &&
+                      data?.passengerData?.selectedCar &&
+                      Object.keys(selectedDriver).length > 0
+                        ? data?.passengerData?.selectedCar
                         : dummyDataCat
                     }
                     renderItem={Categories}
@@ -2406,27 +2450,29 @@ export default function PassengerHomeScreen({navigation}) {
                     </View>
                   ) : null}
 
-                  {fare && !data && distance > 3 && (
-                    <TouchableOpacity
-                      onPress={() => showBidFareModal()}
-                      style={{
-                        marginTop: 10,
-                        marginHorizontal: 5,
-                        backgroundColor: 'skyblue',
-                        padding: 8,
-                        width: '30%',
-                        borderRadius: 10,
-                      }}>
-                      <Text
+                  {fare &&
+                    !Object.keys(selectedDriver).length > 0 &&
+                    distance > 3 && (
+                      <TouchableOpacity
+                        onPress={() => showBidFareModal()}
                         style={{
-                          color: 'black',
-                          fontSize: 20,
-                          fontWeight: '700',
+                          marginTop: 10,
+                          marginHorizontal: 5,
+                          backgroundColor: 'skyblue',
+                          padding: 8,
+                          width: '30%',
+                          borderRadius: 10,
                         }}>
-                        Bid Fare
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                        <Text
+                          style={{
+                            color: 'black',
+                            fontSize: 20,
+                            fontWeight: '700',
+                          }}>
+                          Bid Fare
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   {appearBiddingOption && (
                     <AppModal
                       modalVisible={appearBiddingOption}
@@ -2435,7 +2481,10 @@ export default function PassengerHomeScreen({navigation}) {
                       confirm={confirmBidFare}
                     />
                   )}
-                  {driverArrive && driverArrive.pickupLocation && focus && ArriveModal()}
+                  {driverArrive &&
+                    driverArrive.pickupLocation &&
+                    focus &&
+                    ArriveModal()}
                   {driverArriveAtdropoffLocation && getTollAmount()}
                   {toll && focus && dropOffModal()}
                   {showFeedBackModal && FeedBackModal()}
@@ -2450,7 +2499,7 @@ export default function PassengerHomeScreen({navigation}) {
                     activeUnderlineColor={Colors.gray}
                     style={styles.textInputStyle}
                     editable={
-                      routeData && Object.keys(routeData).length > 0
+                      selectedDriver && Object.keys(selectedDriver).length > 0
                         ? false
                         : true
                     }
@@ -2458,7 +2507,7 @@ export default function PassengerHomeScreen({navigation}) {
                   />
 
                   {/* </ScrollView> */}
-                  {routeData && Object.keys(routeData).length > 0 ? (
+                  {selectedDriver && Object.keys(selectedDriver).length > 0 ? (
                     ''
                   ) : (
                     <View style={styles.btnContainer}>

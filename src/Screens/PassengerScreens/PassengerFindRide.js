@@ -121,7 +121,13 @@ export default function PassengerFindRide({route}) {
       if (driverData.length == 0 && request && passengerData.bidFare) {
         setRequest(false);
         setNoDriverData(true);
-        navigation.navigate('PassengerHomeScreen');
+        // navigation.navigate('PassengerHomeScreen');
+        navigation.navigate('PassengerRoutes', {
+          screen: 'PassengerHomeScreen',
+          params: {
+            passengerData: passengerData,
+          },
+        });
         clearInterval(interval);
         ToastAndroid.show(
           'Drivers are not available rightnow request after sometime',
@@ -131,7 +137,7 @@ export default function PassengerFindRide({route}) {
     }, 30000);
     return () => clearInterval(interval);
   }, [request]);
-  
+
   useEffect(() => {
     if (passengerData && !passengerData.bidFare && !request) {
       driverData && driverData.length == 0 ? setLoader(true) : '';
@@ -161,7 +167,7 @@ export default function PassengerFindRide({route}) {
       setDriverData([]);
       setRequest(true);
     }
-  }, [route.params]);
+  }, [route.params,focus]);
 
   useEffect(() => {
     let interval = setInterval(() => {
@@ -170,7 +176,7 @@ export default function PassengerFindRide({route}) {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [focus]);
 
   const checkRouteFromCancelRide = () => {
     let id = auth().currentUser.uid;
@@ -329,7 +335,7 @@ export default function PassengerFindRide({route}) {
 
       return () => clearInterval(interval);
     }
-  }, [request, selectedDriver]);
+  }, [request, selectedDriver,focus,route.params]);
 
   const getDriverData = async rejectedDriver => {
     /// GET ALL DRIVERS
@@ -632,6 +638,7 @@ export default function PassengerFindRide({route}) {
     });
   }, []);
   const AccecptOffer = acceptDriver => {
+
     if (passengerData && passengerData.bidFare) {
       if (
         driverData &&

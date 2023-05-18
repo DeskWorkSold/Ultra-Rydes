@@ -14,10 +14,7 @@ import {StackActions} from '@react-navigation/native';
 import {AppState} from 'react-native';
 import Colors from '../../Constants/Colors';
 import SwitchSelector from 'react-native-switch-selector';
-import {
-  locationPermission,
-  getCurrentLocation,
-} from '../../Helper/HelperFunction';
+import {locationPermission} from '../../Helper/HelperFunction';
 import auth from '@react-native-firebase/auth';
 import firestore, {firebase} from '@react-native-firebase/firestore';
 import Geolocation from 'react-native-geolocation-service';
@@ -33,9 +30,7 @@ import IdleTimerManager from 'react-native-idle-timer';
 import {useIsFocused} from '@react-navigation/native';
 
 export default function DriverHomeScreen({route}) {
-  let reload = route.params;
   let navigation = useNavigation();
-
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
       latitude: 24.863,
@@ -207,7 +202,7 @@ export default function DriverHomeScreen({route}) {
     );
 
     return () => backHandler.remove();
-  }, []);
+  }, [focus]);
 
   useEffect(() => {
     if (requestLoader) {
@@ -593,7 +588,7 @@ export default function DriverHomeScreen({route}) {
 
   useEffect(() => {
     getDriverData();
-  }, [driverStatus]);
+  }, [driverStatus, focus]);
 
   const checkRequestStatus = () => {
     if (requestData && requestData?.bidFare) {
@@ -838,8 +833,6 @@ export default function DriverHomeScreen({route}) {
     }
   };
 
-  useEffect(() => {}, [requestLoader]);
-
   const AcceptRequest = item => {
     const Userid = item?.id ?? item?.passengerData?.id;
 
@@ -1044,7 +1037,7 @@ export default function DriverHomeScreen({route}) {
     return () => {
       IdleTimerManager.setIdleTimerDisabled(false);
     };
-  }, []);
+  }, [focus]);
 
   const removeLocationUpdates = () => {
     if (watchId !== null) {
@@ -1061,6 +1054,7 @@ export default function DriverHomeScreen({route}) {
       removeLocationUpdates();
     }
   };
+
   useEffect(() => {
     if (driverStatus == 'online') {
       updateOnlineOnFirebase();
@@ -1261,12 +1255,12 @@ export default function DriverHomeScreen({route}) {
 
   const signOutHandler = async () => {
     setLoader(true);
-    let currentUser = auth().currentUser
+    let currentUser = auth().currentUser;
 
-    if(!currentUser){
+    if (!currentUser) {
       navigation.navigate('GetStartedScreen');
-      ToastAndroid.show('Logout Successfull', ToastAndroid.SHORT)
-      return
+      ToastAndroid.show('Logout Successfull', ToastAndroid.SHORT);
+      return;
     }
 
     await auth()

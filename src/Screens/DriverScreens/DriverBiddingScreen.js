@@ -516,7 +516,6 @@ export default function DriverBiddingScreen({navigation}) {
           axios(config)
             .then(res => {
               setButtonLoader(false);
-              
             })
             .catch(error => {
               setButtonLoader(false);
@@ -825,7 +824,7 @@ export default function DriverBiddingScreen({navigation}) {
         </Modal>
       </View>
     );
-  }, [endRide, buttonLoader,tipAmount,tollAmount]);
+  }, [endRide, buttonLoader, tipAmount, tollAmount]);
 
   const cancelBookingByDriver = () => {
     setButtonLoader(true);
@@ -843,6 +842,7 @@ export default function DriverBiddingScreen({navigation}) {
       .doc(route.params?.data?.id ? route.params?.data?.id : passengerData.id)
       .update({
         rideCancelByDriver: true,
+        myDriversData: null,
       })
       .then(() => {
         firestore()
