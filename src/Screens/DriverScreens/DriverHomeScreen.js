@@ -407,7 +407,7 @@ export default function DriverHomeScreen({route}) {
   const getRequestFromPassengers = () => {
     if (!inlinedDrivers) {
       if (driverStatus == 'online' && driverData.currentLocation) {
-        let requestData = [];
+        let requestData = [];key
         firestore()
           .collection('Request')
           .get()
