@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,26 +10,25 @@ import {
   Alert,
 } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
-import {StackActions} from '@react-navigation/native';
-import {AppState} from 'react-native';
+import { AppState } from 'react-native';
 import Colors from '../../Constants/Colors';
 import SwitchSelector from 'react-native-switch-selector';
-import {locationPermission} from '../../Helper/HelperFunction';
+import { locationPermission } from '../../Helper/HelperFunction';
 import auth from '@react-native-firebase/auth';
-import firestore, {firebase} from '@react-native-firebase/firestore';
+import firestore, { firebase } from '@react-native-firebase/firestore';
 import Geolocation from 'react-native-geolocation-service';
-import {getPreciseDistance} from 'geolib';
+import { getPreciseDistance } from 'geolib';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useCallback} from 'react';
+import { useCallback } from 'react';
 import Sound from 'react-native-sound';
 import mytone from '../../Assets/my_sound.mp3';
 import CustomButton from '../../Components/CustomButton';
-import {useNavigation} from '@react-navigation/native';
-import {BackHandler} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { BackHandler } from 'react-native';
 import IdleTimerManager from 'react-native-idle-timer';
-import {useIsFocused} from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 
-export default function DriverHomeScreen({route}) {
+export default function DriverHomeScreen({ route }) {
   let navigation = useNavigation();
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
@@ -47,7 +46,7 @@ export default function DriverHomeScreen({route}) {
     pickupCords: null,
     dropLocationCords: {},
   });
-  const {pickupCords, dropLocationCords} = state;
+  const { pickupCords, dropLocationCords } = state;
   const [status, setStatus] = useState(1);
   const [driverStatus, setDriverStatus] = useState('');
   const [loading, setLoading] = useState(false);
@@ -234,15 +233,18 @@ export default function DriverHomeScreen({route}) {
     if (passengerBookingData.length < requestIds.length) {
       setRequestIds(
         passengerBookingData &&
-          passengerBookingData.length > 0 &&
-          passengerBookingData.map((e, i) => {
-            if (e?.passengerData) {
-              return e.passengerData.id;
-            } else {
-              return e?.id;
-            }
-          }),
+        passengerBookingData.length > 0 &&
+        passengerBookingData.map((e, i) => {
+          if (e?.passengerData) {
+            return e.passengerData.id;
+          } else {
+            return e?.id;
+          }
+        }),
       );
+    }
+    else if (passengerBookingData.length == 0) {
+      setRequestIds([])
     }
 
     if (ding && Object.keys(ding).length > 0) {
@@ -294,14 +296,14 @@ export default function DriverHomeScreen({route}) {
           let interval = setTimeout(() => {
             setRequestIds(
               passengerBookingData &&
-                passengerBookingData.length > 0 &&
-                passengerBookingData.map((e, i) => {
-                  if (e?.passengerData) {
-                    return e.passengerData.id;
-                  } else {
-                    return e.id;
-                  }
-                }),
+              passengerBookingData.length > 0 &&
+              passengerBookingData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
             );
           }, 30000);
         } else {
@@ -317,14 +319,14 @@ export default function DriverHomeScreen({route}) {
           setTimeout(() => {
             setRequestIds(
               passengerBookingData &&
-                passengerBookingData.length > 0 &&
-                passengerBookingData.map((e, i) => {
-                  if (e?.passengerData) {
-                    return e.passengerData.id;
-                  } else {
-                    return e.id;
-                  }
-                }),
+              passengerBookingData.length > 0 &&
+              passengerBookingData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
             );
           }, 30000);
         } else {
@@ -341,7 +343,7 @@ export default function DriverHomeScreen({route}) {
     if (!hasLocationPermission) return;
     watchId = Geolocation.watchPosition(
       position => {
-        const {latitude, longitude} = position.coords;
+        const { latitude, longitude } = position.coords;
 
         setState({
           ...state,
@@ -590,7 +592,9 @@ export default function DriverHomeScreen({route}) {
     getDriverData();
   }, [driverStatus, focus]);
 
+
   const checkRequestStatus = () => {
+
     if (requestData && requestData?.bidFare) {
       firestore()
         .collection('Request')
@@ -653,7 +657,7 @@ export default function DriverHomeScreen({route}) {
                 let myData = JSON.stringify(requestData ?? data);
 
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
 
               firestore()
                 .collection('inlinedDriver')
@@ -674,7 +678,7 @@ export default function DriverHomeScreen({route}) {
                       selectedDriver: driverData,
                     },
                   });
-                  setRequestLoader(false);
+                  // setRequestLoader(false);
                 })
                 .catch(error => {
                   setRequestLoader(false);
@@ -703,7 +707,7 @@ export default function DriverHomeScreen({route}) {
                 requestData.driverData = driverData;
                 let myData = JSON.stringify(requestData ?? data);
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
 
               firestore()
                 .collection('inlinedDriver')
@@ -724,7 +728,7 @@ export default function DriverHomeScreen({route}) {
                       selectedDriver: driverData,
                     },
                   });
-                  setRequestLoader(false);
+                  // setRequestLoader(false);
                 })
                 .catch(error => {
                   setRequestLoader(false);
@@ -741,9 +745,27 @@ export default function DriverHomeScreen({route}) {
     }
   };
 
+
+  // useEffect(()=>{
+  //   let interval = setInterval(() => {
+  //     if(requestLoader && Object.keys(requestData).length>0){
+  //       firestore().collection("Request").doc(requestData.id).update({
+  //         myDriversData : null
+  //       }).then(()=>{
+  //         setRequestLoader(false)
+  //         setRequestData({})
+  //       })
+  //     }
+  //   }, 30000);
+  //   return () => clearInterval(interval)
+  // },[requestLoader,requestData])
+
+
+
   useEffect(() => {
     if (requestLoader && driverData && !acceptRequest && focus) {
       let interval = setInterval(() => {
+        console.log("hello")
         checkRequestStatus();
       }, 10000);
 
@@ -860,7 +882,7 @@ export default function DriverHomeScreen({route}) {
                 data.driverData = item.driverData;
                 let myData = JSON.stringify(data);
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
               firestore()
                 .collection('inlinedDriver')
                 .doc(driverData.id)
@@ -1064,7 +1086,7 @@ export default function DriverHomeScreen({route}) {
   }, [driverStatus, state]);
 
   const rideList = useCallback(
-    ({item, index}) => {
+    ({ item, index }) => {
       // console.log(item?.timeLimit, 'timelimit');
 
       let items = item.passengerData ?? item;
@@ -1097,22 +1119,22 @@ export default function DriverHomeScreen({route}) {
         <View
           style={styles.listItemContainer}
           key={item.passengerData ? item.passengerData.id : item.id}
-          // onPress={() => {
-          //   navigation.navigate('DriverRoutes', {
-          //     screen: 'DriverBiddingScreen',
-          //     params: {
-          //       data: items,
-          //       passengerState: {
-          //         pickupCords: item.passengerData
-          //           ? item.passengerData.pickupCords
-          //           : item.pickupCords,
-          //         dropLocationCords: item.passengerData
-          //           ? item.passengerData.dropLocationCords
-          //           : item.dropLocationCords,
-          //       },
-          //     },
-          //   });
-          // }}
+        // onPress={() => {
+        //   navigation.navigate('DriverRoutes', {
+        //     screen: 'DriverBiddingScreen',
+        //     params: {
+        //       data: items,
+        //       passengerState: {
+        //         pickupCords: item.passengerData
+        //           ? item.passengerData.pickupCords
+        //           : item.pickupCords,
+        //         dropLocationCords: item.passengerData
+        //           ? item.passengerData.dropLocationCords
+        //           : item.dropLocationCords,
+        //       },
+        //     },
+        //   });
+        // }}
         >
           <View
             style={{
@@ -1171,7 +1193,7 @@ export default function DriverHomeScreen({route}) {
             <Text
               style={[
                 styles.itemTextStyle,
-                {width: '50%', textAlign: 'center'},
+                { width: '50%', textAlign: 'center' },
               ]}>
               Fare:
               <Text style={styles.itemLocStyle}>
@@ -1181,10 +1203,10 @@ export default function DriverHomeScreen({route}) {
             <Text
               style={[
                 styles.itemTextStyle,
-                {width: '50%', textAlign: 'center'},
+                { width: '50%', textAlign: 'center' },
               ]}>
               Distance:
-              <Text style={[styles.itemLocStyle, {fontSize: 18}]}>
+              <Text style={[styles.itemLocStyle, { fontSize: 18 }]}>
                 {item.passengerData
                   ? item.passengerData.distance
                   : item.distance}{' '}
@@ -1204,7 +1226,7 @@ export default function DriverHomeScreen({route}) {
               <Text
                 style={[
                   styles.itemTextStyle,
-                  {width: '50%', textAlign: 'center'},
+                  { width: '50%', textAlign: 'center' },
                 ]}>
                 Bid Fare:
                 <Text style={styles.itemLocStyle}>${items.bidFare}</Text>
@@ -1213,7 +1235,7 @@ export default function DriverHomeScreen({route}) {
             <Text
               style={[
                 styles.itemTextStyle,
-                {width: '50%', textAlign: 'center'},
+                { width: '50%', textAlign: 'center' },
               ]}>
               Minutes:
               <Text style={styles.itemLocStyle}>
@@ -1233,7 +1255,7 @@ export default function DriverHomeScreen({route}) {
             <CustomButton
               onPress={() => AcceptRequest(item)}
               text={'Accept'}
-              styleContainer={{width: '45%'}}
+              styleContainer={{ width: '45%' }}
             />
             <CustomButton
               text={
@@ -1244,7 +1266,7 @@ export default function DriverHomeScreen({route}) {
                 )
               }
               onPress={() => rejectRequest(item)}
-              styleContainer={{width: '45%'}}
+              styleContainer={{ width: '45%' }}
             />
           </View>
         </View>
@@ -1252,7 +1274,6 @@ export default function DriverHomeScreen({route}) {
     },
     [passengerBookingData],
   );
-
   const signOutHandler = async () => {
     setLoader(true);
     let currentUser = auth().currentUser;
@@ -1276,7 +1297,14 @@ export default function DriverHomeScreen({route}) {
           .then(() => {
             setLoader(false);
             ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
-            navigation.dispatch(StackActions.replace('GetStartedScreen'));
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'GetStartedScreen',
+                },
+              ],
+            });
           })
           .catch(error => {
             setLoader(false);
@@ -1284,7 +1312,14 @@ export default function DriverHomeScreen({route}) {
           });
       })
       .catch(() => {
-        navigation.navigate('GetStartedScreen');
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'GetStartedScreen',
+            },
+          ],
+        });
       });
   };
 
@@ -1339,7 +1374,7 @@ export default function DriverHomeScreen({route}) {
               textColor={Colors.black} //'#7a44cf'
               selectedColor={Colors.white}
               // textStyle={{ fontFamily: 'Poppins-Medium', }}
-              selectedTextStyle={{fontFamily: 'Poppins-Medium'}}
+              selectedTextStyle={{ fontFamily: 'Poppins-Medium' }}
               buttonColor={
                 driverStatus === 'online' ? Colors.fontColor : Colors.gray
               }
@@ -1347,14 +1382,14 @@ export default function DriverHomeScreen({route}) {
               buttonMargin={3}
               hasPadding
               options={[
-                {label: 'Online', value: 'online'},
-                {label: 'Offline', value: 'offline'},
+                { label: 'Online', value: 'online' },
+                { label: 'Offline', value: 'offline' },
               ]}
             />
           </View>
           {driverStatus == 'online' &&
-          passengerBookingData &&
-          passengerBookingData.length > 0 ? (
+            passengerBookingData &&
+            passengerBookingData.length > 0 ? (
             <View style={styles.listContainer}>
               <FlatList
                 data={passengerBookingData}

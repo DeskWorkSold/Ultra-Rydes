@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Text,
   View,
@@ -6,34 +6,29 @@ import {
   useWindowDimensions,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
   ToastAndroid,
   BackHandler,
-  Linking,
 } from 'react-native';
-import {useLayoutEffect} from 'react';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
 import CustomButton from '../Components/CustomButton';
 import firestore from '@react-native-firebase/firestore';
-import auth, {firebase} from '@react-native-firebase/auth';
+import auth, { firebase } from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Modal} from 'react-native';
+import { Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {useNavigation} from '@react-navigation/native';
-import {useIsFocused} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 
-export default function AskScreen({route}) {
+export default function AskScreen({ route }) {
   let email = route.params;
-  let isFocused = useIsFocused();
-
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState();
-  const {height} = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const [warningData, setWarningData] = useState([]);
   const [activeDriverData, setActiveDriverData] = useState({});
-
+  const focus = useIsFocused()
   const getDriverData = () => {
     let id = auth().currentUser.uid;
 
@@ -93,8 +88,8 @@ export default function AskScreen({route}) {
             selectedDriver: data?.myDriversData
               ? data?.myDriversData
               : data?.driverData
-              ? data?.driverData
-              : activeDriverData,
+                ? data?.driverData
+                : activeDriverData,
             startRide: startRide ? true : false,
             driverArrive: checkDriverArrive ? true : false,
             endRide: endRide ? true : false,
@@ -153,7 +148,7 @@ export default function AskScreen({route}) {
               firestore()
                 .collection('warning')
                 .doc(uid)
-                .set({warningToDriver: mergeData})
+                .set({ warningToDriver: mergeData })
                 .then(() => {
                   setWarningData([]);
                   ToastAndroid.show(
@@ -181,16 +176,16 @@ export default function AskScreen({route}) {
           transparent={true}
           visible={warningData && warningData.length > 0}>
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, {height: '60%'}]}>
+            <View style={[styles.modalView, { height: '60%' }]}>
               <View>
                 <Icon size={80} color="white" name="warning" />
               </View>
               <Text
-                style={[styles.modalText, {fontSize: 24, fontWeight: '900'}]}>
+                style={[styles.modalText, { fontSize: 24, fontWeight: '900' }]}>
                 Warning!
               </Text>
               <Text
-                style={[styles.modalText, {fontSize: 16, fontWeight: '900'}]}>
+                style={[styles.modalText, { fontSize: 16, fontWeight: '900' }]}>
                 Your car has been recently given the lowest rating either your
                 car is dirty or it has got some mechanical issues you are
                 directed to fix it before taking another ride..
@@ -198,13 +193,13 @@ export default function AskScreen({route}) {
               <TouchableOpacity
                 style={[
                   styles.button,
-                  {marginBottom: 10, backgroundColor: Colors.primary},
+                  { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
                 onPress={() => hideModal()}>
                 <Text
                   style={[
                     styles.textStyle1,
-                    {backgroundColor: Colors.primary},
+                    { backgroundColor: Colors.primary },
                   ]}>
                   confirm
                 </Text>
@@ -215,6 +210,7 @@ export default function AskScreen({route}) {
       </View>
     );
   }, [warningData]);
+
 
   const getPassengerBookingData = async () => {
     try {
@@ -237,21 +233,6 @@ export default function AskScreen({route}) {
       console.log(error, 'error');
     }
   };
-
-  // const handleBackPress = () => {
-  //   if (navigation.canGoBack) {
-  //     navigation.goBack();
-  //     return;
-  //   }
-
-  //   // Linking.openURL('home://');
-  //   return true;
-  // };
-
-  // const backHandler = BackHandler.addEventListener(
-  //   'hardwareBackPress',
-  //   handleBackPress,
-  // );
 
   const checkPassengerRequestToDriver = async () => {
     let id = auth().currentUser.uid;
@@ -351,13 +332,21 @@ export default function AskScreen({route}) {
       console.log(error);
     }
   };
+  const removeData = async () => {
+    let data = await AsyncStorage.getItem("passengerData")
+    data = JSON.parse(data)
+    if (data && Object.keys(data).length > 0) {
+      AsyncStorage.removeItem("passengerData")
+    }
+  }
   useEffect(() => {
+    removeData()
     getDriverBookingData();
-    // getPassengerBookingData();
-    // checkPassengerRequestToDriver();
-    // checkDriverRequestToPassenger();
+    getPassengerBookingData();
+    checkPassengerRequestToDriver();
+    checkDriverRequestToPassenger();
     checkOnTheWayDriver();
-  }, []);
+  }, [focus]);
 
   const passengerModeHandler = async () => {
     try {
@@ -407,7 +396,7 @@ export default function AskScreen({route}) {
             });
           } else if (!checkEmpty.vehicleDetails) {
             setLoading(false);
-            navigation.navigate('DriverRoutes', {screen: 'DriverVehicleAdd'});
+            navigation.navigate('DriverRoutes', { screen: 'DriverVehicleAdd' });
           } else {
             setLoading(false);
             navigation.navigate('DriverRideOption');
@@ -417,31 +406,33 @@ export default function AskScreen({route}) {
       console.log(err);
     }
   };
-
   const signOutHandler = async () => {
     await auth()
       .signOut()
-      .then(() => navigation.dispatch(StackActions.replace('GetStartedScreen')))
+      .then(() => {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'GetStartedScreen',
+            },
+          ],
+        });
+      })
       .catch(() => {
-        navigation.navigate('GetStartedScreen');
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'GetStartedScreen',
+            },
+          ],
+        });
       });
   };
 
-  // useEffect(() => {
-
-  //   const backAction = () => {
-  //     return false;
-  //   };
-  //   const backHandler = BackHandler.addEventListener(
-  //     'hardwareBackPress',
-  //     backAction,
-  //   );
-  //   return () => backHandler.remove();
-
-  // }, [])
-
   return (
-    <View style={{flex: 1, backgroundColor: Colors.white}}>
+    <View style={{ flex: 1, backgroundColor: Colors.white }}>
       <CustomHeader
         iconname={navigation.canGoBack() ? 'chevron-back-circle' : null}
         color={Colors.fontColor}
@@ -479,7 +470,7 @@ export default function AskScreen({route}) {
         </View>
         <View style={styles.midContainer}>
           <Image
-            style={[styles.img, {height: height * 0.2}]}
+            style={[styles.img, { height: height * 0.2 }]}
             resizeMode="contain"
             source={require('../Assets/Images/askImg.png')}
           />
@@ -487,7 +478,7 @@ export default function AskScreen({route}) {
         <View style={styles.bottomContainer}>
           <Text style={styles.textStyle}>Who are You</Text>
           <CustomButton text="Driver" onPress={driverModeHandler} />
-          <View style={{marginVertical: 10}}></View>
+          <View style={{ marginVertical: 10 }}></View>
           <CustomButton
             text="Passenger"
             onPress={passengerModeHandler}

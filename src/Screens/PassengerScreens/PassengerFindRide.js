@@ -1,4 +1,4 @@
-import React, {useLayoutEffect, useEffect, useState, useCallback} from 'react';
+import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   Text,
   TouchableOpacity,
@@ -7,28 +7,20 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  TextInput,
   Alert,
   ToastAndroid,
-  Modal,
-  Settings,
 } from 'react-native';
-
 import CustomButton from '../../Components/CustomButton';
 import Colors from '../../Constants/Colors';
 import firestore from '@react-native-firebase/firestore';
-import {getPreciseDistance} from 'geolib';
-import MapViewDirections from 'react-native-maps-directions';
-import GoogleMapKey from '../../Constants/GoogleMapKey';
+import { getPreciseDistance } from 'geolib';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {useIsFocused} from '@react-navigation/native';
-import {BackHandler} from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import { BackHandler } from 'react-native';
 import auth from '@react-native-firebase/auth';
-import storage from '@react-native-firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import {StackActions} from '@react-navigation/native';
-export default function PassengerFindRide({route}) {
+import { useNavigation } from '@react-navigation/native';
+export default function PassengerFindRide({ route }) {
   let passengerData = route.params;
 
   const focus = useIsFocused();
@@ -117,11 +109,15 @@ export default function PassengerFindRide({route}) {
   }, []);
 
   useEffect(() => {
-    let interval = setInterval(() => {
+    let interval = setInterval(async () => {
       if (driverData.length == 0 && request && passengerData.bidFare) {
         setRequest(false);
         setNoDriverData(true);
         // navigation.navigate('PassengerHomeScreen');
+
+        let AsyncpassengerData = JSON.stringify(passengerData)
+        AsyncStorage.setItem("passengerData", AsyncpassengerData)
+
         navigation.navigate('PassengerRoutes', {
           screen: 'PassengerHomeScreen',
           params: {
@@ -167,7 +163,7 @@ export default function PassengerFindRide({route}) {
       setDriverData([]);
       setRequest(true);
     }
-  }, [route.params,focus]);
+  }, [route.params, focus]);
 
   useEffect(() => {
     let interval = setInterval(() => {
@@ -335,7 +331,7 @@ export default function PassengerFindRide({route}) {
 
       return () => clearInterval(interval);
     }
-  }, [request, selectedDriver,focus,route.params]);
+  }, [request, selectedDriver, focus, route.params]);
 
   const getDriverData = async rejectedDriver => {
     /// GET ALL DRIVERS
@@ -509,11 +505,11 @@ export default function PassengerFindRide({route}) {
             if (
               Number(pickupMileDistance) <= 5 &&
               Number(passengerDropAndDriverDropMileDis) <
-                Number(passengerpickAndDriverDropMileDis) &&
+              Number(passengerpickAndDriverDropMileDis) &&
               Number(DriverPickAndDriveDropMileDis) >=
-                Number(passengerPickAndPassengerDropMileDis) &&
+              Number(passengerPickAndPassengerDropMileDis) &&
               Number(passengerDropAndDriverDropMileDis) < remainingDis &&
-              myDriverData.status == 'online' &&
+              myDriverData.status == 'online' && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.latitude &&
               flag &&
               !isInlined &&
               !driverRequestedButNotRespond &&
@@ -533,7 +529,7 @@ export default function PassengerFindRide({route}) {
               mileDistance <= 3 &&
               flag &&
               !isInlined &&
-              !driverRequestedButNotRespond &&
+              !driverRequestedButNotRespond && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
               !flag2
             ) {
               myDriverData.fare = passengerData.fare;
@@ -544,7 +540,7 @@ export default function PassengerFindRide({route}) {
               mileDistance < 5 &&
               flag &&
               !flag2 &&
-              !isInlined &&
+              !isInlined && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
               !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
@@ -555,7 +551,7 @@ export default function PassengerFindRide({route}) {
               mileDistance > 5 &&
               flag &&
               !flag2 &&
-              !isInlined &&
+              !isInlined && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
               !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
@@ -566,7 +562,7 @@ export default function PassengerFindRide({route}) {
               mileDistance > 10 &&
               flag &&
               !isInlined &&
-              !flag2 &&
+              !flag2 && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
               !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
@@ -577,7 +573,7 @@ export default function PassengerFindRide({route}) {
               mileDistance > 15 &&
               flag &&
               !flag2 &&
-              !isInlined &&
+              !isInlined && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
               !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
@@ -587,7 +583,7 @@ export default function PassengerFindRide({route}) {
               mileDistance < 25 &&
               mileDistance > 20 &&
               !isInlined &&
-              !flag2 &&
+              !flag2 && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude &&
               !driverRequestedButNotRespond
             ) {
               myDriverData.fare = passengerData.fare;
@@ -615,6 +611,8 @@ export default function PassengerFindRide({route}) {
       .doc(passengerData.id)
       .delete()
       .then(() => {
+        AsyncStorage.removeItem('passengerBooking');
+        AsyncStorage.removeItem('driverArrive');
         navigation.navigate('AskScreen');
       })
       .catch(error => {
@@ -632,6 +630,13 @@ export default function PassengerFindRide({route}) {
               deleteBookingData();
             }}>
             <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        );
+      },
+      headerLeft: () => {
+        return (
+          <TouchableOpacity>
+
           </TouchableOpacity>
         );
       },
@@ -776,7 +781,7 @@ export default function PassengerFindRide({route}) {
       firestore()
         .collection('Request')
         .doc(passengerData.id)
-        .onSnapshot(querySnapshot => {
+        .get().then(querySnapshot => {
           if (querySnapshot.exists) {
             let data = querySnapshot.data();
             if (
@@ -786,12 +791,11 @@ export default function PassengerFindRide({route}) {
             ) {
               data.myDriversData.selected = false;
               data.myDriversData.requestStatus = 'rejected';
-
               firestore()
                 .collection('Request')
-                .doc(passengerData.id)
+                .doc(passengerData?.id)
                 .update({
-                  myDriversData: data.myDriversData,
+                  myDriversData: data?.myDriversData,
                 })
                 .then(() => {
                   setDriverData(
@@ -852,7 +856,7 @@ export default function PassengerFindRide({route}) {
     item.distance = myDistance;
   };
 
-  const rideRequests = ({item, index}) => {
+  const rideRequests = ({ item, index }) => {
     let data = route.params;
     if (data.bidFare) {
       data?.selectedCar[0]?.carMiles?.map((e, i) => {
@@ -911,7 +915,7 @@ export default function PassengerFindRide({route}) {
           <View style={styles.innerItemsUpper}>
             <View style={styles.imgContainer}>
               <Image
-                source={{uri: item.url}}
+                source={{ uri: item.url }}
                 resizeMode="cover"
                 style={styles.proPic}
               />
@@ -922,8 +926,8 @@ export default function PassengerFindRide({route}) {
                 <Text style={styles.driverNameText}>
                   {item.firstName + item.lastName}
                 </Text>
-                <View style={{flexDirection: 'row'}}>
-                  <Text style={[styles.driverNameText, {fontWeight: '800'}]}>
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={[styles.driverNameText, { fontWeight: '800' }]}>
                     {item.rating}
                   </Text>
                   <Icon name="star" size={20} color="yellow" />
@@ -931,14 +935,14 @@ export default function PassengerFindRide({route}) {
               </View>
             </View>
             <View style={styles.priceContainer}>
-              <View style={{alignItems: 'flex-end'}}>
+              <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.priceText}>
                   ${item.bidFare ? Number(item.bidFare) : item.fare}
                 </Text>
-                <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                <Text style={{ color: 'black', fontSize: 14, fontWeight: '600' }}>
                   {item.minutes} minutes away
                 </Text>
-                <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                <Text style={{ color: 'black', fontSize: 14, fontWeight: '600' }}>
                   {item.distance} miles away
                 </Text>
               </View>
@@ -973,7 +977,7 @@ export default function PassengerFindRide({route}) {
         height: '90%',
       }}>
       <ActivityIndicator size={100} color={Colors.black} />
-      <Text style={{color: 'black', marginTop: 10}}>
+      <Text style={{ color: 'black', marginTop: 10 }}>
         {' '}
         Finding Driver Please wait!{' '}
       </Text>
@@ -981,7 +985,7 @@ export default function PassengerFindRide({route}) {
   ) : (
     <View>
       {(driverData && driverData.length > 0 && passengerData.bidFare) ||
-      (!request && !loader) ? (
+        (!request && !loader) ? (
         <View>
           {showCardForm ? (
             PaymentFormCard()
@@ -1004,7 +1008,7 @@ export default function PassengerFindRide({route}) {
             height: '90%',
           }}>
           <ActivityIndicator color="black" size={100} />
-          <Text style={{color: 'black', marginTop: 10}}>
+          <Text style={{ color: 'black', marginTop: 10 }}>
             {' '}
             Finding Driver Please wait!{' '}
           </Text>

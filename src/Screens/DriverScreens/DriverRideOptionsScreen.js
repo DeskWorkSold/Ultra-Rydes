@@ -14,6 +14,8 @@ import CustomButton from '../../Components/CustomButton';
 let height = Dimensions.get('window').height;
 
 function DriverRideOption({navigation}) {
+
+  
   const routeToTakesRides = () => {
     navigation.navigate('DriverRoutes', {
       screen: 'DriverHomeScreen',

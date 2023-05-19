@@ -1,7 +1,7 @@
-import React, {useState, useEffect} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {createDrawerNavigator} from '@react-navigation/drawer';
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import SplashScreen from '../Screens/SplashScreen';
 import OnBoardingScreen from '../Screens/OnBoardingScreen';
 import GetStartedScreen from '../Screens/GetStartedScreen';
@@ -57,6 +57,8 @@ import PassengerDefinedPlaces from '../Screens/PassengerScreens/passengerDefined
 import AddCard from '../Screens/PassengerScreens/addCardScreen';
 import DriverRideOption from '../Screens/DriverScreens/DriverRideOptionsScreen';
 import DriverOnTheWay from '../Screens/DriverScreens/DriverOnTheWayScreen';
+import CustomButton from '../Components/CustomButton';
+import { ScreenStackHeaderBackButtonImage } from 'react-native-screens';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
@@ -64,9 +66,9 @@ function PassengerRoutes() {
   return (
     <Drawer.Navigator
       drawerContent={props => <DrawerContentPassenger {...props} />}
-      // screenOptions={{
-      //     headerShown: false,
-      // }}
+    // screenOptions={{
+    //     headerShown: false,
+    // }}
     >
       <Drawer.Screen
         name="PassengerHomeScreen"
@@ -88,6 +90,7 @@ function PassengerRoutes() {
         options={{
           title: 'Finding Ride',
           unmountOnBlur: true,
+          headerLeft: null
         }}
       />
       <Drawer.Screen
@@ -139,17 +142,17 @@ function DriverRoutes() {
   return (
     <Drawer.Navigator
       drawerContent={props => <DrawerContentDriver {...props} />}
-      screenOptions={{headerShown: false}}
+      screenOptions={{ headerShown: false }}
     >
       <Drawer.Screen
         name="DriverHomeScreen"
         component={DriverHomeScreen}
-        options={{headerShown: false, unmountOnBlur: true}}
+        options={{ headerShown: false, unmountOnBlur: true }}
       />
       <Drawer.Screen
         name="DriverOnTheWayScreen"
         component={DriverOnTheWay}
-        options={{headerShown: false,unmountOnBlur:true}}
+        options={{ headerShown: false, unmountOnBlur: true }}
       />
       <Drawer.Screen
         name="SettingsDriver"
@@ -236,7 +239,7 @@ export default function Navigation() {
   }, []);
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
         <Stack.Screen
           name="MyScreen"
@@ -246,7 +249,7 @@ export default function Navigation() {
         <Stack.Screen name="GetStartedScreen" component={GetStartedScreen} />
         <Stack.Screen name="EmailSignInScreen" component={EmailSignInScreen} />
         <Stack.Screen name="EmailSignUpScreen" component={EmailSignUpScreen} />
-        <Stack.Screen name="AskScreen" component={AskScreen} options={{unmountOnBlur:true}} />
+        <Stack.Screen name="AskScreen" component={AskScreen} options={{ unmountOnBlur: true }} />
         <Stack.Screen
           name="PassengerDetailScreen"
           component={PassengerDetailScreen}

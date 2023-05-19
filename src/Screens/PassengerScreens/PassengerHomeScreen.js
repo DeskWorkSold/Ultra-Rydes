@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Text,
   View,
@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import MapView, {Marker} from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import moment from 'moment-timezone';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
@@ -24,12 +24,12 @@ import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
 import CustomButton from '../../Components/CustomButton';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {useIsFocused} from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import IdleTimerManager from 'react-native-idle-timer';
-import {LogBox} from 'react-native';
+import { LogBox } from 'react-native';
 import {
   locationPermission,
   getCurrentLocation,
@@ -39,17 +39,17 @@ import auth from '@react-native-firebase/auth';
 import * as geolib from 'geolib';
 import firestore from '@react-native-firebase/firestore';
 import Geocoder from 'react-native-geocoding';
-import {Modal} from 'react-native';
+import { Modal } from 'react-native';
 import AppModal from '../../Components/modal';
-import {BackHandler} from 'react-native';
-import {useCallback} from 'react';
+import { BackHandler } from 'react-native';
+import { useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useRoute} from '@react-navigation/native';
-import {Linking} from 'react-native';
-import {BASE_URI} from '../../Constants/Base_uri';
+import { useRoute } from '@react-navigation/native';
+import { Linking } from 'react-native';
+import { BASE_URI } from '../../Constants/Base_uri';
 import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';
-export default function PassengerHomeScreen({navigation}) {
+export default function PassengerHomeScreen({ navigation }) {
   let route = useRoute();
   const [dummyDataCat, setDummyDataCat] = useState('');
   const [onlineDriversLocation, setOnlineDriversLocation] = useState([]);
@@ -377,8 +377,8 @@ export default function PassengerHomeScreen({navigation}) {
     }
   }, [
     location,
-    location.dropLocationCords.latitude,
-    location.dropLocationCords.longitude,
+    location?.dropLocationCords?.latitude,
+    location?.dropLocationCords?.longitude,
     pickupCords,
     dropLocationCords,
   ]);
@@ -399,16 +399,19 @@ export default function PassengerHomeScreen({navigation}) {
         'hardwareBackPress',
         backAction,
       );
-
       return () => backHandler.remove();
     }
-  }, [route.params]);
+  }, [route.params, focus, data, data?.driverArriveAtPickUpLocation, data?.driverArriveAtDropoffLocation]);
 
   useEffect(() => {
     data?.driverData ? setRouteData(data) : setRouteData('');
     data?.driverData
       ? setSelectedDriver(data.driverData)
       : setSelectedDriver('');
+    if (!data?.driverData) {
+      AsyncStorage.removeItem('passengerBooking');
+      AsyncStorage.removeItem('driverArrive');
+    }
   }, [data, focus]);
 
   useEffect(() => {
@@ -442,7 +445,7 @@ export default function PassengerHomeScreen({navigation}) {
         setSelectedLocation(data.driverData.currentLocation);
       }
     }
-    if (data) {
+    if (data && data.driverData) {
       let myData = JSON.stringify(data);
       AsyncStorage.setItem('passengerBooking', myData);
     }
@@ -465,7 +468,7 @@ export default function PassengerHomeScreen({navigation}) {
   const LATITUDE_DELTA = 0.06;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-  const {pickupCords, dropLocationCords} = location;
+  const { pickupCords, dropLocationCords } = location;
 
   const [CurrentUserUid, setCurrentUserUid] = useState('');
 
@@ -474,7 +477,7 @@ export default function PassengerHomeScreen({navigation}) {
 
     if (locPermissionDenied) {
       setLoading(true);
-      const {latitude, longitude} = await getCurrentLocation();
+      const { latitude, longitude } = await getCurrentLocation();
 
       setLocation({
         ...location,
@@ -496,7 +499,7 @@ export default function PassengerHomeScreen({navigation}) {
       .doc('8w6hVPveXKR6kTvYVWwy')
       .onSnapshot(documentSnapshot => {
         const GetUserData = documentSnapshot.data();
-        let carsData = {...GetUserData};
+        let carsData = { ...GetUserData };
         carsData = carsData?.categories;
         let first3Data = carsData.slice(0, 3);
         let greenCar = carsData.slice(5);
@@ -700,19 +703,19 @@ export default function PassengerHomeScreen({navigation}) {
       calculateDistance(result);
     }
   };
-  const Categories = ({item, index}) => {
+  const Categories = ({ item, index }) => {
     return (
       <View style={styles.catList}>
         <TouchableOpacity
           style={
             item.selected
-              ? [styles.cards, {borderColor: Colors.primary, borderWidth: 2}]
+              ? [styles.cards, { borderColor: Colors.primary, borderWidth: 2 }]
               : [styles.cards]
           }
           onPress={() => !bidFare && !route.params && onClickItem(item, index)}>
           <Image
             style={styles.catImg}
-            source={{uri: item.carImage}}
+            source={{ uri: item.carImage }}
             resizeMode="cover"
           />
           <Text numberOfLines={2} style={styles.labelTextStyle}>
@@ -761,6 +764,7 @@ export default function PassengerHomeScreen({navigation}) {
             }
 
             Tfare && setFare(Tfare?.toString());
+            setBidFare(null)
           }
         });
       }
@@ -920,7 +924,7 @@ export default function PassengerHomeScreen({navigation}) {
               .then(res => {
                 clearTimeout(timeoutId);
                 let data = res.data;
-                let {result, status} = data;
+                let { result, status } = data;
                 if (!status && !timedOut) {
                   setButtonLoader(false);
                   ToastAndroid.show(data.message, ToastAndroid.SHORT);
@@ -942,7 +946,7 @@ export default function PassengerHomeScreen({navigation}) {
                     {
                       wallet: firestore.FieldValue.arrayUnion(walletData),
                     },
-                    {merge: true},
+                    { merge: true },
                   )
                   .then(() => {
                     firestore()
@@ -1027,8 +1031,8 @@ export default function PassengerHomeScreen({navigation}) {
         let totalTollChargeToPassenger =
           totalToll && totalToll.length > 0
             ? totalToll.reduce((previous, current) => {
-                return previous + current;
-              })
+              return previous + current;
+            })
             : 0;
         let id = auth().currentUser.uid;
         let tip =
@@ -1122,7 +1126,7 @@ export default function PassengerHomeScreen({navigation}) {
                 .then(res => {
                   clearTimeout(timeoutId);
                   let data = res.data;
-                  let {result, status} = data;
+                  let { result, status } = data;
                   if (!status && !timedOut) {
                     setButtonLoader(false);
                     ToastAndroid.show(data.message, ToastAndroid.SHORT);
@@ -1144,7 +1148,7 @@ export default function PassengerHomeScreen({navigation}) {
                       {
                         wallet: firestore.FieldValue.arrayUnion(walletData),
                       },
-                      {merge: true},
+                      { merge: true },
                     )
                     .then(() => {
                       firestore()
@@ -1225,7 +1229,7 @@ export default function PassengerHomeScreen({navigation}) {
               <TouchableOpacity
                 style={[
                   styles.button,
-                  {marginBottom: 10, backgroundColor: Colors.primary},
+                  { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
                 onPress={() => !buttonLoader && handlePayPress()}>
                 {buttonLoader ? (
@@ -1234,7 +1238,7 @@ export default function PassengerHomeScreen({navigation}) {
                   <Text
                     style={[
                       styles.textStyle,
-                      {backgroundColor: Colors.primary},
+                      { backgroundColor: Colors.primary },
                     ]}>
                     confirm
                   </Text>
@@ -1276,7 +1280,7 @@ export default function PassengerHomeScreen({navigation}) {
           {
             wallet: firestore.FieldValue.arrayUnion(walletData),
           },
-          {merge: true},
+          { merge: true },
         )
         .then(() => {
           setButtonLoader(false);
@@ -1335,7 +1339,7 @@ export default function PassengerHomeScreen({navigation}) {
           {
             warningToDriver: firestore.FieldValue.arrayUnion(warning),
           },
-          {merge: true},
+          { merge: true },
         )
         .then(() => {
           console.log('warning has been send');
@@ -1384,7 +1388,7 @@ export default function PassengerHomeScreen({navigation}) {
         {
           bookingData: firestore.FieldValue.arrayUnion(myData),
         },
-        {merge: true},
+        { merge: true },
       )
       .then(() => {
         setButtonLoader(false);
@@ -1395,7 +1399,6 @@ export default function PassengerHomeScreen({navigation}) {
       })
       .catch(error => {
         setButtonLoader(false);
-        console.log(error, 'error');
       });
   };
 
@@ -1420,14 +1423,14 @@ export default function PassengerHomeScreen({navigation}) {
     let totalCharges = (Number(rideFare) + tip + myToll).toFixed(2);
     return (
       <View style={styles.centeredView}>
-        <ScrollView style={{height: '100%'}}>
+        <ScrollView style={{ height: '100%' }}>
           <Modal
             animationType="slide"
             transparent={true}
             visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
             <View style={[styles.centeredView]}>
-              <View style={[styles.modalView, {width: '90%', height: 550}]}>
-                <Text style={[styles.modalText, {fontSize: 26}]}>
+              <View style={[styles.modalView, { width: '90%', height: 550 }]}>
+                <Text style={[styles.modalText, { fontSize: 26 }]}>
                   Congratulations!
                 </Text>
                 <Text
@@ -1455,7 +1458,7 @@ export default function PassengerHomeScreen({navigation}) {
                     },
                   ]}>
                   Your Fare Amount:{' '}
-                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  <Text style={{ fontSize: 16, color: 'yellow', width: '100%' }}>
                     $
                     {route.params.passengerData.bidFare ??
                       route.params.passengerData.fare}
@@ -1474,7 +1477,7 @@ export default function PassengerHomeScreen({navigation}) {
                     },
                   ]}>
                   Your Tip Amount:{' '}
-                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  <Text style={{ fontSize: 16, color: 'yellow', width: '100%' }}>
                     ${tip.toFixed(2)}
                   </Text>
                 </Text>
@@ -1491,7 +1494,7 @@ export default function PassengerHomeScreen({navigation}) {
                     },
                   ]}>
                   Your Toll Amount:{' '}
-                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  <Text style={{ fontSize: 16, color: 'yellow', width: '100%' }}>
                     ${myToll && myToll?.toFixed(2)}
                   </Text>
                 </Text>
@@ -1508,12 +1511,12 @@ export default function PassengerHomeScreen({navigation}) {
                     },
                   ]}>
                   Total Charges:
-                  <Text style={{fontSize: 16, color: 'yellow', width: '100%'}}>
+                  <Text style={{ fontSize: 16, color: 'yellow', width: '100%' }}>
                     ${totalCharges}
                   </Text>
                 </Text>
                 <Text
-                  style={[styles.modalText, {fontWeight: '600', marginTop: 2}]}>
+                  style={[styles.modalText, { fontWeight: '600', marginTop: 2 }]}>
                   Kindly give rating to driver
                 </Text>
                 <View
@@ -1540,7 +1543,7 @@ export default function PassengerHomeScreen({navigation}) {
                       );
                     })}
                 </View>
-                <Text style={[styles.modalText, {fontWeight: '600'}]}>
+                <Text style={[styles.modalText, { fontWeight: '600' }]}>
                   Kindly give rating to Car
                 </Text>
                 <View
@@ -1569,7 +1572,7 @@ export default function PassengerHomeScreen({navigation}) {
                 <TouchableOpacity
                   style={[
                     styles.button,
-                    {marginBottom: 5, backgroundColor: Colors.primary},
+                    { marginBottom: 5, backgroundColor: Colors.primary },
                   ]}
                   onPress={() =>
                     !buttonLoader &&
@@ -1578,7 +1581,7 @@ export default function PassengerHomeScreen({navigation}) {
                   <Text
                     style={[
                       styles.textStyle,
-                      {backgroundColor: Colors.primary},
+                      { backgroundColor: Colors.primary },
                     ]}>
                     {buttonLoader ? (
                       <ActivityIndicator size={'large'} color={'black'} />
@@ -1600,7 +1603,6 @@ export default function PassengerHomeScreen({navigation}) {
     buttonLoader,
     toll,
   ]);
-
   const FeedBackModal = useCallback(() => {
     return (
       <View style={styles.centeredView}>
@@ -1609,7 +1611,7 @@ export default function PassengerHomeScreen({navigation}) {
           transparent={true}
           visible={showFeedBackModal}>
           <View style={[styles.centeredView]}>
-            <View style={[styles.modalView, {width: '90%', height: '65%'}]}>
+            <View style={[styles.modalView, { width: '90%', height: '65%' }]}>
               <MaterialIcon size={80} color="white" name="feedback" />
               <Text
                 style={[
@@ -1653,7 +1655,7 @@ export default function PassengerHomeScreen({navigation}) {
                 ]}
                 onPress={!buttonLoader && bookingComplete}>
                 <Text
-                  style={[styles.textStyle, {backgroundColor: Colors.primary}]}>
+                  style={[styles.textStyle, { backgroundColor: Colors.primary }]}>
                   {buttonLoader ? (
                     <ActivityIndicator size={'large'} color={'black'} />
                   ) : (
@@ -1682,7 +1684,7 @@ export default function PassengerHomeScreen({navigation}) {
       <MapViewDirections
         origin={
           selectedDriverLocation.pickupCords &&
-          selectedDriverLocation.dropLocationCords
+            selectedDriverLocation.dropLocationCords
             ? selectedDriverLocation
             : selectedDriver.currentLocation
         }
@@ -1735,7 +1737,7 @@ export default function PassengerHomeScreen({navigation}) {
         {
           wallet: firestore.FieldValue.arrayUnion(walletData),
         },
-        {merge: true},
+        { merge: true },
       )
       .then(() => {
         let cancelRide = {
@@ -1760,7 +1762,7 @@ export default function PassengerHomeScreen({navigation}) {
                 {
                   cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
                 },
-                {merge: true},
+                { merge: true },
               )
               .then(() => {
                 setButtonLoader(false);
@@ -1817,7 +1819,7 @@ export default function PassengerHomeScreen({navigation}) {
       .then(doc => {
         let data = doc.data();
 
-        if (data && data.rideCancelByDriver && selectedDriver && Object.keys(selectedDriver).length>0) {
+        if (data && data.rideCancelByDriver && selectedDriver && Object.keys(selectedDriver).length > 0) {
           ToastAndroid.show(
             'Ride has been cancelled by Driver',
             ToastAndroid.SHORT,
@@ -1847,11 +1849,11 @@ export default function PassengerHomeScreen({navigation}) {
 
 
   useEffect(() => {
-    if ((Object.keys(selectedDriver).length>0, focus)) {
+    if ((Object.keys(selectedDriver).length > 0, focus)) {
       let interval = setInterval(() => {
-        if(selectedDriver && Object.keys(selectedDriver).length>0, focus){
-        cancelRideByDriver();
-      }
+        if (selectedDriver && Object.keys(selectedDriver).length > 0, focus) {
+          cancelRideByDriver();
+        }
       }, 10000);
       return () => clearInterval(interval);
     }
@@ -1939,7 +1941,7 @@ export default function PassengerHomeScreen({navigation}) {
                       <Text
                         style={[
                           styles.textStyle,
-                          {backgroundColor: Colors.black},
+                          { backgroundColor: Colors.black },
                         ]}>
                         Cancel
                       </Text>
@@ -1959,7 +1961,7 @@ export default function PassengerHomeScreen({navigation}) {
                       <Text
                         style={[
                           styles.textStyle,
-                          {backgroundColor: Colors.primary},
+                          { backgroundColor: Colors.primary },
                         ]}>
                         confirm
                       </Text>
@@ -1968,7 +1970,7 @@ export default function PassengerHomeScreen({navigation}) {
                 )}
 
                 {reasonForCancelRide && (
-                  <View style={{width: '100%'}}>
+                  <View style={{ width: '100%' }}>
                     <Text
                       style={[
                         styles.modalText,
@@ -1998,7 +2000,7 @@ export default function PassengerHomeScreen({navigation}) {
                       placeholderTextColor="black"
                       onPressIn={() => setInput(true)}
                     />
-                    <View style={{alignItems: 'center'}}>
+                    <View style={{ alignItems: 'center' }}>
                       <TouchableOpacity
                         style={[
                           styles.button,
@@ -2016,7 +2018,7 @@ export default function PassengerHomeScreen({navigation}) {
                         <Text
                           style={[
                             styles.textStyle,
-                            {backgroundColor: Colors.primary},
+                            { backgroundColor: Colors.primary },
                           ]}>
                           {buttonLoader ? (
                             <ActivityIndicator
@@ -2070,11 +2072,11 @@ export default function PassengerHomeScreen({navigation}) {
               color={Colors.white}
               rightButton={
                 driverArriveAtPickUpLocation ||
-                route.params?.driverArriveAtPickupLocation
+                  route.params?.driverArriveAtPickupLocation
                   ? ''
                   : selectedDriver
-                  ? 'show'
-                  : ''
+                    ? 'show'
+                    : ''
               }
               onPress={() => {
                 !selectedDriver && navigation.toggleDrawer();
@@ -2134,7 +2136,7 @@ export default function PassengerHomeScreen({navigation}) {
                             pinColor="blue">
                             <Image
                               source={require('../../Assets/Images/mapCar.png')}
-                              style={{width: 40, height: 40}}
+                              style={{ width: 40, height: 40 }}
                               resizeMode="contain"
                             />
                           </Marker>
@@ -2145,18 +2147,18 @@ export default function PassengerHomeScreen({navigation}) {
 
                 {selectedDriver &&
                   Object.keys(selectedDriver).length > 0 &&
-                  selectedDriverLocation.latitude &&
-                  selectedDriverLocation.longitude && (
+                  selectedDriverLocation?.latitude &&
+                  selectedDriverLocation?.longitude && (
                     <Marker
                       coordinate={{
-                        latitude: selectedDriverLocation.latitude,
-                        longitude: selectedDriverLocation.longitude,
+                        latitude: selectedDriverLocation?.latitude,
+                        longitude: selectedDriverLocation?.longitude,
                       }}
                       pinColor="black"
                       title="Driver Location"
-                      //   onDrag={() => console.log('onDrag', arguments)}
-                      //   onDragStart={(e) => console.log('onDragStart', e)}
-                      //   onDragEnd={(e)=>changeDropLocation(e.nativeEvent)}
+                    //   onDrag={() => console.log('onDrag', arguments)}
+                    //   onDragStart={(e) => console.log('onDragStart', e)}
+                    //   onDragEnd={(e)=>changeDropLocation(e.nativeEvent)}
                     >
                       <Image
                         source={require('../../Assets/Images/mapCar.png')}
@@ -2165,13 +2167,13 @@ export default function PassengerHomeScreen({navigation}) {
                           height: 40,
                           transform:
                             selectedDriverLocation &&
-                            selectedDriverLocation.heading
+                              selectedDriverLocation.heading
                               ? [
-                                  {
-                                    rotate: `${selectedDriverLocation.heading}deg`,
-                                  },
-                                ]
-                              : [{rotate: `180deg`}],
+                                {
+                                  rotate: `${selectedDriverLocation.heading}deg`,
+                                },
+                              ]
+                              : [{ rotate: `180deg` }],
                         }}
                         resizeMode="contain"
                       />
@@ -2205,7 +2207,7 @@ export default function PassengerHomeScreen({navigation}) {
                       mode="DRIVING"
                       onReady={result => {
                         setResult(result);
-                        !route.params && calculateDistance(result);
+                        ((!route.params || !data?.driverData) && calculateDistance(result))
                         mapRef.current.fitToCoordinates(result.coordinates, {
                           edgePadding: {
                             right: 30,
@@ -2220,8 +2222,8 @@ export default function PassengerHomeScreen({navigation}) {
               </MapView>
             )}
 
-            {data && (
-              <View style={{position: 'absolute', right: 10, top: 10}}>
+            {data && data.driverData && (
+              <View style={{ position: 'absolute', right: 10, top: 10 }}>
                 <Text
                   style={{
                     color: 'black',
@@ -2230,7 +2232,7 @@ export default function PassengerHomeScreen({navigation}) {
                     marginTop: 10,
                   }}>
                   Duration:{' '}
-                  {driverArriveAtPickUpLocation || driverArrive.pickupLocation
+                  {driverArriveAtPickUpLocation || driverArrive.pickupLocation || !data?.driverArriveAtPickUpLocation
                     ? data.passengerData.minutes
                     : Math.ceil(minutesAndDistanceDifference.minutes)}{' '}
                   Minutes
@@ -2243,11 +2245,11 @@ export default function PassengerHomeScreen({navigation}) {
                     marginTop: 5,
                   }}>
                   Distance:{' '}
-                  {driverArriveAtPickUpLocation || driverArrive.pickUpLocation
+                  {driverArriveAtPickUpLocation || driverArrive.pickUpLocation || !data?.driverArriveAtPickUpLocation
                     ? data.passengerData.distance
                     : (
-                        minutesAndDistanceDifference.distance * 0.621371
-                      ).toFixed(2)}{' '}
+                      minutesAndDistanceDifference.distance * 0.621371
+                    ).toFixed(2)}{' '}
                   Miles{' '}
                 </Text>
               </View>
@@ -2268,9 +2270,9 @@ export default function PassengerHomeScreen({navigation}) {
                   <FlatList
                     data={
                       data &&
-                      Object.keys(data).length > 0 &&
-                      data?.passengerData?.selectedCar &&
-                      Object.keys(selectedDriver).length > 0
+                        Object.keys(data).length > 0 &&
+                        data?.passengerData?.selectedCar &&
+                        Object.keys(selectedDriver).length > 0
                         ? data?.passengerData?.selectedCar
                         : dummyDataCat
                     }
@@ -2280,8 +2282,8 @@ export default function PassengerHomeScreen({navigation}) {
                     keyExtractor={item => item.id}
                   />
                   {selectedDriver && (
-                    <View style={{justifyContent: 'center', width: '70%'}}>
-                      <TouchableOpacity style={{width: '90%'}}>
+                    <View style={{ justifyContent: 'center', width: '70%' }}>
+                      <TouchableOpacity style={{ width: '90%' }}>
                         <Text
                           style={{
                             color: Colors.secondary,
@@ -2376,69 +2378,64 @@ export default function PassengerHomeScreen({navigation}) {
                       data ? pickupAddress : 'Enter Pickup Location'
                     }
                     fetchAddress={fetchPickupCords}
-                    type={data && 'route'}
+                    type={data && data.driverData && 'route'}
                   />
                   <AddressPickup
                     placeholderText={
                       data ? dropOffAddress : 'Enter Destination Location'
                     }
                     fetchAddress={fetchDestinationCords}
-                    type={data && 'route'}
+                    type={data && data.driverData && 'route'}
                   />
 
                   <TextInput
                     placeholder="Fare"
                     placeholderTextColor={Colors.gray}
-                    value={
-                      selectedDriver &&
-                      Object.keys(selectedDriver).length > 0 &&
-                      !data.bidFare
-                        ? `$${data?.passengerData?.fare} `
-                        : selectedDriver &&
+                    value={data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData ? fare : data?.passengerData.bidFare
+                      ? data?.passengerData?.bidFare
+                      : Object.keys(selectedDriver).length > 0 &&
+                        selectedDriver.bidFare
+                        ? selectedDriver.bidFare : selectedDriver &&
                           Object.keys(selectedDriver).length > 0 &&
-                          data?.bidFare
-                        ? `$${data.bidFare}`
-                        : bidFare
-                        ? `$${bidFare}`
-                        : fare
-                        ? `$${fare}`
-                        : ''
-                    }
+                          !selectedDriver.bidFare
+                          ? selectedDriver.fare
+                          : bidFare
+                            ? bidFare
+                            : fare}
                     onChangeText={setFare}
                     selectionColor={Colors.black}
                     activeUnderlineColor={Colors.gray}
                     style={styles.textInputStyle}
                     editable={false}
-                    // left={<TextInput.Icon name="email" color={emailError ? 'red' : Colors.fontColor} />}
+                  // left={<TextInput.Icon name="email" color={emailError ? 'red' : Colors.fontColor} />}
                   />
                   {distance && minutes && fare ? (
                     <View style={styles.recommendedText}>
                       <Text style={styles.headingStyle}>
                         {selectedDriver &&
-                        Object.keys(selectedDriver).length > 0 &&
-                        !selectedDriver.bidFare
+                          Object.keys(selectedDriver).length > 0 &&
+                          !selectedDriver.bidFare
                           ? 'Recommended Fare'
                           : selectedDriver &&
                             Object.keys(selectedDriver).length > 0 &&
                             selectedDriver.bidFare
-                          ? 'Bid Fare'
-                          : bidFare
-                          ? 'Bid Fare'
-                          : 'Recommended Fare'}
+                            ? 'Bid Fare'
+                            : bidFare
+                              ? 'Bid Fare'
+                              : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
                           $
-                          {data?.passengerData.bidFare
+                          {data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData ? fare : data?.passengerData.bidFare
                             ? data?.passengerData?.bidFare
-                            : selectedDriver &&
-                              Object.keys(selectedDriver).length > 0 &&
-                              !selectedDriver.bidFare
-                            ? selectedDriver.fare
                             : Object.keys(selectedDriver).length > 0 &&
                               selectedDriver.bidFare
-                            ? selectedDriver.bidFare
-                            : bidFare
-                            ? bidFare
-                            : fare}{' '}
+                              ? selectedDriver.bidFare : selectedDriver &&
+                                Object.keys(selectedDriver).length > 0 &&
+                                !selectedDriver.bidFare
+                                ? selectedDriver.fare
+                                : bidFare
+                                  ? bidFare
+                                  : fare}
                         </Text>
                         Distance:
                         <Text style={styles.valueStyle}>{distance} miles </Text>
@@ -2450,7 +2447,7 @@ export default function PassengerHomeScreen({navigation}) {
                     </View>
                   ) : null}
 
-                  {fare &&
+                  {(fare || !data?.driverData) &&
                     !Object.keys(selectedDriver).length > 0 &&
                     distance > 3 && (
                       <TouchableOpacity
@@ -2503,7 +2500,7 @@ export default function PassengerHomeScreen({navigation}) {
                         ? false
                         : true
                     }
-                    // left={<TextInput.Icon name="email" color={emailError ? 'red' : Colors.fontColor} />}
+                  // left={<TextInput.Icon name="email" color={emailError ? 'red' : Colors.fontColor} />}
                   />
 
                   {/* </ScrollView> */}
@@ -2514,7 +2511,7 @@ export default function PassengerHomeScreen({navigation}) {
                       <CustomButton
                         text="Find Rider"
                         onPress={() => checkValidation()}
-                        // onPress={() => navigation.navigate('PassengerFindRide')}
+                      // onPress={() => navigation.navigate('PassengerFindRide')}
                       />
                     </View>
                   )}

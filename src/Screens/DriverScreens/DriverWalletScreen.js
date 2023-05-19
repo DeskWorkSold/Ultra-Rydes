@@ -9,24 +9,24 @@ import {
   View,
   ScrollView,
 } from 'react-native';
-import React, {useEffect, useState, useCallback} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import COLORS from '../../Constants/Colors';
 import CustomButton from '../../Components/CustomButton';
 import CustomHeader from '../../Components/CustomHeader';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {useIsFocused} from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import Colors from '../../Constants/Colors';
-import {ToastAndroid} from 'react-native';
-import {Modal} from 'react-native';
+import { ToastAndroid } from 'react-native';
+import { Modal } from 'react-native';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
-import {Linking} from 'react-native';
-import {ActivityIndicator} from 'react-native-paper';
-import {BASE_URI} from '../../Constants/Base_uri';
+import { Linking } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
+import { BASE_URI } from '../../Constants/Base_uri';
 
-const CurrentBalanceScreen = ({navigation}) => {
+const CurrentBalanceScreen = ({ navigation }) => {
   const [currentwallet, setCurrentWallet] = useState(null);
   const [allWalletData, setAllWalletData] = useState(true);
   const [monthlyWalletData, setMonthlyWalletData] = useState([]);
@@ -68,9 +68,9 @@ const CurrentBalanceScreen = ({navigation}) => {
                 id: data,
               })
               .then(res => {
-                let {capabilities} = res.data.accountStatus;
+                let { capabilities } = res.data.accountStatus;
 
-                let {transfers, card_payments} = capabilities;
+                let { transfers, card_payments } = capabilities;
 
                 if (transfers == 'active' && card_payments == 'active') {
                   setStripeVerifiedAccount(true);
@@ -108,15 +108,15 @@ const CurrentBalanceScreen = ({navigation}) => {
           let currentDate = date.getDate();
           setMonthlyWalletData(
             data &&
-              data.length > 0 &&
-              data.filter((e, i) => {
-                let walletDate = e.date.toDate();
-                let walletMonth = walletDate.getMonth();
-                let walletYear = walletDate.getFullYear();
-                if (walletMonth == currentMonth && walletYear == currentYear) {
-                  return e;
-                }
-              }),
+            data.length > 0 &&
+            data.filter((e, i) => {
+              let walletDate = e.date.toDate();
+              let walletMonth = walletDate.getMonth();
+              let walletYear = walletDate.getFullYear();
+              if (walletMonth == currentMonth && walletYear == currentYear) {
+                return e;
+              }
+            }),
           );
         }
       });
@@ -142,7 +142,7 @@ const CurrentBalanceScreen = ({navigation}) => {
         return previous + current;
       }, 0);
 
-    myDeposits && setWithdraw({...withdraw, total: myDeposits});
+    myDeposits && setWithdraw({ ...withdraw, total: myDeposits });
   };
   const getAmountEarnFromWallet = () => {
     let mySpentData = [];
@@ -169,7 +169,7 @@ const CurrentBalanceScreen = ({navigation}) => {
         return previous + current;
       }, 0);
 
-    mySpents && setEarn({...earn, total: mySpents});
+    mySpents && setEarn({ ...earn, total: mySpents });
   };
 
   const getMonthlyAmountWithdrawFromWallet = () => {
@@ -188,7 +188,7 @@ const CurrentBalanceScreen = ({navigation}) => {
         return previous + current;
       }, 0);
 
-    myDeposits && setWithdraw({...withdraw, monthly: myDeposits});
+    myDeposits && setWithdraw({ ...withdraw, monthly: myDeposits });
   };
   const getDriverData = () => {
     let id = auth().currentUser.uid;
@@ -231,7 +231,7 @@ const CurrentBalanceScreen = ({navigation}) => {
         return previous + current;
       }, 0);
 
-    mySpents && setEarn({...earn, monthly: mySpents});
+    mySpents && setEarn({ ...earn, monthly: mySpents });
   };
 
   useEffect(() => {
@@ -331,7 +331,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                 driverWallet:
                   firestore.FieldValue.arrayUnion(walletDataToUpdate),
               },
-              {merge: true},
+              { merge: true },
             );
         })
         .then(res => {
@@ -359,7 +359,7 @@ const CurrentBalanceScreen = ({navigation}) => {
       .onSnapshot(querySnapshot => {
         let accountId = querySnapshot.data().id;
         axios
-          .post(`${BASE_URI}accountLink`, {id: accountId})
+          .post(`${BASE_URI}accountLink`, { id: accountId })
           .then(res => {
             setModalLoading(false);
             let data = res.data;
@@ -395,7 +395,7 @@ const CurrentBalanceScreen = ({navigation}) => {
               <TouchableOpacity
                 style={[
                   styles.button,
-                  {marginBottom: 10, backgroundColor: Colors.primary},
+                  { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
                 onPress={() => getStripeAccountDetailsFromDriver()}>
                 {modalLoading ? (
@@ -404,7 +404,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                   <Text
                     style={[
                       styles.textStyle,
-                      {backgroundColor: Colors.primary},
+                      { backgroundColor: Colors.primary },
                     ]}>
                     Get my Details
                   </Text>
@@ -421,7 +421,7 @@ const CurrentBalanceScreen = ({navigation}) => {
     <SafeAreaView>
       <StatusBar backgroundColor={COLORS.black} />
       <ScrollView
-        style={{height: '100%', backgroundColor: COLORS.white}}
+        style={{ height: '100%', backgroundColor: COLORS.white }}
         vertical
         showsVerticalScrollIndicator={false}>
         <View style={styles.container}>
@@ -445,7 +445,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                 height: 80,
                 paddingHorizontal: 20,
               }}>
-              <View style={{width: '100%', alignItems: 'center'}}>
+              <View style={{ width: '100%', alignItems: 'center' }}>
                 <Text
                   style={{
                     fontSize: 24,
@@ -470,7 +470,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                 alignItems: 'center',
               }}>
               <View>
-                <View style={{width: '20%'}}>
+                <View style={{ width: '20%' }}>
                   <TouchableOpacity>
                     <Image
                       source={require('../../Assets/Images/deposit.jpg')}
@@ -487,7 +487,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                 style={{
                   paddingVertical: 10,
                 }}>
-                <Text style={{color: COLORS.black}}>Current Balance</Text>
+                <Text style={{ color: COLORS.black }}>Current Balance</Text>
               </View>
               <View>
                 <Text
@@ -656,7 +656,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                         ? withdraw.total
                         : 0
                       : (withdraw.monthly ?? 0) &&
-                        (withdraw.monthly.toFixed(2) ?? 0)}
+                      (withdraw.monthly.toFixed(2) ?? 0)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -681,14 +681,14 @@ const CurrentBalanceScreen = ({navigation}) => {
                 </Text>
               </View>
             </View>
-            <View style={{alignItems: 'center'}}>
+            <View style={{ alignItems: 'center' }}>
               <View>
                 <View>
-                  <Text style={{color: COLORS.black}}>Amount</Text>
+                  <Text style={{ color: COLORS.black }}>Amount</Text>
                 </View>
                 <View style={styles.NumberInput}>
                   <TextInput
-                    style={[styles.TextInput, {color: COLORS.black}]}
+                    style={[styles.TextInput, { color: COLORS.black }]}
                     placeholder="Enter Amount"
                     value={addAmount}
                     keyboardType="numeric"
@@ -718,7 +718,7 @@ const CurrentBalanceScreen = ({navigation}) => {
                   'Withdraw Amount'
                 )
               }
-              btnTextStyle={{color: COLORS.white}}
+              btnTextStyle={{ color: COLORS.white }}
             />
           </View>
         </View>

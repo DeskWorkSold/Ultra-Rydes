@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect, useLayoutEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Text,
   View,
@@ -7,35 +7,30 @@ import {
   Image,
   KeyboardAvoidingView,
   ScrollView,
-  TextInput,
   ToastAndroid,
   TouchableOpacity,
-  TouchableOpacityBase,
   BackHandler,
   AppState,
   Alert,
 } from 'react-native';
-import MapView, {Marker} from 'react-native-maps';
-import moment from 'moment-timezone';
+import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import CustomButton from '../../Components/CustomButton';
-import {useIsFocused} from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 import {
   getCurrentLocation,
   locationPermission,
 } from '../../Helper/HelperFunction';
-import Geocoder from 'react-native-geocoding';
 import firestore from '@react-native-firebase/firestore';
-import {ActivityIndicator} from 'react-native-paper';
-import {useCallback} from 'react';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import { ActivityIndicator } from 'react-native-paper';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AddressPickup from '../../Components/AddressPickup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getPreciseDistance} from 'geolib';
+import { getPreciseDistance } from 'geolib';
 import Sound from 'react-native-sound';
 import mytone from '../../Assets/my_sound.mp3';
 import IdleTimerManager from 'react-native-idle-timer';
@@ -72,7 +67,7 @@ export default function DriverOnTheWay() {
     },
   });
   const [startRide, setStartRide] = useState(false);
-  const {pickupCords, dropLocationCords} = location;
+  const { pickupCords, dropLocationCords } = location;
 
   const [myDriverData, setMyDriverData] = useState({});
   const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
@@ -85,86 +80,83 @@ export default function DriverOnTheWay() {
 
   Sound.setCategory('Playback');
 
-  console.log(focus, 'focus');
+  useEffect(() => {
+    AppState.addEventListener('change', nextAppState => {
+      const currentUser = auth().currentUser;
+      if (!currentUser && !focus) {
+        return;
+      }
 
-  AppState.addEventListener('change', nextAppState => {
-    const currentUser = auth().currentUser;
-    if (!currentUser && !focus) {
-      return;
-    }
+      const driverId = currentUser?.uid;
+      if (nextAppState === 'background' || nextAppState == 'inactive' || focus) {
 
-    const driverId = currentUser?.uid;
-    if (nextAppState === 'background' || nextAppState == 'inactive' || focus) {
-      console.log(nextAppState, 'appstate');
+        firestore()
+          .collection('Drivers')
+          .doc(driverId)
+          .get()
+          .then(driverDoc => {
+            if (!driverDoc._exists) {
+              return;
+            }
+            const driverData = driverDoc.data();
 
-      firestore()
-        .collection('Drivers')
-        .doc(driverId)
-        .get()
-        .then(driverDoc => {
-          if (!driverDoc._exists) {
-            return;
-          }
-          const driverData = driverDoc.data();
-
-          if (driverData?.status === 'online' && driverData?.onTheWay) {
-            firestore()
-              .collection('inlinedDriver')
-              .doc(driverId)
-              .get()
-              .then(inlinedDoc => {
-                console.log(inlinedDoc, 'docccc');
-                const inlinedData = inlinedDoc.data();
-                if (!inlinedData?.inlined || !inlinedDoc._exists) {
-                  firestore().collection('Drivers').doc(driverId).update({
-                    currentLocation: null,
-                    status: 'offline',
-                  });
-                }
-              })
-              .catch(error => {
-                console.error('Error getting inlined driver document:', error);
-              });
-          }
-        })
-        .catch(error => {
-          console.error('Error getting driver document:', error);
-        });
-    } else if (nextAppState === 'active') {
-      firestore()
-        .collection('Drivers')
-        .doc(driverId)
-        .get()
-        .then(driverDoc => {
-          if (!driverDoc?._exists || !focus) {
-            return;
-          }
-          const driverData = driverDoc.data();
-          if (driverData.status === 'offline') {
-            firestore()
-              .collection('inlinedDriver')
-              .doc(driverId)
-              .get()
-              .then(inlinedDoc => {
-                const inlinedData = inlinedDoc.data();
-                if (!inlinedData?.inlined || !inlinedDoc?._exists) {
-                  firestore().collection('Drivers').doc(driverId).update({
-                    currentLocation: state,
-                    status: 'online',
-                  });
-                }
-              })
-              .catch(error => {
-                console.error('Error getting inlined driver document:', error);
-              });
-          }
-        })
-        .catch(error => {
-          console.error('Error getting driver document:', error);
-        });
-    }
-  });
-
+            if (driverData?.status === 'online' && driverData?.onTheWay) {
+              firestore()
+                .collection('inlinedDriver')
+                .doc(driverId)
+                .get()
+                .then(inlinedDoc => {
+                  const inlinedData = inlinedDoc.data();
+                  if (!inlinedData?.inlined || !inlinedDoc._exists) {
+                    firestore().collection('Drivers').doc(driverId).update({
+                      currentLocation: null,
+                      status: 'offline',
+                    });
+                  }
+                })
+                .catch(error => {
+                  console.error('Error getting inlined driver document:', error);
+                });
+            }
+          })
+          .catch(error => {
+            console.error('Error getting driver document:', error);
+          });
+      } else if (nextAppState === 'active') {
+        firestore()
+          .collection('Drivers')
+          .doc(driverId)
+          .get()
+          .then(driverDoc => {
+            if (!driverDoc?._exists || !focus) {
+              return;
+            }
+            const driverData = driverDoc.data();
+            if (driverData.status === 'offline') {
+              firestore()
+                .collection('inlinedDriver')
+                .doc(driverId)
+                .get()
+                .then(inlinedDoc => {
+                  const inlinedData = inlinedDoc.data();
+                  if (!inlinedData?.inlined || !inlinedDoc?._exists) {
+                    firestore().collection('Drivers').doc(driverId).update({
+                      currentLocation: state,
+                      status: 'online',
+                    });
+                  }
+                })
+                .catch(error => {
+                  console.error('Error getting inlined driver document:', error);
+                });
+            }
+          })
+          .catch(error => {
+            console.error('Error getting driver document:', error);
+          });
+      }
+    });
+  }, [AppState, startRide])
   // const getTimeZone = async () => {
   //   if (state.latitude && state.longitude) {
   //     let {latitude, longitude} = state;
@@ -194,7 +186,156 @@ export default function DriverOnTheWay() {
     };
   }, []);
 
+  // const checkRequestStatus = () => {
+
+
+  //   if (requestData && requestData.bidFare && requestLoader && startRide) {
+  //     firestore()
+  //       .collection('Request')
+  //       .doc(requestData.id)
+  //       .get()
+  //       .then(doc => {
+  //         let data = doc.data();
+  //         if (
+  //           data &&
+  //           data.myDriversData &&
+  //           !Array.isArray(data.myDriversData) &&
+  //           data.myDriversData.requestStatus == 'rejected'
+  //         ) {
+  //           ToastAndroid.show(
+  //             'Your Request has been rejected',
+  //             ToastAndroid.SHORT,
+  //           );
+  //           setRequestLoader(false);
+  //           return;
+  //         }
+
+  //         console.log(data,"data")
+
+  //         if (
+  //           data &&
+  //           data?.myDriversData &&
+  //           Array.isArray(data?.myDriversData)
+  //         ) {
+  //           let flag = data?.myDriversData.some(
+  //             (e, i) =>
+  //               e.id == myDriverData?.id && e.requestStatus == 'rejected',
+  //           );
+  //           if (flag) {
+  //             let id = auth().currentUser.uid
+  //             ToastAndroid.show(
+  //               'Your Request has been rejected',
+  //               ToastAndroid.SHORT,
+  //             );
+  //             setRequestLoader(false);
+  //           }
+  //           return;
+  //         }
+  //         if (
+  //           data &&
+  //           data.myDriversData &&
+  //           !Array.isArray(data.myDriversData) &&
+  //           data.myDriversData.requestStatus
+  //         ) {
+  //           if (
+  //             data.myDriversData.id == myDriverData.id &&
+  //             data.myDriversData.requestStatus == 'accepted'
+  //           ) {
+  //             ToastAndroid.show(
+  //               'Your request has been accepted',
+  //               ToastAndroid.SHORT,
+  //             );
+  //             setAcceptRequest(true);
+  //             try {
+  //               requestData.driverData = myDriverData;
+  //               let myData = JSON.stringify(requestData ?? data);
+  //               AsyncStorage.setItem('driverBooking', myData);
+  //             } catch (error) { }
+  //             firestore()
+  //               .collection('inlinedDriver')
+  //               .doc(myDriverData.id)
+  //               .set({
+  //                 inlined: true,
+  //                 id: myDriverData.id,
+  //               })
+  //               .then(() => {
+  //                 navigation.navigate('DriverRoutes', {
+  //                   screen: 'DriverBiddingScreen',
+  //                   params: {
+  //                     data: requestData ?? data,
+  //                     passengerState: {
+  //                       pickupCords: data?.pickupCords,
+  //                       dropLocationCords: data?.dropLocationCords,
+  //                     },
+  //                     selectedDriver: myDriverData,
+  //                   },
+  //                 });
+  //               })
+  //               .catch(error => {
+  //                 setRequestLoader(false);
+  //                 console.log(error);
+  //               });
+  //           }
+  //           return;
+  //         }
+  //         if (data && data.myDriversData && Array.isArray(data.myDriversData)) {
+
+  //           console.log("helooooo")
+
+  //           let flag = data.myDriversData.some(
+  //             (e, i) => e.selected && e.id == myDriverData.id,
+  //           );
+  //           let flag1 = data.myDriversData.some(
+  //             (e, i) =>
+  //               e.id == myDriverData.id && e.requestStatus == 'rejected',
+  //           );
+  //           if (flag && !flag1) {
+  //             ToastAndroid.show(
+  //               'Your request has been accepted',
+  //               ToastAndroid.SHORT,
+  //             );
+  //             setAcceptRequest(true);
+  //             firestore()
+  //               .collection('inlinedDriver')
+  //               .doc(myDriverData.id)
+  //               .set({
+  //                 inlined: true,
+  //                 id: myDriverData.id,
+  //               })
+  //               .then(() => {
+  //                 navigation.navigate('DriverRoutes', {
+  //                   screen: 'DriverBiddingScreen',
+  //                   params: {
+  //                     data: requestData ?? data,
+  //                     passengerState: {
+  //                       pickupCords: data?.pickupCords,
+  //                       dropLocationCords: data?.dropLocationCords,
+  //                     },
+  //                     selectedDriver: myDriverData,
+  //                   },
+  //                 });
+  //                 try {
+  //                   requestData.driverData = myDriverData;
+  //                   let myData = JSON.stringify(requestData ?? data);
+  //                   AsyncStorage.setItem('driverBooking', myData);
+  //                 } catch (error) { }
+  //               })
+  //               .catch(error => {
+  //                 setRequestLoader(false);
+  //                 console.log(error);
+  //               });
+  //           } else if (!flag && flag1) {
+  //             ToastAndroid.show(
+  //               'Your request has been rejected',
+  //               ToastAndroid.SHORT,
+  //             );
+  //           }
+  //         }
+  //       });
+  //   }
+  // };
   const checkRequestStatus = () => {
+
     if (requestData && requestData?.bidFare) {
       firestore()
         .collection('Request')
@@ -223,8 +364,7 @@ export default function DriverOnTheWay() {
             Array.isArray(data?.myDriversData)
           ) {
             let flag = data?.myDriversData.some(
-              (e, i) =>
-                e.id == myDriverData?.id && e.requestStatus == 'rejected',
+              (e, i) => e.id == myDriverData?.id && e.requestStatus == 'rejected',
             );
 
             if (flag) {
@@ -258,7 +398,7 @@ export default function DriverOnTheWay() {
                 let myData = JSON.stringify(requestData ?? data);
 
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
 
               firestore()
                 .collection('inlinedDriver')
@@ -279,7 +419,7 @@ export default function DriverOnTheWay() {
                       selectedDriver: myDriverData,
                     },
                   });
-                  setRequestLoader(false);
+                  // setRequestLoader(false);
                 })
                 .catch(error => {
                   setRequestLoader(false);
@@ -295,8 +435,7 @@ export default function DriverOnTheWay() {
             );
 
             let flag1 = data.myDriversData.some(
-              (e, i) =>
-                e.id == myDriverData.id && e.requestStatus == 'rejected',
+              (e, i) => e.id == myDriverData.id && e.requestStatus == 'rejected',
             );
             if (flag && !flag1) {
               ToastAndroid.show(
@@ -309,7 +448,7 @@ export default function DriverOnTheWay() {
                 requestData.driverData = myDriverData;
                 let myData = JSON.stringify(requestData ?? data);
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
 
               firestore()
                 .collection('inlinedDriver')
@@ -330,7 +469,7 @@ export default function DriverOnTheWay() {
                       selectedDriver: myDriverData,
                     },
                   });
-                  setRequestLoader(false);
+                  // setRequestLoader(false);
                 })
                 .catch(error => {
                   setRequestLoader(false);
@@ -347,12 +486,13 @@ export default function DriverOnTheWay() {
     }
   };
 
+
+
   useEffect(() => {
-    if (requestLoader && myDriverData && !acceptRequest) {
+    if (requestLoader && myDriverData && !acceptRequest && startRide) {
       let interval = setInterval(() => {
         checkRequestStatus();
       }, 10000);
-
       return () => clearInterval(interval);
     }
   }, [requestLoader]);
@@ -367,7 +507,6 @@ export default function DriverOnTheWay() {
       setDing('');
       return;
     }
-
     let createSound = new Sound(mytone, error => {
       if (error) {
         console.log('failed to load the sound', error);
@@ -465,15 +604,19 @@ export default function DriverOnTheWay() {
     if (passengersData.length < requestIds.length) {
       setRequestIds(
         passengersData &&
-          passengersData.length > 0 &&
-          passengersData.map((e, i) => {
-            if (e?.passengerData) {
-              return e.passengerData.id;
-            } else {
-              return e?.id;
-            }
-          }),
+        passengersData.length > 0 &&
+        passengersData.map((e, i) => {
+          if (e?.passengerData) {
+            return e.passengerData.id;
+          } else {
+            return e?.id;
+          }
+        }),
       );
+    }
+    else if (passengersData.length == 0) {
+      !requestLoader && setRequestIds([])
+      !requestLoader && setRequestData([])
     }
 
     if (ding && Object.keys(ding).length > 0) {
@@ -525,14 +668,14 @@ export default function DriverOnTheWay() {
           let interval = setTimeout(() => {
             setRequestIds(
               passengersData &&
-                passengersData.length > 0 &&
-                passengersData.map((e, i) => {
-                  if (e?.passengerData) {
-                    return e.passengerData.id;
-                  } else {
-                    return e.id;
-                  }
-                }),
+              passengersData.length > 0 &&
+              passengersData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
             );
           }, 30000);
         } else {
@@ -548,14 +691,14 @@ export default function DriverOnTheWay() {
           setTimeout(() => {
             setRequestIds(
               passengersData &&
-                passengersData.length > 0 &&
-                passengersData.map((e, i) => {
-                  if (e?.passengerData) {
-                    return e.passengerData.id;
-                  } else {
-                    return e.id;
-                  }
-                }),
+              passengersData.length > 0 &&
+              passengersData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
             );
           }, 30000);
         }
@@ -711,9 +854,9 @@ export default function DriverOnTheWay() {
             if (
               Number(pickupMileDistance) <= 5 &&
               Number(passengerDropAndDriverDropMileDis) <
-                Number(passengerpickAndDriverDropMileDis) &&
+              Number(passengerpickAndDriverDropMileDis) &&
               Number(DriverPickAndDriveDropMileDis) >=
-                Number(passengerPickAndPassengerDropMileDis) &&
+              Number(passengerPickAndPassengerDropMileDis) &&
               Number(passengerDropAndDriverDropMileDis) < remainingDis
             ) {
               if (data) {
@@ -824,7 +967,6 @@ export default function DriverOnTheWay() {
 
   const getDriverData = () => {
     const driverId = auth().currentUser.uid;
-
     firestore()
       .collection('Drivers')
       .doc(driverId)
@@ -921,7 +1063,7 @@ export default function DriverOnTheWay() {
                 data.driverData = item.driverData;
                 let myData = JSON.stringify(data);
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
               firestore()
                 .collection('inlinedDriver')
                 .doc(myDriverData.id)
@@ -989,8 +1131,8 @@ export default function DriverOnTheWay() {
             return;
           }
         }
-
         if (data && !data.myDriversData) {
+
           firestore()
             .collection('Request')
             .doc(data.id)
@@ -1092,6 +1234,7 @@ export default function DriverOnTheWay() {
         .collection('Request')
         .doc(data?.passengerData ? data.passengerData?.id : data.id)
         .update({
+
           rejectedDrivers: rejectedDrivers,
         })
         .then(() => {
@@ -1264,7 +1407,7 @@ export default function DriverOnTheWay() {
                   style={{
                     width: 40,
                     height: 40,
-                    transform: [{rotate: `${state.heading}deg`}],
+                    transform: [{ rotate: `${state.heading}deg` }],
                   }}
                   resizeMode="contain"
                 />
@@ -1360,7 +1503,7 @@ export default function DriverOnTheWay() {
       )}
 
       {passengersData && passengersData.length > 0 && (
-        <View style={{width: '100%', marginTop: 20}}>
+        <View style={{ width: '100%', marginTop: 20 }}>
           {passengersData &&
             passengersData.length > 0 &&
             passengersData.map((item, index) => {
@@ -1396,22 +1539,22 @@ export default function DriverOnTheWay() {
                 <View
                   style={styles.listItemContainer}
                   key={item.passengerData ? item.passengerData.id : item.id}
-                  // onPress={() => {
-                  //   navigation.navigate('DriverRoutes', {
-                  //     screen: 'DriverBiddingScreen',
-                  //     params: {
-                  //       data: items,
-                  //       passengerState: {
-                  //         pickupCords: item.passengerData
-                  //           ? item.passengerData.pickupCords
-                  //           : item.pickupCords,
-                  //         dropLocationCords: item.passengerData
-                  //           ? item.passengerData.dropLocationCords
-                  //           : item.dropLocationCords,
-                  //       },
-                  //     },
-                  //   });
-                  // }}
+                // onPress={() => {
+                //   navigation.navigate('DriverRoutes', {
+                //     screen: 'DriverBiddingScreen',
+                //     params: {
+                //       data: items,
+                //       passengerState: {
+                //         pickupCords: item.passengerData
+                //           ? item.passengerData.pickupCords
+                //           : item.pickupCords,
+                //         dropLocationCords: item.passengerData
+                //           ? item.passengerData.dropLocationCords
+                //           : item.dropLocationCords,
+                //       },
+                //     },
+                //   });
+                // }}
                 >
                   <View
                     style={{
@@ -1470,7 +1613,7 @@ export default function DriverOnTheWay() {
                     <Text
                       style={[
                         styles.itemTextStyle,
-                        {width: '50%', textAlign: 'center'},
+                        { width: '50%', textAlign: 'center' },
                       ]}>
                       Fare:
                       <Text style={styles.itemLocStyle}>
@@ -1483,10 +1626,10 @@ export default function DriverOnTheWay() {
                     <Text
                       style={[
                         styles.itemTextStyle,
-                        {width: '50%', textAlign: 'center'},
+                        { width: '50%', textAlign: 'center' },
                       ]}>
                       Distance:
-                      <Text style={[styles.itemLocStyle, {fontSize: 18}]}>
+                      <Text style={[styles.itemLocStyle, { fontSize: 18 }]}>
                         {item.passengerData
                           ? item.passengerData.distance
                           : item.distance}{' '}
@@ -1506,7 +1649,7 @@ export default function DriverOnTheWay() {
                       <Text
                         style={[
                           styles.itemTextStyle,
-                          {width: '50%', textAlign: 'center'},
+                          { width: '50%', textAlign: 'center' },
                         ]}>
                         Bid Fare:
                         <Text style={styles.itemLocStyle}>
@@ -1517,7 +1660,7 @@ export default function DriverOnTheWay() {
                     <Text
                       style={[
                         styles.itemTextStyle,
-                        {width: '50%', textAlign: 'center'},
+                        { width: '50%', textAlign: 'center' },
                       ]}>
                       Minutes:
                       <Text style={styles.itemLocStyle}>
@@ -1537,7 +1680,7 @@ export default function DriverOnTheWay() {
                     <CustomButton
                       onPress={() => AcceptRequest(item)}
                       text={'Accept'}
-                      styleContainer={{width: '45%'}}
+                      styleContainer={{ width: '45%' }}
                     />
                     <CustomButton
                       text={
@@ -1548,7 +1691,7 @@ export default function DriverOnTheWay() {
                         )
                       }
                       onPress={() => rejectRequest(item)}
-                      styleContainer={{width: '45%'}}
+                      styleContainer={{ width: '45%' }}
                     />
                   </View>
                 </View>

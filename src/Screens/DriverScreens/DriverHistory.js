@@ -214,6 +214,10 @@ function DriverHistory({navigation}) {
 
   const renderCancelBookingData = ({item, index}) => {
     let fare = null;
+
+    let date = item.date.toDate();
+    let stringDate = date.toString().slice(0, 15);
+
     if (
       item.driverData &&
       item.driverData.bidFare &&
@@ -249,7 +253,7 @@ function DriverHistory({navigation}) {
             })
           }>
           {/* Date is mentioned Here */}
-          <Text style={[styles.text, {marginTop: 5}]}>abc</Text>
+          <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
           <Text
             style={[styles.text, {paddingTop: 5, fontSize: 14}]}
             numberOfLines={1}>
