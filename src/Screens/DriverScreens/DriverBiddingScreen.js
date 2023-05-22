@@ -120,7 +120,8 @@ export default function DriverBiddingScreen({ navigation }) {
   const [endRide, setEndRide] = useState(false);
   const [buttonLoader, setButtonLoader] = useState(false);
   const [arriveModal, setArriveModal] = useState(false)
-  const [riderOnCabConfirmation,setRiderOnCabConfirmation] = useState(false)
+  const [riderOnCabConfirmation, setRiderOnCabConfirmation] = useState(false)
+  const [confirm, setConfirm] = useState(false)
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -143,10 +144,14 @@ export default function DriverBiddingScreen({ navigation }) {
     };
   }, []);
 
+
   const getLocationUpdates = async () => {
     let checkDriverArrive = await AsyncStorage.getItem(
       'ArrivedAtpickUpLocation',
     );
+
+
+
 
     // let myDriverArrived;
     firestore()
@@ -198,22 +203,10 @@ export default function DriverBiddingScreen({ navigation }) {
       !data?.driverArriveAtDropoffLocation &&
       pickupCords.latitude &&
       pickupCords.longitude &&
-      (arrive.pickUpLocation || data.driverArriveAtPickupLocation)
+      (arrive.pickUpLocation || data.driverArriveAtPickupLocation) &&
+      (startRide || data?.startRide || route?.params?.startRide)
     ) {
-      const dis = getPreciseDistance(
-        {
-          latitude: driverCurrentLocation.latitude,
-          longitude: driverCurrentLocation.longitude,
-        },
-        {
-          latitude: dropLocationCords.latitude,
-          longitude: dropLocationCords.longitude,
-        },
-      );
-
-      if (dis < 100) {
-        setArriveDropOffLocation(true);
-      }
+      setArriveDropOffLocation(true);
     }
 
     getCurrentLocation()
@@ -232,10 +225,9 @@ export default function DriverBiddingScreen({ navigation }) {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    let interval = setInterval(() => {
       getLocationUpdates();
     }, 15000);
-
     return () => clearInterval(interval);
   });
 
@@ -594,7 +586,7 @@ export default function DriverBiddingScreen({ navigation }) {
     );
   }, [arriveModal, buttonLoader]);
 
-  const PassengerConfirmationModal = useCallback(()=>{
+  const PassengerConfirmationModal = useCallback(() => {
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -610,45 +602,46 @@ export default function DriverBiddingScreen({ navigation }) {
                 <Icon size={80} color="white" name="hand-stop-o" />
               </View>
               <Text style={styles.modalText}>
-                Please Confirm the passenger's name : {data?.passengerData?.passengerPersonalDetails?.firstName}
+                Please Confirm the passenger's name : {data?.passengerData ? data?.passengerData?.passengerPersonalDetails?.firstName : data?.passengerPersonalDetails?.firstName}
               </Text>
-              <View style={{flexDirection:"row",width:"100%",marginTop:30,justifyContent:"space-between"}} >
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  { marginBottom: 10, backgroundColor: Colors.primary,width:"49%",position:"static"},
-                ]}
+              <View style={{ flexDirection: "row", width: "100%", marginTop: 30, justifyContent: "space-between" }} >
+                <TouchableOpacity
+                  onPress={() => rideStartByDriver()}
+                  style={[
+                    styles.button,
+                    { marginBottom: 10, backgroundColor: Colors.primary, width: "49%", position: "static" },
+                  ]}
                 >
-                <Text style={styles.textStyle}>
-                  {buttonLoader ? (
-                    <ActivityIndicator size={'large'} color={Colors.black} />
-                  ) : (
-                    'confirm'
-                  )}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  { marginBottom: 10, backgroundColor: Colors.primary,width:"49%",position:"static",backgroundColor:Colors.black},
-                ]}
-                onPress={()=>cancelBookingByDriver()}
+                  <Text style={styles.textStyle}>
+                    {buttonLoader && confirm ? (
+                      <ActivityIndicator size={'large'} color={Colors.black} />
+                    ) : (
+                      'confirm'
+                    )}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    { marginBottom: 10, backgroundColor: Colors.primary, width: "49%", position: "static", backgroundColor: Colors.black },
+                  ]}
+                  onPress={() => cancelBookingByDriver()}
                 >
-                <Text style={styles.textStyle}>
-                  {buttonLoader ? (
-                    <ActivityIndicator size={'large'} color={Colors.white} />
-                  ) : (
-                    'Wrong rider'
-                  )}
-                </Text>
-              </TouchableOpacity>
+                  <Text style={styles.textStyle}>
+                    {buttonLoader ? (
+                      <ActivityIndicator size={'large'} color={Colors.white} />
+                    ) : (
+                      'Wrong rider'
+                    )}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
       </View>
     );
-  },[riderOnCabConfirmation,buttonLoader])
+  }, [riderOnCabConfirmation, buttonLoader])
 
 
 
@@ -1320,13 +1313,13 @@ export default function DriverBiddingScreen({ navigation }) {
   };
 
   useEffect(() => {
+    let inteval;
     if (selectedDriver) {
-      let interval = setInterval(() => {
+      interval = setInterval(() => {
         cancelRideByPassenger();
       }, 10000);
-
-      return () => clearInterval(interval);
     }
+    return () => clearInterval(interval);
   }, [selectedDriver]);
 
   const sendDriverRequestInFirebase = () => {
@@ -1487,6 +1480,8 @@ export default function DriverBiddingScreen({ navigation }) {
     setDriverBidFare(Number(myFare));
   };
 
+  console.log(data?.startRide,"startRide")
+
   const getMinutesAndDistance = result => {
     setMinutesAndDistanceDifference({
       ...minutesAndDistanceDifference,
@@ -1509,6 +1504,7 @@ export default function DriverBiddingScreen({ navigation }) {
   };
 
   const rideStartByDriver = async () => {
+    setConfirm(true)
     firestore()
       .collection('Request')
       .doc(data.id ?? data.passengerData.id)
@@ -1519,6 +1515,8 @@ export default function DriverBiddingScreen({ navigation }) {
           try {
             await AsyncStorage.setItem('startRide', 'Ride has been started');
             setStartRide(true);
+            setConfirm(false)
+            setRiderOnCabConfirmation(false)
             handleZoom();
           } catch (error) {
             console.log(error);
@@ -1566,10 +1564,48 @@ export default function DriverBiddingScreen({ navigation }) {
     setCancelRide(true);
   };
   const rideEndByDriver = async () => {
-    setEndRide(true);
-    setArriveDropOffLocation(false);
 
-    await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
+    const dis = getPreciseDistance(
+      {
+        latitude: driverCurrentLocation.latitude,
+        longitude: driverCurrentLocation.longitude,
+      },
+      {
+        latitude: dropLocationCords.latitude,
+        longitude: dropLocationCords.longitude,
+      },
+    );
+
+    mileDistance = (dis / 1609.34)?.toFixed(2);
+
+      console.log(mileDistance,"distance")
+
+
+    if (data?.distance <= 3) {
+
+      if (mileDistance < ((data?.distance * 75) / 100)) {
+        setEndRide(true);
+        setArriveDropOffLocation(false);
+        await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
+      }
+      else {
+        ToastAndroid.show("You have met the minimum requirement to end ride kindly proceed to destination location", ToastAndroid.SHORT)
+      }
+      return
+    }
+
+    if (data?.distance > 3) {
+
+      if (mileDistance < ((data?.distance * 50) / 100)) {
+        setEndRide(true);
+        setArriveDropOffLocation(false);
+        await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
+      }
+      else {
+        ToastAndroid.show("You have met the minimum requirement to end ride kindly proceed to destination location", ToastAndroid.SHORT)
+      }
+    }
+
   };
 
   const openWaze = () => {
@@ -1681,6 +1717,8 @@ export default function DriverBiddingScreen({ navigation }) {
     }
   };
 
+console.log(route.params.startRide,"startRide")
+
   return loading ? (
     <View
       style={{ alignItems: 'center', justifyContent: 'center', height: '90%' }}>
@@ -1701,8 +1739,8 @@ export default function DriverBiddingScreen({ navigation }) {
           source={require('../../Assets/Images/URWhiteLogo.png')}
           rightButton={
             selectedDriver
-                ? 'show'
-                : ''
+              ? 'show'
+              : ''
           }
           cancelRideFunction={cancelRideByDriver}
         />
@@ -1822,7 +1860,7 @@ export default function DriverBiddingScreen({ navigation }) {
 
         }
 
-
+        
         {((arrive.pickUpLocation && !startRide) ||
           (route.params?.driverArrive &&
             !route.params.startRide &&
@@ -1848,7 +1886,7 @@ export default function DriverBiddingScreen({ navigation }) {
               </Text>
             </TouchableOpacity>
           )}
-          {riderOnCabConfirmation && PassengerConfirmationModal()}
+        {riderOnCabConfirmation && PassengerConfirmationModal()}
         {arriveDropOffLocation && !endRide && (
           <TouchableOpacity
             style={{

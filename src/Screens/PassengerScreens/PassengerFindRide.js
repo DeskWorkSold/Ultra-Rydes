@@ -124,7 +124,6 @@ export default function PassengerFindRide({ route }) {
         setNoDriverData(true);
         let AsyncpassengerData = JSON.stringify(passengerData)
         AsyncStorage.setItem("passengerData", AsyncpassengerData)
-        
         navigation.navigate('PassengerRoutes', {
           screen: 'PassengerHomeScreen',
           params: {
@@ -219,8 +218,7 @@ export default function PassengerFindRide({ route }) {
           let data = doc.data();
 
 
-
-          if (data.rideCancelByDriver || data.rideCancelByPassenger) {
+          if (data.rideCancelByDriver || data.rideCancelByPassenger && focus) {
             const backAction = () => {
               Alert.alert(
                 'Hold on!',

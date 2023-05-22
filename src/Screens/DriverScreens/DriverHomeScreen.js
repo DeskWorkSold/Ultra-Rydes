@@ -375,7 +375,6 @@ export default function DriverHomeScreen({ route }) {
       );
       let startRide = await AsyncStorage.getItem('startRide');
       let endRide = await AsyncStorage.getItem('EndRide');
-
       data = JSON.parse(data);
       if (data && Object.keys(data).length > 0) {
         navigation.navigate('DriverRoutes', {
@@ -566,21 +565,20 @@ export default function DriverHomeScreen({ route }) {
   }, [])
 
 
-
   useEffect(() => {
+    let interval;
     if (
       driverStatus == 'online' &&
-      driverData &&
+      driverData && focus &&
       Object.keys(driverData.length > 0)
     ) {
-      let interval = setInterval(() => {
+      interval = setInterval(() => {
         if (focus) {
           getRequestFromPassengers();
         }
       }, 2000);
-
-      return () => clearInterval(interval);
     }
+    return () => clearInterval(interval);
   }, [driverStatus, driverData]);
 
   const getDriverData = () => {
@@ -608,7 +606,6 @@ export default function DriverHomeScreen({ route }) {
   useEffect(() => {
     getDriverData();
   }, [driverStatus, focus]);
-
 
   const checkRequestStatus = () => {
 
@@ -668,11 +665,9 @@ export default function DriverHomeScreen({ route }) {
                 ToastAndroid.SHORT,
               );
               setAcceptRequest(true);
-
               try {
                 requestData.driverData = driverData;
                 let myData = JSON.stringify(requestData ?? data);
-
                 AsyncStorage.setItem('driverBooking', myData);
               } catch (error) { }
 
@@ -780,14 +775,15 @@ export default function DriverHomeScreen({ route }) {
 
 
   useEffect(() => {
+    
+    let interval;
     if (requestLoader && driverData && !acceptRequest && focus) {
-      let interval = setInterval(() => {
+      interval = setInterval(() => {
         console.log("hello")
         checkRequestStatus();
       }, 10000);
-
-      return () => clearInterval(interval);
     }
+    return () => clearInterval(interval);
   }, [requestLoader]);
 
   const rejectRequest = async data => {
@@ -1072,7 +1068,7 @@ export default function DriverHomeScreen({ route }) {
   useEffect(() => {
 
     setTimeout(() => {
-      if (requestLoader) {
+      if (requestLoader && focus) {
 
         firestore().collection("Request").doc(requestData?.id).get().then(doc => {
           let data = doc.data()
@@ -1092,7 +1088,7 @@ export default function DriverHomeScreen({ route }) {
             }
           }
 
-          if (driverData && Array.isArray(driverData)) {
+          if (driverData && Array.isArray(driverData) && focus) {
 
             let id = auth().currentUser?.uid
 
@@ -1113,7 +1109,7 @@ export default function DriverHomeScreen({ route }) {
     }, 30000)
 
 
-  }, [requestLoader])
+  }, [requestLoader, focus])
 
 
   useEffect(() => {

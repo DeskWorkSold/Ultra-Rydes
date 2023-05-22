@@ -336,7 +336,7 @@ export default function PassengerHomeScreen({ navigation }) {
     setCurrentUserUid(currentUser.uid);
   };
 
-  let data =
+    let data =
     route.params && route.params?.data ? route.params.data : route.params;
 
   useEffect(() => {
