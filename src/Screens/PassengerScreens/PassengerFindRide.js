@@ -20,6 +20,7 @@ import { BackHandler } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { useRef } from 'react';
 export default function PassengerFindRide({ route }) {
   let passengerData = route.params;
 
@@ -42,6 +43,9 @@ export default function PassengerFindRide({ route }) {
   const [buttonLoader, setButtonLoader] = React.useState(false);
   const [noDriverData, setNoDriverData] = React.useState(false);
   const [driversRejected, setDriverRejected] = React.useState([]);
+  const [timer, setTimer] = useState(null);
+  const [respondInTime, setRespondInTime] = useState("")
+
 
   const [cardDetail, setCardDetail] = useState({
     cardHolderName: '',
@@ -84,7 +88,6 @@ export default function PassengerFindRide({ route }) {
 
             const speed = 10; // meters per second
             data.myDriversData.minutes = Math.round(mileDistance / speed / 60);
-            console.log('hello');
             setDriverData([data.myDriversData]);
           } else if (
             data &&
@@ -97,9 +100,14 @@ export default function PassengerFindRide({ route }) {
               }),
             );
           }
-        });
+
+          if (data && !data?.myDriversData && !request && focus) {
+            setDriverData([])
+          }
+        })
     }
   };
+
 
   useEffect(() => {
     if (passengerData.id && passengerData.bidFare && !noDriverData) {
@@ -108,38 +116,57 @@ export default function PassengerFindRide({ route }) {
     checkAvailableDriverStatus();
   }, []);
 
+  const timerRef = useRef(null);
   useEffect(() => {
-    let interval = setInterval(async () => {
-      if (driverData.length == 0 && request && passengerData.bidFare) {
+    const handleBackRoute = () => {
+      if (request && passengerData.bidFare) {
         setRequest(false);
         setNoDriverData(true);
-        // navigation.navigate('PassengerHomeScreen');
-
         let AsyncpassengerData = JSON.stringify(passengerData)
         AsyncStorage.setItem("passengerData", AsyncpassengerData)
-
+        
         navigation.navigate('PassengerRoutes', {
           screen: 'PassengerHomeScreen',
           params: {
             passengerData: passengerData,
           },
         });
-        clearInterval(interval);
         ToastAndroid.show(
-          'Drivers are not available rightnow request after sometime',
+          'Drivers are not available right now. Request again after some time.',
           ToastAndroid.SHORT,
         );
       }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [request]);
+    };
+
+    // Start the timer if it hasn't been started yet
+    if (timerRef.current === null) {
+      timerRef.current = setTimeout(handleBackRoute, 30000);
+    }
+
+    return () => {
+      // Clear the timer on component unmount
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    };
+  }, [request, driverData]);
+
+  useEffect(() => {
+    if (driverData.length > 0 || !request) {
+      // Data has arrived or request is canceled, clear the timer
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, [driverData]);
+
+
+
 
   useEffect(() => {
     if (passengerData && !passengerData.bidFare && !request) {
       driverData && driverData.length == 0 ? setLoader(true) : '';
       let interval = setInterval(() => {
         let rejectedDriver = false;
-        let id = auth().currentUser.uid;
+        let id = auth().currentUsers
         firestore()
           .collection('Request')
           .doc(id)
@@ -175,7 +202,13 @@ export default function PassengerFindRide({ route }) {
   }, [focus]);
 
   const checkRouteFromCancelRide = () => {
-    let id = auth().currentUser.uid;
+    let currentUser = auth().currentUser
+
+    if (!currentUser) {
+      return
+    }
+
+    let id = currentUser?.uid
 
     firestore()
       .collection('Request')
@@ -185,7 +218,7 @@ export default function PassengerFindRide({ route }) {
         if (doc._exists) {
           let data = doc.data();
 
-          console.log(data, 'dataa');
+
 
           if (data.rideCancelByDriver || data.rideCancelByPassenger) {
             const backAction = () => {
@@ -613,13 +646,21 @@ export default function PassengerFindRide({ route }) {
       .then(() => {
         AsyncStorage.removeItem('passengerBooking');
         AsyncStorage.removeItem('driverArrive');
-        navigation.navigate('AskScreen');
+        let AsyncpassengerData = JSON.stringify(passengerData)
+        AsyncStorage.setItem("passengerData", AsyncpassengerData)
+        navigation.navigate('PassengerRoutes', {
+          screen: 'PassengerHomeScreen',
+          params: {
+            passengerData: passengerData,
+          },
+        });
       })
       .catch(error => {
         console.log(error, 'error');
       });
     return () => backHandler.remove();
   };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => {
@@ -732,8 +773,6 @@ export default function PassengerFindRide({ route }) {
     if (!passengerData.bidFare) {
     }
   }, [driverNotAvailable]);
-
-  console.log(passengerData?.pickupCords, 'pickupcords');
 
   useEffect(() => {
     let interval;

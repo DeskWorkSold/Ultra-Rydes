@@ -43,6 +43,7 @@ import { Linking, Platform } from 'react-native';
 import axios from 'axios';
 import IdleTimerManager from 'react-native-idle-timer';
 
+
 export default function DriverBiddingScreen({ navigation }) {
   const route = useRoute();
 
@@ -118,6 +119,8 @@ export default function DriverBiddingScreen({ navigation }) {
   const [driverCurrentLocation, setDriverCurrentLocation] = useState({});
   const [endRide, setEndRide] = useState(false);
   const [buttonLoader, setButtonLoader] = useState(false);
+  const [arriveModal, setArriveModal] = useState(false)
+  const [riderOnCabConfirmation,setRiderOnCabConfirmation] = useState(false)
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -173,17 +176,17 @@ export default function DriverBiddingScreen({ navigation }) {
       pickupCords.latitude &&
       pickupCords.longitude
     ) {
-      const dis = getPreciseDistance(
-        {
-          latitude: driverCurrentLocation.latitude,
-          longitude: driverCurrentLocation.longitude,
-        },
-        { latitude: pickupCords.latitude, longitude: pickupCords.longitude },
-      );
+      // const dis = getPreciseDistance(
+      //   {
+      //     latitude: driverCurrentLocation.latitude,
+      //     longitude: driverCurrentLocation.longitude,
+      //   },
+      //   { latitude: pickupCords.latitude, longitude: pickupCords.longitude },
+      // );
 
-      if (dis < 100) {
-        setArrivePickupLocation(true);
-      }
+      // if (dis < 100) {
+      setArrivePickupLocation(true);
+      // }
     }
 
     if (
@@ -338,7 +341,7 @@ export default function DriverBiddingScreen({ navigation }) {
   };
 
 
-console.log(tipAmount,"tollAmount")
+  console.log(tipAmount, "tollAmount")
 
   // const checkRequestStatus = async () => {
   //   if (!selectedDriver) {
@@ -488,8 +491,7 @@ console.log(tipAmount,"tollAmount")
 
   const sendArriveMessageToPassenger = async () => {
     setButtonLoader(true);
-    setArrive({ ...arrive, pickUpLocation: true });
-    setArrivePickupLocation(false);
+
     firestore()
       .collection('token')
       .doc(passengerData.id)
@@ -534,6 +536,9 @@ console.log(tipAmount,"tollAmount")
       })
       .then(res => {
         setButtonLoader(false);
+        setArrive({ ...arrive, pickUpLocation: true });
+        setArrivePickupLocation(false);
+        setArriveModal(false)
         console.log('You have arrived at pickup Location');
       })
       .catch(error => {
@@ -556,7 +561,7 @@ console.log(tipAmount,"tollAmount")
         <Modal
           animationType="slide"
           transparent={true}
-          visible={arrivePickUpLocation}
+          visible={arriveModal}
           onRequestClose={() => {
             setArrivePickupLocation(false);
           }}>
@@ -587,7 +592,66 @@ console.log(tipAmount,"tollAmount")
         </Modal>
       </View>
     );
-  }, [arrivePickUpLocation, buttonLoader]);
+  }, [arriveModal, buttonLoader]);
+
+  const PassengerConfirmationModal = useCallback(()=>{
+    return (
+      <View style={styles.centeredView}>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={riderOnCabConfirmation}
+          onRequestClose={() => {
+            setRiderOnCabConfirmation(false);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <View>
+                <Icon size={80} color="white" name="hand-stop-o" />
+              </View>
+              <Text style={styles.modalText}>
+                Please Confirm the passenger's name : {data?.passengerData?.passengerPersonalDetails?.firstName}
+              </Text>
+              <View style={{flexDirection:"row",width:"100%",marginTop:30,justifyContent:"space-between"}} >
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  { marginBottom: 10, backgroundColor: Colors.primary,width:"49%",position:"static"},
+                ]}
+                >
+                <Text style={styles.textStyle}>
+                  {buttonLoader ? (
+                    <ActivityIndicator size={'large'} color={Colors.black} />
+                  ) : (
+                    'confirm'
+                  )}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  { marginBottom: 10, backgroundColor: Colors.primary,width:"49%",position:"static",backgroundColor:Colors.black},
+                ]}
+                onPress={()=>cancelBookingByDriver()}
+                >
+                <Text style={styles.textStyle}>
+                  {buttonLoader ? (
+                    <ActivityIndicator size={'large'} color={Colors.white} />
+                  ) : (
+                    'Wrong rider'
+                  )}
+                </Text>
+              </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  },[riderOnCabConfirmation,buttonLoader])
+
+
+
   const bookingComplete = (myTip, myToll) => {
     setButtonLoader(true);
 
@@ -1521,6 +1585,9 @@ console.log(tipAmount,"tollAmount")
       Linking.openURL(url);
     }
   };
+
+  console.log(arrivePickUpLocation, "arrivePickUp")
+
   const rejectRequest = async () => {
     setRejectLoader(true);
     if (data && data.bidFare) {
@@ -1633,9 +1700,7 @@ console.log(tipAmount,"tollAmount")
           // }}
           source={require('../../Assets/Images/URWhiteLogo.png')}
           rightButton={
-            arrive.pickUpLocation || route.params?.driverArrive
-              ? ''
-              : selectedDriver
+            selectedDriver
                 ? 'show'
                 : ''
           }
@@ -1717,8 +1782,12 @@ console.log(tipAmount,"tollAmount")
                 }}
               />
             )}
+
+
           </MapView>
         )}
+
+
 
         {selectedDriver &&
           driverCurrentLocation.latitude &&
@@ -1738,6 +1807,21 @@ console.log(tipAmount,"tollAmount")
               />
             </View>
           )}
+        {arrivePickUpLocation && <CustomButton text={"Arrived"}
+          styleContainer={{
+            position: 'absolute',
+            bottom: 20,
+            right: 20,
+            backgroundColor: Colors.secondary,
+            width: 100,
+            borderRadius: 0
+          }}
+          btnTextStyle={{ fontSize: 16, color: 'white', fontWeight: '600', borderRadius: 0 }}
+          onPress={() => setArriveModal(true)}
+        />
+
+        }
+
 
         {((arrive.pickUpLocation && !startRide) ||
           (route.params?.driverArrive &&
@@ -1758,12 +1842,13 @@ console.log(tipAmount,"tollAmount")
                 borderRadius: 10,
                 paddingHorizontal: 20,
               }}
-              onPress={() => rideStartByDriver()}>
-              <Text style={{ fontSize: 16, color: 'white', fontWeight: '600' }}>
-                Start Ride
+              onPress={() => setRiderOnCabConfirmation(true)}>
+              <Text style={{ fontSize: 18, color: 'white', fontWeight: '600' }}>
+                Rider On Cab
               </Text>
             </TouchableOpacity>
           )}
+          {riderOnCabConfirmation && PassengerConfirmationModal()}
         {arriveDropOffLocation && !endRide && (
           <TouchableOpacity
             style={{
@@ -1966,7 +2051,8 @@ console.log(tipAmount,"tollAmount")
                   state="driver"
                 />
               )}
-              {arrivePickUpLocation && <ArriveModal />}
+              {arriveModal && <ArriveModal />}
+
               {endRide && tipAmount && DropOffModal(tipAmount, tollAmount)}
               {cancelRide && cancelRideModal()}
 

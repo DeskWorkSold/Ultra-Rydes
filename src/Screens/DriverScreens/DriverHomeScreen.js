@@ -170,10 +170,10 @@ export default function DriverHomeScreen({ route }) {
     }
   });
 
-  useEffect(() => {
-    setStatus(1);
-    setDriverStatus('offline');
-  }, [focus]);
+  // useEffect(() => {
+  //   setStatus(1);
+  //   setDriverStatus('offline');
+  // }, [focus]);
 
   useEffect(() => {
     const backAction = () => {
@@ -399,6 +399,14 @@ export default function DriverHomeScreen({ route }) {
           },
         });
       }
+      else {
+        let id = auth().currentUser?.uid
+        firestore().collection("inlinedDriver").doc(id).update({
+          inlined: false
+        }).then(() => {
+          setInlinedDrivers(false)
+        })
+      }
     } catch (error) {
       console.log(error, 'error');
     }
@@ -424,7 +432,7 @@ export default function DriverHomeScreen({ route }) {
               let requestRespondSeconds = requestSeconds + 32;
               let differenceSeconds = requestRespondSeconds - nowSeconds;
               data.timeLimit = differenceSeconds;
-              if (!data?.requestStatus && differenceSeconds > 0) {
+              if (!data?.requestStatus) {
                 let dis = getPreciseDistance(
                   {
                     latitude:
@@ -549,6 +557,15 @@ export default function DriverHomeScreen({ route }) {
       }
     }
   };
+
+
+  useEffect(() => {
+
+    getDriverBookingData()
+
+  }, [])
+
+
 
   useEffect(() => {
     if (
@@ -1051,6 +1068,54 @@ export default function DriverHomeScreen({ route }) {
     }
   };
 
+
+  useEffect(() => {
+
+    setTimeout(() => {
+      if (requestLoader) {
+
+        firestore().collection("Request").doc(requestData?.id).get().then(doc => {
+          let data = doc.data()
+
+          let driverData = data.myDriversData
+
+          if (driverData && !Array.isArray(driverData)) {
+            let id = auth().currentUser?.uid
+            if (driverData.id == id) {
+              firestore().collection("Request").doc(requestData?.id).update({
+                myDriversData: null
+              }).then(res => {
+                setRequestLoader(false)
+                setRequestData({})
+              })
+              return
+            }
+          }
+
+          if (driverData && Array.isArray(driverData)) {
+
+            let id = auth().currentUser?.uid
+
+            let otherDriversData = driverData.filter((e, i) => {
+              return e.id !== id
+            })
+            firestore().collection("Request").doc(requestData?.id).update({
+              myDriversData: otherDriversData
+            }).then((res) => {
+              setRequestLoader(false)
+              setRequestData({})
+            })
+          }
+        })
+        setRequestLoader(false)
+        ToastAndroid.show("No response from the passenger", ToastAndroid.SHORT)
+      }
+    }, 30000)
+
+
+  }, [requestLoader])
+
+
   useEffect(() => {
     // Disable screen timeout when the component mounts
     IdleTimerManager.setIdleTimerDisabled(true);
@@ -1087,8 +1152,7 @@ export default function DriverHomeScreen({ route }) {
 
   const rideList = useCallback(
     ({ item, index }) => {
-      // console.log(item?.timeLimit, 'timelimit');
-
+      // console.log(item?.timeLimit, 'timelimit
       let items = item.passengerData ?? item;
       items.selectedCar[0].carMiles.map((e, i) => {
         if (
@@ -1099,10 +1163,12 @@ export default function DriverHomeScreen({ route }) {
             (Number(items?.bidFare) / Number(items?.fare)) * 100,
           );
           let baseCharge = items?.selectedCar[0]?.carMiles[0]?.mileCharge;
+
           let myDistance = 0;
           if (items.distance > 3) {
             myDistance = items.distance - 3;
           }
+
           let milesCharge = myDistance * e.mileCharge;
           let totalCharges = baseCharge + milesCharge;
           items.fare = totalCharges.toFixed(2);
@@ -1197,7 +1263,7 @@ export default function DriverHomeScreen({ route }) {
               ]}>
               Fare:
               <Text style={styles.itemLocStyle}>
-                ${item.passengerData ? item.passengerData.fare : item.fare}
+                ${items.fare}
               </Text>
             </Text>
             <Text

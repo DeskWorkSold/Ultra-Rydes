@@ -239,22 +239,22 @@ export default function PassengerHomeScreen({ navigation }) {
             ) {
               setDriverArriveAtdropoffLocation(true);
             }
-            if (myData && !Array.isArray(myDriversData)) {
+            if (myData && !Array.isArray(myDriversData) && myData?.currentLocation) {
               myDriversData.currentLocation.latitude =
                 myDriversData.currentLocation.latitude;
               myDriversData.currentLocation.longitude =
-                myDriversData.currentLocation.longitude;
+                myDriversData.currentLocation.longitude;  
               myDriversData.currentLocation.heading = myDriversData
                 .currentLocation.heading
                 ? myDriversData?.currentLocation?.heading?.toString()
                 : '180';
-              setSelectedLocation(myDriversData.currentLocation);
+              setSelectedLocation(myDriversData?.currentLocation);
             } else if (myData && Array.isArray(myDriversData)) {
-              let selectedDriver = myDriversData.filter(
+              let selectedDriver = myDriversData?.filter(
                 (e, i) => (e.requestStatus = 'accepted'),
               );
               selectedDriver = selectedDriver[0];
-              setSelectedLocation(selectedDriver.currentLocation);
+              setSelectedLocation(selectedDriver?.currentLocation);
             }
           }
         });
@@ -384,7 +384,7 @@ export default function PassengerHomeScreen({ navigation }) {
   ]);
 
   useEffect(() => {
-    if (data) {
+    if (data && data?.driverData) {
       const backAction = () => {
         Alert.alert('Hold on!', 'You can not go back from here', [
           {
@@ -562,6 +562,8 @@ export default function PassengerHomeScreen({ navigation }) {
       .catch(error => console.warn(error));
   };
   const checkValidation = () => {
+
+
     if (Object.keys(pickupCords).length === 0) {
       ToastAndroid.show('Pickup Cords cannot be empty', ToastAndroid.SHORT);
       return false;
@@ -580,7 +582,7 @@ export default function PassengerHomeScreen({ navigation }) {
       );
       return false;
     }
-    if (!dropLocationCords) {
+    if (!dropOffAddress) {
       ToastAndroid.show(
         'destination address is empty kindly select destination location',
         ToastAndroid.SHORT,
@@ -588,12 +590,16 @@ export default function PassengerHomeScreen({ navigation }) {
       return false;
     }
     let flag = dummyDataCat.some((e, i) => e.selected);
+
     if (!flag) {
       ToastAndroid.show('Kindly select Car type', ToastAndroid.SHORT);
       return;
     }
 
-    if (!bidFare && !data) {
+    console.log("hello")
+    console.log(data,"data")
+
+    if (!bidFare) {
       let id = auth().currentUser.uid;
       let passengerPersonalDetails = '';
       firestore()
@@ -609,7 +615,9 @@ export default function PassengerHomeScreen({ navigation }) {
           // const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
           // const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
 
-          let data = {
+          
+
+          let myData = {
             pickupCords: pickupCords,
             dropLocationCords: dropLocationCords,
             selectedCar: dummyDataCat.filter((e, i) => e.selected),
@@ -624,7 +632,7 @@ export default function PassengerHomeScreen({ navigation }) {
             passengerPersonalDetails: passengerPersonalData,
             requestDate: new Date(),
           };
-          navigation.navigate('PassengerFindRide', data);
+          navigation.navigate('PassengerFindRide', data?.passengerData ?? myData);
         });
     }
     if (bidFare) {
@@ -2040,6 +2048,8 @@ export default function PassengerHomeScreen({ navigation }) {
       )
     );
   }, [cancelRide, reasonForCancelRide, input, buttonLoader]);
+
+  console.log(data,"data")
 
   const getTollAmount = () => {
     let id = auth().currentUser.uid;
