@@ -141,10 +141,17 @@ const CurrentBalanceScreen = ({navigation, route}) => {
     monthlyWalletData &&
       monthlyWalletData.length > 0 &&
       monthlyWalletData.map((e, i) => {
-        if (e && e.fare) {
-          mySpentData.push(Number(e.fare) + Number(e.tip) + Number(e?.toll));
+        if ((e && e?.fare) || e?.cancellationCharges ) {
+          console.log(e.cancellationCharges,"cancel")
+
+          let cancellationCharges = e?.cancellationCharges ? Number(e.cancellationCharges) : 0
+
+          mySpentData.push(Number(e.fare??0) + Number(e.tip??0) + Number(e.toll??0) + cancellationCharges);
         }
       });
+
+      console.log(mySpentData,"SPENDTdATA")
+
     let mySpents =
       mySpentData &&
       mySpentData.length > 0 &&

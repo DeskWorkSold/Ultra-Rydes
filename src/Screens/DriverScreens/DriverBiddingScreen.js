@@ -16,7 +16,6 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import AddressPickup from '../../Components/AddressPickup';
@@ -563,7 +562,7 @@ export default function DriverBiddingScreen({ navigation }) {
                 <Icon size={80} color="white" name="hand-stop-o" />
               </View>
               <Text style={styles.modalText}>
-                You have arrived at customer location!
+                 Have you arrived at customer location?
               </Text>
               <TouchableOpacity
                 style={[
@@ -890,7 +889,7 @@ export default function DriverBiddingScreen({ navigation }) {
       driverData: myDriverData,
       rideCancelByDriver: true,
       reasonForCancelRide: driverReasonForCancelRide,
-      date: new Date(),
+      requestDate: new Date(),
     };
 
     firestore()
@@ -899,6 +898,9 @@ export default function DriverBiddingScreen({ navigation }) {
       .update({
         rideCancelByDriver: true,
         myDriversData: null,
+        requestStatus:null,
+        driverData : null,
+        requestDate : new Date()
       })
       .then(() => {
         firestore()
@@ -1480,7 +1482,6 @@ export default function DriverBiddingScreen({ navigation }) {
     setDriverBidFare(Number(myFare));
   };
 
-  console.log(data?.startRide,"startRide")
 
   const getMinutesAndDistance = result => {
     setMinutesAndDistanceDifference({
@@ -1578,12 +1579,14 @@ export default function DriverBiddingScreen({ navigation }) {
 
     mileDistance = (dis / 1609.34)?.toFixed(2);
 
-      console.log(mileDistance,"distance")
 
+      let distance =  data?.passengerData ? data?.passengerData?.distance : data?.distance
 
-    if (data?.distance <= 3) {
+      distance = Number(distance)
 
-      if (mileDistance < ((data?.distance * 75) / 100)) {
+    if (distance  <= 3) {
+
+      if (mileDistance < ((distance * 75) / 100)) {
         setEndRide(true);
         setArriveDropOffLocation(false);
         await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
@@ -1594,9 +1597,13 @@ export default function DriverBiddingScreen({ navigation }) {
       return
     }
 
-    if (data?.distance > 3) {
 
-      if (mileDistance < ((data?.distance * 50) / 100)) {
+
+    if (distance  > 3) {
+
+      console.log("hello")
+
+      if (mileDistance < ((distance * 50) / 100)) {
         setEndRide(true);
         setArriveDropOffLocation(false);
         await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
@@ -1622,8 +1629,7 @@ export default function DriverBiddingScreen({ navigation }) {
     }
   };
 
-  console.log(arrivePickUpLocation, "arrivePickUp")
-
+  
   const rejectRequest = async () => {
     setRejectLoader(true);
     if (data && data.bidFare) {
@@ -1851,8 +1857,9 @@ console.log(route.params.startRide,"startRide")
             bottom: 20,
             right: 20,
             backgroundColor: Colors.secondary,
-            width: 100,
-            borderRadius: 0
+            width: 120,
+            borderRadius: 30,
+            borderWidth:0
           }}
           btnTextStyle={{ fontSize: 16, color: 'white', fontWeight: '600', borderRadius: 0 }}
           onPress={() => setArriveModal(true)}

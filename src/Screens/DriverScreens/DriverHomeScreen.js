@@ -66,7 +66,7 @@ export default function DriverHomeScreen({ route }) {
   const focus = useIsFocused();
 
   useEffect(() => {
-    if (requestLoader) {
+    if (requestLoader && focus) {
       setDing('');
       return;
     }
@@ -96,7 +96,7 @@ export default function DriverHomeScreen({ route }) {
       //   if(passengerBookingData.length>requestIds.length){
       // }
     });
-  }, [passengerBookingData, requestLoader]);
+  }, [passengerBookingData, requestLoader,focus]);
 
   AppState.addEventListener('change', nextAppState => {
     const currentUser = auth().currentUser;
@@ -170,10 +170,10 @@ export default function DriverHomeScreen({ route }) {
     }
   });
 
-  // useEffect(() => {
-  //   setStatus(1);
-  //   setDriverStatus('offline');
-  // }, [focus]);
+  useEffect(() => {
+    setStatus(1);
+    setDriverStatus('offline');
+  }, [focus]);
 
   useEffect(() => {
     const backAction = () => {
@@ -415,7 +415,7 @@ export default function DriverHomeScreen({ route }) {
   }, []);
   const getRequestFromPassengers = () => {
     if (!inlinedDrivers) {
-      if (driverStatus == 'online' && driverData.currentLocation) {
+      if (driverStatus == 'online' && driverData?.currentLocation) {
         let requestData = [];
         firestore()
           .collection('Request')
@@ -445,12 +445,12 @@ export default function DriverHomeScreen({ route }) {
                   },
                   {
                     latitude:
-                      data && data.driverData
-                        ? data.driverData.currentLocation.latitude
+                      data && data?.driverData
+                        ? data?.driverData.currentLocation.latitude
                         : driverData && driverData.currentLocation.latitude,
                     longitude:
-                      data && data.driverData
-                        ? data.driverData.currentLocation.longitude
+                      data && data?.driverData
+                        ? data?.driverData.currentLocation.longitude
                         : driverData && driverData.currentLocation.longitude,
                   },
                 );
@@ -463,16 +463,16 @@ export default function DriverHomeScreen({ route }) {
 
                   if (
                     data &&
-                    data.myDriversData &&
-                    !Array.isArray(data.myDriversData)
+                    data?.myDriversData &&
+                    !Array.isArray(data?.myDriversData)
                   ) {
                     matchUid =
-                      data.myDriversData.id == uid &&
-                      data.myDriversData.requestStatus;
+                      data?.myDriversData?.id == uid &&
+                      data?.myDriversData?.requestStatus;
                   } else if (
                     data &&
-                    data.myDriversData &&
-                    Array.isArray(data.myDriversData)
+                    data?.myDriversData &&
+                    Array.isArray(data?.myDriversData)
                   ) {
                     matchUid = data.myDriversData.some(
                       (e, i) => e.id == uid && e.requestStatus,
@@ -482,8 +482,8 @@ export default function DriverHomeScreen({ route }) {
                   let checkRejectStatus = false;
                   if (
                     data &&
-                    data.myDriversData &&
-                    Array.isArray(data.myDriversData)
+                    data?.myDriversData &&
+                    Array.isArray(data?.myDriversData)
                   ) {
                     checkRejectStatus = data.myDriversData.some(
                       (e, i) => e.id == uid && e.requestStatus == 'rejected',
@@ -491,13 +491,13 @@ export default function DriverHomeScreen({ route }) {
                   }
                   if (
                     data &&
-                    data.myDriversData &&
-                    !Array.isArray(data.myDriversData) &&
-                    data.myDriversData.requestStatus
+                    data?.myDriversData &&
+                    !Array.isArray(data?.myDriversData) &&
+                    data?.myDriversData?.requestStatus
                   ) {
                     checkRejectStatus =
-                      data.myDriversData.id == uid &&
-                      data.myDriversData.requestStatus == 'rejected';
+                      data?.myDriversData?.id == uid &&
+                      data?.myDriversData?.requestStatus == 'rejected';
                   }
                   let flag = '';
                   if (
@@ -524,7 +524,7 @@ export default function DriverHomeScreen({ route }) {
                   if (
                     data &&
                     data.passengerData &&
-                    driverData.id == data.driverData.id &&
+                    driverData?.id == data.driverData?.id &&
                     !data.requestStatus &&
                     !checkRejectStatus &&
                     !flag2 &&
@@ -657,8 +657,8 @@ export default function DriverHomeScreen({ route }) {
             data.myDriversData.requestStatus
           ) {
             if (
-              data.myDriversData.id == driverData.id &&
-              data.myDriversData.requestStatus == 'accepted'
+              data?.myDriversData?.id == driverData?.id &&
+              data?.myDriversData?.requestStatus == 'accepted'
             ) {
               ToastAndroid.show(
                 'Your request has been accepted',
@@ -673,10 +673,10 @@ export default function DriverHomeScreen({ route }) {
 
               firestore()
                 .collection('inlinedDriver')
-                .doc(driverData.id)
+                .doc(driverData?.id)
                 .set({
                   inlined: true,
-                  id: driverData.id,
+                  id: driverData?.id,
                 })
                 .then(() => {
                   navigation.navigate('DriverRoutes', {
@@ -702,11 +702,11 @@ export default function DriverHomeScreen({ route }) {
 
           if (data && data.myDriversData && Array.isArray(data.myDriversData)) {
             let flag = data.myDriversData.some(
-              (e, i) => e.selected && e.id == driverData.id,
+              (e, i) => e.selected && e.id == driverData?.id,
             );
 
             let flag1 = data.myDriversData.some(
-              (e, i) => e.id == driverData.id && e.requestStatus == 'rejected',
+              (e, i) => e.id == driverData?.id && e.requestStatus == 'rejected',
             );
             if (flag && !flag1) {
               ToastAndroid.show(
@@ -1079,7 +1079,7 @@ export default function DriverHomeScreen({ route }) {
             let id = auth().currentUser?.uid
             if (driverData.id == id) {
               firestore().collection("Request").doc(requestData?.id).update({
-                myDriversData: null
+                myDriversData: null,
               }).then(res => {
                 setRequestLoader(false)
                 setRequestData({})
@@ -1096,7 +1096,7 @@ export default function DriverHomeScreen({ route }) {
               return e.id !== id
             })
             firestore().collection("Request").doc(requestData?.id).update({
-              myDriversData: otherDriversData
+              myDriversData: otherDriversData.length>0 ? otherDriversData : null 
             }).then((res) => {
               setRequestLoader(false)
               setRequestData({})

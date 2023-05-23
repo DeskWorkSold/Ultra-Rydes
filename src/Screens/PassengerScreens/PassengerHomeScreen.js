@@ -404,6 +404,23 @@ export default function PassengerHomeScreen({ navigation }) {
   }, [route.params, focus, data, data?.driverArriveAtPickUpLocation, data?.driverArriveAtDropoffLocation]);
 
   useEffect(() => {
+    if (data && !data?.driverData) {
+      const backAction = () => {
+        return true;
+      };
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
+      return () => backHandler.remove();
+    }
+  }, [focus]);
+
+
+
+
+
+  useEffect(() => {
     data?.driverData ? setRouteData(data) : setRouteData('');
     data?.driverData
       ? setSelectedDriver(data.driverData)
@@ -596,9 +613,7 @@ export default function PassengerHomeScreen({ navigation }) {
       return;
     }
 
-    console.log("hello")
-    console.log(data,"data")
-
+  
     if (!bidFare) {
       let id = auth().currentUser.uid;
       let passengerPersonalDetails = '';
@@ -635,7 +650,7 @@ export default function PassengerHomeScreen({ navigation }) {
           navigation.navigate('PassengerFindRide', data?.passengerData ?? myData);
         });
     }
-    if (bidFare) {
+    if (bidFare || data?.bidFare) {
       const id = auth().currentUser.uid;
 
       // const deviceTime = moment(); // get current time in device's time zone
@@ -1753,14 +1768,17 @@ export default function PassengerHomeScreen({ navigation }) {
           driverData: route.params.driverData,
           rideCancelByPassenger: true,
           reasonForCancelRide: passengerReasonForCancelRide,
-          date: new Date(),
+          requestDate: new Date(),
         };
         firestore()
           .collection('Request')
           .doc(route.params.passengerData.id)
           .update({
-            rideCancelByPassenger: true,
+           rideCancelByPassenger: true,
             myDriversData: null,
+            driverData : null,
+            requestStatus: null,
+            requestDate : new Date()
           })
           .then(() => {
             firestore()
@@ -1857,14 +1875,15 @@ export default function PassengerHomeScreen({ navigation }) {
 
 
   useEffect(() => {
+    let interval;
     if ((Object.keys(selectedDriver).length > 0, focus)) {
-      let interval = setInterval(() => {
+      interval = setInterval(() => {
         if (selectedDriver && Object.keys(selectedDriver).length > 0, focus) {
           cancelRideByDriver();
         }
       }, 10000);
-      return () => clearInterval(interval);
     }
+    return () => clearInterval(interval);
   }, [selectedDriver, focus]);
 
   const cancelRideModal = useCallback(() => {
@@ -2049,10 +2068,9 @@ export default function PassengerHomeScreen({ navigation }) {
     );
   }, [cancelRide, reasonForCancelRide, input, buttonLoader]);
 
-  console.log(data,"data")
 
   const getTollAmount = () => {
-    let id = auth().currentUser.uid;
+    let id = auth().currentUser?.uid;
     firestore()
       .collection('Request')
       .doc(id)
@@ -2081,10 +2099,7 @@ export default function PassengerHomeScreen({ navigation }) {
               iconname={'menu'}
               color={Colors.white}
               rightButton={
-                driverArriveAtPickUpLocation ||
-                  route.params?.driverArriveAtPickupLocation
-                  ? ''
-                  : selectedDriver
+                selectedDriver
                     ? 'show'
                     : ''
               }

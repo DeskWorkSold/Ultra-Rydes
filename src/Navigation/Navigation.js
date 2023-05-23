@@ -216,6 +216,7 @@ function DriverRoutes() {
         component={DriverWalletScreen}
         options={{
           headerShown: false,
+          unmountOnBlur:true
         }}
       />
     </Drawer.Navigator>
