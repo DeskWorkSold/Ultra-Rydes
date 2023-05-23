@@ -31,7 +31,7 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import AddressPickup from '../../Components/AddressPickup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getPreciseDistance} from 'geolib';
-import Sound from 'react-native-sound';
+import Sound, {setCategory} from 'react-native-sound';
 import mytone from '../../Assets/my_sound.mp3';
 import IdleTimerManager from 'react-native-idle-timer';
 
@@ -67,6 +67,7 @@ export default function DriverOnTheWay() {
     },
   });
   const [startRide, setStartRide] = useState(false);
+  const [requestTime, setRequestTime] = useState(30);
   const {pickupCords, dropLocationCords} = location;
 
   const [myDriverData, setMyDriverData] = useState({});
@@ -166,24 +167,6 @@ export default function DriverOnTheWay() {
       }
     });
   }, [AppState, startRide]);
-  // const getTimeZone = async () => {
-  //   if (state.latitude && state.longitude) {
-  //     let {latitude, longitude} = state;
-  //     const timestamp = Math.floor(Date.now() / 1000);
-  //     const response = await fetch(
-  //       `https://maps.googleapis.com/maps/api/timezone/json?location=${latitude},${longitude}&timestamp=${timestamp}&key=${GoogleMapKey.GOOGLE_MAP_KEY}`,
-  //     );
-  //     // parse the response as JSON
-  //     const data = await response.json();
-  //     // extract the state or province from the response
-  //     const timeZone = data.timeZoneId;
-  //     setTimeZone(timeZone);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   getTimeZone();
-  // }, [state]);
 
   useEffect(() => {
     // Disable screen timeout when the component mounts
@@ -195,153 +178,6 @@ export default function DriverOnTheWay() {
     };
   }, []);
 
-  // const checkRequestStatus = () => {
-
-  //   if (requestData && requestData.bidFare && requestLoader && startRide) {
-  //     firestore()
-  //       .collection('Request')
-  //       .doc(requestData.id)
-  //       .get()
-  //       .then(doc => {
-  //         let data = doc.data();
-  //         if (
-  //           data &&
-  //           data.myDriversData &&
-  //           !Array.isArray(data.myDriversData) &&
-  //           data.myDriversData.requestStatus == 'rejected'
-  //         ) {
-  //           ToastAndroid.show(
-  //             'Your Request has been rejected',
-  //             ToastAndroid.SHORT,
-  //           );
-  //           setRequestLoader(false);
-  //           return;
-  //         }
-
-  //         console.log(data,"data")
-
-  //         if (
-  //           data &&
-  //           data?.myDriversData &&
-  //           Array.isArray(data?.myDriversData)
-  //         ) {
-  //           let flag = data?.myDriversData.some(
-  //             (e, i) =>
-  //               e.id == myDriverData?.id && e.requestStatus == 'rejected',
-  //           );
-  //           if (flag) {
-  //             let id = auth().currentUser.uid
-  //             ToastAndroid.show(
-  //               'Your Request has been rejected',
-  //               ToastAndroid.SHORT,
-  //             );
-  //             setRequestLoader(false);
-  //           }
-  //           return;
-  //         }
-  //         if (
-  //           data &&
-  //           data.myDriversData &&
-  //           !Array.isArray(data.myDriversData) &&
-  //           data.myDriversData.requestStatus
-  //         ) {
-  //           if (
-  //             data.myDriversData.id == myDriverData.id &&
-  //             data.myDriversData.requestStatus == 'accepted'
-  //           ) {
-  //             ToastAndroid.show(
-  //               'Your request has been accepted',
-  //               ToastAndroid.SHORT,
-  //             );
-  //             setAcceptRequest(true);
-  //             try {
-  //               requestData.driverData = myDriverData;
-  //               let myData = JSON.stringify(requestData ?? data);
-  //               AsyncStorage.setItem('driverBooking', myData);
-  //             } catch (error) { }
-  //             firestore()
-  //               .collection('inlinedDriver')
-  //               .doc(myDriverData.id)
-  //               .set({
-  //                 inlined: true,
-  //                 id: myDriverData.id,
-  //               })
-  //               .then(() => {
-  //                 navigation.navigate('DriverRoutes', {
-  //                   screen: 'DriverBiddingScreen',
-  //                   params: {
-  //                     data: requestData ?? data,
-  //                     passengerState: {
-  //                       pickupCords: data?.pickupCords,
-  //                       dropLocationCords: data?.dropLocationCords,
-  //                     },
-  //                     selectedDriver: myDriverData,
-  //                   },
-  //                 });
-  //               })
-  //               .catch(error => {
-  //                 setRequestLoader(false);
-  //                 console.log(error);
-  //               });
-  //           }
-  //           return;
-  //         }
-  //         if (data && data.myDriversData && Array.isArray(data.myDriversData)) {
-
-  //           console.log("helooooo")
-
-  //           let flag = data.myDriversData.some(
-  //             (e, i) => e.selected && e.id == myDriverData.id,
-  //           );
-  //           let flag1 = data.myDriversData.some(
-  //             (e, i) =>
-  //               e.id == myDriverData.id && e.requestStatus == 'rejected',
-  //           );
-  //           if (flag && !flag1) {
-  //             ToastAndroid.show(
-  //               'Your request has been accepted',
-  //               ToastAndroid.SHORT,
-  //             );
-  //             setAcceptRequest(true);
-  //             firestore()
-  //               .collection('inlinedDriver')
-  //               .doc(myDriverData.id)
-  //               .set({
-  //                 inlined: true,
-  //                 id: myDriverData.id,
-  //               })
-  //               .then(() => {
-  //                 navigation.navigate('DriverRoutes', {
-  //                   screen: 'DriverBiddingScreen',
-  //                   params: {
-  //                     data: requestData ?? data,
-  //                     passengerState: {
-  //                       pickupCords: data?.pickupCords,
-  //                       dropLocationCords: data?.dropLocationCords,
-  //                     },
-  //                     selectedDriver: myDriverData,
-  //                   },
-  //                 });
-  //                 try {
-  //                   requestData.driverData = myDriverData;
-  //                   let myData = JSON.stringify(requestData ?? data);
-  //                   AsyncStorage.setItem('driverBooking', myData);
-  //                 } catch (error) { }
-  //               })
-  //               .catch(error => {
-  //                 setRequestLoader(false);
-  //                 console.log(error);
-  //               });
-  //           } else if (!flag && flag1) {
-  //             ToastAndroid.show(
-  //               'Your request has been rejected',
-  //               ToastAndroid.SHORT,
-  //             );
-  //           }
-  //         }
-  //       });
-  //   }
-  // };
   const checkRequestStatus = () => {
     if (requestData && requestData?.bidFare) {
       firestore()
@@ -766,6 +602,17 @@ export default function DriverOnTheWay() {
     }, 30000);
   }, [requestLoader, focus]);
 
+  // useEffect(() => {
+  //   if (passengersData.length > 0 && requestTime > 0) {
+  //     setRequestTime(requestTime - 1);
+  //   }
+
+  //   if (requestTime == 0) {
+  //     setRequestTime(30);
+  //   }
+
+  // }, [passengersData]);
+
   const getPassengersRequests = () => {
     //get request data from firebase
 
@@ -777,10 +624,6 @@ export default function DriverOnTheWay() {
 
         querySnapshot?.forEach(documentSnapshot => {
           let data = documentSnapshot?.data();
-          // const deviceTime = moment(); // get current time in device's time zone
-          // const convertedTime = myTimeZone && moment.tz(myTimeZone);
-          // const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
-          // const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
           let date = data?.requestDate?.toDate();
           let dateObj = new Date();
           let time = date?.getTime();
@@ -791,12 +634,7 @@ export default function DriverOnTheWay() {
           let differenceSeconds = requestRespondSeconds - nowSeconds;
           data.timeLimit = differenceSeconds;
 
-          if (
-            data &&
-            !data?.requestStatus &&
-            differenceSeconds > 0 &&
-            startRide
-          ) {
+          if (data && !data?.requestStatus && startRide) {
             let pickupLocationDistance = getPreciseDistance(
               {
                 latitude:
@@ -1018,8 +856,30 @@ export default function DriverOnTheWay() {
 
   useEffect(() => {
     let interval;
-    if (startRide && Object.keys(myDriverData).length > 0 && !requestLoader && myDriverData?.currentLocation?.latitude && myDriverData?.currentLocation?.longitude) {
-     interval  = setInterval(() => {
+
+    interval = setInterval(() => {
+      if (requestTime > 0 && passengersData.length > 0) {
+        setRequestTime(requestTime - 1);
+      }
+
+      if (requestTime < 30 && passengersData.length == 0) {
+        setRequestTime(30);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [passengersData, requestTime]);
+
+  useEffect(() => {
+    let interval;
+    if (
+      startRide &&
+      Object.keys(myDriverData).length > 0 &&
+      !requestLoader &&
+      myDriverData?.currentLocation?.latitude &&
+      myDriverData?.currentLocation?.longitude
+    ) {
+      interval = setInterval(() => {
         getPassengersRequests();
       }, 2000);
     }
@@ -1642,7 +1502,7 @@ export default function DriverOnTheWay() {
                         fontWeight: '400',
                         width: '46%',
                       }}>
-                      {item?.timeLimit?.toFixed(0)} Seconds
+                      {requestTime?.toFixed(0)} Seconds
                     </Text>
                   </View>
                   <Text style={styles.itemTextStyle}>

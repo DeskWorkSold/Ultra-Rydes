@@ -120,24 +120,36 @@ export default function PassengerFindRide({route}) {
       if (request && passengerData.bidFare) {
         setRequest(false);
         setNoDriverData(true);
-        let AsyncpassengerData = JSON.stringify(passengerData);
-        AsyncStorage.setItem('passengerData', AsyncpassengerData);
-        navigation.navigate('PassengerRoutes', {
-          screen: 'PassengerHomeScreen',
-          params: {
-            passengerData: passengerData,
-          },
-        });
-        ToastAndroid.show(
-          'Drivers are not available right now. Request again after some time.',
-          ToastAndroid.SHORT,
-        );
+
+          firestore().collection("Request").doc(passengerData?.id).delete().then((res)=>{
+
+            let AsyncpassengerData = JSON.stringify(passengerData);
+            AsyncStorage.setItem('passengerData', AsyncpassengerData);
+            navigation.navigate('PassengerRoutes', {
+              screen: 'PassengerHomeScreen',
+              params: {
+                passengerData: passengerData,
+              },
+            });
+            ToastAndroid.show(
+              'Drivers are not available right now. Request again after some time.',
+              ToastAndroid.SHORT,
+            );
+          }).catch((error)=>{
+            ToastAndroid.show(
+              error?.message,
+              ToastAndroid.SHORT,
+            );
+            
+          })
+
+
       }
     };
 
     // Start the timer if it hasn't been started yet
     if (timerRef.current === null) {
-      timerRef.current = setTimeout(handleBackRoute, 30000);
+      timerRef.current = setTimeout(handleBackRoute, 35000);
     }
 
     return () => {
@@ -786,11 +798,23 @@ export default function PassengerFindRide({route}) {
       interval = setInterval(() => {
         setDriverNotAvailable([...driverNotAvailable, selectedDriver.id]);
         setRequest(false);
-        ToastAndroid.show(
-          'This driver is not available right now',
-          ToastAndroid.SHORT,
-        );
-      }, 32000);
+
+        firestore().collection("Request").doc(passengerData?.id).update({
+          driverData : null
+        }).then(()=>{
+          ToastAndroid.show(
+            'This driver is not available right now',
+            ToastAndroid.SHORT,
+          );
+        }).catch((error)=>{
+          ToastAndroid.show(
+            error.message,
+            ToastAndroid.SHORT,
+          );
+          
+        })
+
+      }, 35000);
 
       return () => clearInterval(interval);
     }
@@ -799,6 +823,9 @@ export default function PassengerFindRide({route}) {
       setRequest(true);
       return () => clearInterval(interval);
     }
+
+    return () => clearInterval(interval)
+
   }, [request, selectedDriver, route.params]);
   // useFocusEffect(() => {
   //  let interval =  setInterval(() => {
@@ -1015,20 +1042,25 @@ export default function PassengerFindRide({route}) {
     );
   };
 
-  let flag = false;
-  flag =
-    driverData.length > 0 &&
-    driverData.map((e, i) => {
+  
+let flag = false;
+
+flag =
+  driverData.length > 0 &&
+  driverData.map((e, i) => {
       let flag2 =
         driverNotAvailable.length > 0 &&
-        driverNotAvailable.every((j, ind) => {
-          return e.id == j;
+        driverNotAvailable.some((j, ind) => {
+            return e.id == j;
         });
-
+  
       return flag2;
     });
 
-  return (driverData.length == 0 || flag[0]) && !passengerData.bidFare ? (
+  let checkAllNotAvailableDrivers = flag&& flag.length>0 && flag.every((e,i)=> e == true)
+
+
+  return (driverData.length == 0 || checkAllNotAvailableDrivers) && !passengerData.bidFare ? (
     <View
       style={{
         alignItems: 'center',
