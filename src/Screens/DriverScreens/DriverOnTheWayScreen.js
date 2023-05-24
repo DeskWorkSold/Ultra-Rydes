@@ -429,6 +429,7 @@ export default function DriverOnTheWay() {
       }
     });
   };
+
   useEffect(() => {
     getLocation();
     let interval = setInterval(() => {
@@ -612,6 +613,10 @@ export default function DriverOnTheWay() {
   //   }
 
   // }, [passengersData]);
+
+
+  console.log(myDriverData?.currentLocation)
+
 
   const getPassengersRequests = () => {
     //get request data from firebase
@@ -865,8 +870,12 @@ export default function DriverOnTheWay() {
       if (requestTime < 30 && passengersData.length == 0) {
         setRequestTime(30);
       }
-    }, 1000);
 
+      if (requestTime == 0) {
+        setpassengersData([]);
+        setRequestTime(30);
+      }
+    }, 900);
     return () => clearInterval(interval);
   }, [passengersData, requestTime]);
 
@@ -1421,7 +1430,7 @@ export default function DriverOnTheWay() {
         </View>
       )}
 
-      {passengersData && passengersData.length > 0 && (
+      {passengersData && passengersData.length > 0 && startRide && (
         <View style={{width: '100%', marginTop: 20}}>
           {passengersData &&
             passengersData.length > 0 &&
@@ -1458,22 +1467,7 @@ export default function DriverOnTheWay() {
                 <View
                   style={styles.listItemContainer}
                   key={item.passengerData ? item.passengerData.id : item.id}
-                  // onPress={() => {
-                  //   navigation.navigate('DriverRoutes', {
-                  //     screen: 'DriverBiddingScreen',
-                  //     params: {
-                  //       data: items,
-                  //       passengerState: {
-                  //         pickupCords: item.passengerData
-                  //           ? item.passengerData.pickupCords
-                  //           : item.pickupCords,
-                  //         dropLocationCords: item.passengerData
-                  //           ? item.passengerData.dropLocationCords
-                  //           : item.dropLocationCords,
-                  //       },
-                  //     },
-                  //   });
-                  // }}
+                  
                 >
                   <View
                     style={{

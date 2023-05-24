@@ -1706,15 +1706,15 @@ export default function PassengerHomeScreen({ navigation }) {
     return (
       <MapViewDirections
         origin={
-          selectedDriverLocation.pickupCords &&
-            selectedDriverLocation.dropLocationCords
+          selectedDriverLocation?.pickupCords &&
+            selectedDriverLocation?.dropLocationCords
             ? selectedDriverLocation
-            : selectedDriver.currentLocation
+            : selectedDriver?.currentLocation
         }
         destination={
-          data && data.passengerData
-            ? data.passengerData.pickupCords
-            : data.pickupCords
+          data && data?.passengerData
+            ? data?.passengerData?.pickupCords
+            : data?.pickupCords
         }
         apikey={GoogleMapKey.GOOGLE_MAP_KEY}
         strokeColor={Colors.black}
@@ -1772,7 +1772,7 @@ export default function PassengerHomeScreen({ navigation }) {
         };
         firestore()
           .collection('Request')
-          .doc(route.params.passengerData.id)
+          .doc(route?.params?.passengerData?.id)
           .update({
            rideCancelByPassenger: true,
             myDriversData: null,
