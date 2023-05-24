@@ -198,6 +198,7 @@ export default function DriverOnTheWay() {
               ToastAndroid.SHORT,
             );
             setRequestLoader(false);
+            setPassengersData([])
             return;
           }
 
@@ -217,6 +218,7 @@ export default function DriverOnTheWay() {
                 ToastAndroid.SHORT,
               );
               setRequestLoader(false);
+              setPassengersData([])
               return;
             }
           }
@@ -563,7 +565,7 @@ export default function DriverOnTheWay() {
 
             if (driverData && !Array.isArray(driverData)) {
               let id = auth().currentUser?.uid;
-              if (driverData.id == id) {
+              if (driverData.id == id && !driverData.requestStatus ) {
                 firestore()
                   .collection('Request')
                   .doc(requestData?.id)
@@ -573,6 +575,9 @@ export default function DriverOnTheWay() {
                   .then(res => {
                     setRequestLoader(false);
                     setRequestData({});
+                    if(focus){
+                      ToastAndroid.show('No response from the passenger', ToastAndroid.SHORT);
+                    }
                   });
                 return;
               }
@@ -582,23 +587,40 @@ export default function DriverOnTheWay() {
               let id = auth().currentUser?.uid;
 
               let otherDriversData = driverData.filter((e, i) => {
-                return e.id !== id;
+                return e?.id !== id;
               });
+
+              let myData = driverData.filter((e,i)=>{
+                  return e?.id == id && e.requestStatus
+              })
+
+              let allData = []
+              if(myData.length > 0){
+                myData = myData[0]
+               allData = [...otherDriversData,myData]
+            }else{
+                allData = otherDriversData
+            }
+            if(requestLoader){
               firestore()
                 .collection('Request')
                 .doc(requestData?.id)
                 .update({
                   myDriversData:
-                    otherDriversData.length > 0 ? otherDriversData : null,
+                    allData.length > 0 ? allData : null,
                 })
                 .then(res => {
                   setRequestLoader(false);
                   setRequestData({});
+                  if(focus){
+                  ToastAndroid.show('No response from the passenger', ToastAndroid.SHORT);
+                }
                 });
             }
+          }
           });
         setRequestLoader(false);
-        ToastAndroid.show('No response from the passenger', ToastAndroid.SHORT);
+        
       }
     }, 30000);
   }, [requestLoader, focus]);
@@ -834,7 +856,7 @@ export default function DriverOnTheWay() {
                   !checkRejectStatus &&
                   !flag2 &&
                   !rejectStatus &&
-                  requestData?.length == 0
+                  requestData?.length == 0 && requestTime > 0
                 ) {
                   requestData.push(data);
                 } else {
@@ -846,7 +868,7 @@ export default function DriverOnTheWay() {
                     !matchUid &&
                     !checkRejectStatus &&
                     !flag2 &&
-                    requestData?.length == 0
+                    requestData?.length == 0 && requestTime > 0
                   ) {
                     requestData.push(data);
                   }
@@ -855,7 +877,8 @@ export default function DriverOnTheWay() {
             }
           }
         });
-        setPassengersData(requestData);
+        passengersData !== requestData && setPassengersData(requestData);
+        passengersData !== requestData && setRejectLoader(false);
       });
   };
 
@@ -872,8 +895,11 @@ export default function DriverOnTheWay() {
       }
 
       if (requestTime == 0) {
-        setpassengersData([]);
-        setRequestTime(30);
+        rejectRequest(passengersData[0])
+        setPassengersData([]);
+        setTimeout(() => {
+          setRequestTime(30);
+        }, 2000);
       }
     }, 900);
     return () => clearInterval(interval);

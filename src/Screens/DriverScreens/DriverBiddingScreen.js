@@ -899,6 +899,7 @@ export default function DriverBiddingScreen({ navigation }) {
         rideCancelByDriver: true,
         myDriversData: null,
         requestStatus:null,
+        driverArriveAtPickupLocation : null,
         driverData : null,
         requestDate : new Date()
       })

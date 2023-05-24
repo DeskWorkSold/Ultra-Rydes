@@ -149,7 +149,7 @@ export default function PassengerFindRide({route}) {
 
     // Start the timer if it hasn't been started yet
     if (timerRef.current === null) {
-      timerRef.current = setTimeout(handleBackRoute, 35000);
+      timerRef.current = setTimeout(handleBackRoute, 180000);
     }
 
     return () => {
@@ -898,7 +898,7 @@ export default function PassengerFindRide({route}) {
               });
               firestore()
                 .collection('Request')
-                .doc(passengerData.id)
+                .doc(passengerData?.id)
                 .update({
                   myDriversData: myDriverData,
                 })

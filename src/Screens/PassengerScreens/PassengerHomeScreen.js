@@ -149,6 +149,7 @@ export default function PassengerHomeScreen({ navigation }) {
     },
   ]);
 
+
   // const getTimeZone = async () => {
   //   if (
   //     location &&
@@ -243,7 +244,7 @@ export default function PassengerHomeScreen({ navigation }) {
               myDriversData.currentLocation.latitude =
                 myDriversData.currentLocation.latitude;
               myDriversData.currentLocation.longitude =
-                myDriversData.currentLocation.longitude;  
+                myDriversData.currentLocation.longitude;
               myDriversData.currentLocation.heading = myDriversData
                 .currentLocation.heading
                 ? myDriversData?.currentLocation?.heading?.toString()
@@ -336,7 +337,7 @@ export default function PassengerHomeScreen({ navigation }) {
     setCurrentUserUid(currentUser.uid);
   };
 
-    let data =
+  let data =
     route.params && route.params?.data ? route.params.data : route.params;
 
   useEffect(() => {
@@ -613,7 +614,7 @@ export default function PassengerHomeScreen({ navigation }) {
       return;
     }
 
-  
+
     if (!bidFare) {
       let id = auth().currentUser.uid;
       let passengerPersonalDetails = '';
@@ -630,7 +631,7 @@ export default function PassengerHomeScreen({ navigation }) {
           // const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
           // const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
 
-          
+
 
           let myData = {
             pickupCords: pickupCords,
@@ -1022,8 +1023,7 @@ export default function PassengerHomeScreen({ navigation }) {
       }
       return;
     }
-
-    const apiKey = 'LDTjNFPH4pfhF7Q4PQbPHQnJn9RhpLRM';
+    const apiKey = 'Tm3G6Mg6pqq2HQ6gb8rg4896GtGHpJJD';
     const origin = data?.passengerData?.pickupAddress;
     const destination = data?.passengerData?.dropOffAddress;
     const apiEndpoint =
@@ -1768,17 +1768,17 @@ export default function PassengerHomeScreen({ navigation }) {
           driverData: route.params.driverData,
           rideCancelByPassenger: true,
           reasonForCancelRide: passengerReasonForCancelRide,
-          requestDate: new Date(),
         };
         firestore()
           .collection('Request')
           .doc(route?.params?.passengerData?.id)
           .update({
-           rideCancelByPassenger: true,
+            rideCancelByPassenger: true,
             myDriversData: null,
-            driverData : null,
+            driverData: null,
             requestStatus: null,
-            requestDate : new Date()
+            driverArriveAtPickUpLocation: null,
+            requestDate: new Date()
           })
           .then(() => {
             firestore()
@@ -2099,7 +2099,8 @@ export default function PassengerHomeScreen({ navigation }) {
               iconname={'menu'}
               color={Colors.white}
               rightButton={
-                selectedDriver
+                driverArrive?.pickupLocation || data?.driverArriveAtPickUpLocation ? "" :
+                  selectedDriver
                     ? 'show'
                     : ''
               }
