@@ -562,7 +562,7 @@ export default function DriverBiddingScreen({ navigation }) {
                 <Icon size={80} color="white" name="hand-stop-o" />
               </View>
               <Text style={styles.modalText}>
-                 Have you arrived at customer location?
+                Have you arrived at customer location?
               </Text>
               <TouchableOpacity
                 style={[
@@ -747,6 +747,9 @@ export default function DriverBiddingScreen({ navigation }) {
         setSelectedDriver([]);
         navigation.navigate('DriverRoutes', {
           screen: 'DriverHomeScreen',
+          params : {
+            data : "changed route"
+          }
         });
       })
       .catch(error => {
@@ -884,24 +887,53 @@ export default function DriverBiddingScreen({ navigation }) {
   const cancelBookingByDriver = () => {
     setButtonLoader(true);
 
+    let items = { ...passengerData }
+    items.selectedCar[0].carMiles.map((e, i) => {
+      if (
+        Number(items.distance) >= e.rangeMin &&
+        items.distance <= e.rangeMax
+      ) {
+        let percentageBid = Math.round(
+          (Number(items?.bidFare) / Number(items?.fare)) * 100,
+        );
+
+        let baseCharge = items?.selectedCar[0]?.carMiles[0]?.mileCharge;
+
+        let myDistance = 0;
+        if (items.distance > 3) {
+          myDistance = items.distance - 3;
+        }
+        let milesCharge = myDistance * e.mileCharge;
+        let totalCharges = Number(baseCharge) + Number(milesCharge)
+        serviceCharges =
+          (totalCharges / 100) * e.creditCardCharge + e.serviceCharge;
+        let allCharges = Number(totalCharges) + Number(serviceCharges)
+        items.fare = Number(allCharges).toFixed(2);
+        if (items && items?.bidFare) {
+          items.bidFare =
+            ((Number(items.fare) * percentageBid) /
+              100).toFixed(2);
+        }
+      }
+    });
+
     let cancelRide = {
-      passengerData: passengerData,
+      passengerData: items,
       driverData: myDriverData,
       rideCancelByDriver: true,
       reasonForCancelRide: driverReasonForCancelRide,
-      requestDate: new Date(),
+      date: new Date(),
     };
-
     firestore()
       .collection('Request')
       .doc(route.params?.data?.id ? route.params?.data?.id : passengerData.id)
       .update({
         rideCancelByDriver: true,
         myDriversData: null,
-        requestStatus:null,
-        driverArriveAtPickupLocation : null,
-        driverData : null,
-        requestDate : new Date()
+        requestStatus: null,
+        driverArriveAtPickupLocation: null,
+        // driverData: null,
+        requestDate: new Date()
       })
       .then(() => {
         firestore()
@@ -943,7 +975,7 @@ export default function DriverBiddingScreen({ navigation }) {
                   navigation.navigate('DriverRoutes', {
                     screen: 'DriverHomeScreen',
                     params: {
-                      data: startRide
+                      data: "changed route"
                     }
                   });
                 }
@@ -1004,6 +1036,7 @@ export default function DriverBiddingScreen({ navigation }) {
                         fontSize: 26,
                         marginTop: 0,
                         textAlign: 'left',
+                        color: Colors.white
                       },
                     ]}>
                     Are you sure You want to cancel Ride!
@@ -1018,6 +1051,7 @@ export default function DriverBiddingScreen({ navigation }) {
                         alignSelf: 'flex-start',
                         marginTop: 0,
                         fontWeight: '400',
+                        color: Colors.white
                       },
                     ]}>
                     Your Passenger is waiting for you!
@@ -1303,7 +1337,7 @@ export default function DriverBiddingScreen({ navigation }) {
                 navigation.navigate('DriverRoutes', {
                   screen: 'DriverHomeScreen',
                   params: {
-                    data: startRide
+                    data: "changed Route"
                   }
                 });
               }
@@ -1581,11 +1615,11 @@ export default function DriverBiddingScreen({ navigation }) {
     mileDistance = (dis / 1609.34)?.toFixed(2);
 
 
-      let distance =  data?.passengerData ? data?.passengerData?.distance : data?.distance
+    let distance = data?.passengerData ? data?.passengerData?.distance : data?.distance
 
-      distance = Number(distance)
+    distance = Number(distance)
 
-    if (distance  <= 3) {
+    if (distance <= 3) {
 
       if (mileDistance < ((distance * 75) / 100)) {
         setEndRide(true);
@@ -1600,7 +1634,7 @@ export default function DriverBiddingScreen({ navigation }) {
 
 
 
-    if (distance  > 3) {
+    if (distance > 3) {
 
       console.log("hello")
 
@@ -1630,7 +1664,7 @@ export default function DriverBiddingScreen({ navigation }) {
     }
   };
 
-  
+
   const rejectRequest = async () => {
     setRejectLoader(true);
     if (data && data.bidFare) {
@@ -1724,7 +1758,7 @@ export default function DriverBiddingScreen({ navigation }) {
     }
   };
 
-console.log(route.params.startRide,"startRide")
+  // route.params.data.passengerData.additionalDetails = true 
 
   return loading ? (
     <View
@@ -1860,7 +1894,7 @@ console.log(route.params.startRide,"startRide")
             backgroundColor: Colors.secondary,
             width: 120,
             borderRadius: 30,
-            borderWidth:0
+            borderWidth: 0
           }}
           btnTextStyle={{ fontSize: 16, color: 'white', fontWeight: '600', borderRadius: 0 }}
           onPress={() => setArriveModal(true)}
@@ -1868,7 +1902,7 @@ console.log(route.params.startRide,"startRide")
 
         }
 
-        
+
         {((arrive.pickUpLocation && !startRide) ||
           (route.params?.driverArrive &&
             !route.params.startRide &&
@@ -2065,6 +2099,15 @@ console.log(route.params.startRide,"startRide")
                     }`}
                 />
               )}
+              <TextInput
+                placeholder="Additional Detail"
+                placeholderTextColor={Colors.gray}
+                selectionColor={Colors.black}
+                activeUnderlineColor={Colors.gray}
+                style={styles.textInputStyle}
+                editable={false}
+                value={route?.params?.data ? route?.params?.data?.passengerData?.additionalDetails : route?.params?.data?.additionalDetails ? route?.params?.data?.additionalDetails : "No Additional Details"}
+              />
               {/* {passengerData.bidFare > 0 && !selectedDriver && (
                 <TouchableOpacity
                   onPress={() => setAppearBiddingOption(true)}

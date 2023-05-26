@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   ImageBackground,
   Text,
@@ -14,7 +14,7 @@ import { StackActions } from '@react-navigation/native';
 import CustomButton from '../Components/CustomButton';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
-import {TextInput} from 'react-native-paper';
+import { TextInput } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import { CommonActions } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
@@ -38,7 +38,7 @@ export default function EmailSignInScreen() {
       const isUserLogin = await auth()
         .signInWithEmailAndPassword(email, password)
         .then(res => {
-          let {user} = res;
+          let { user } = res;
           setEmail('');
           setPassword('');
           setLoading(false);
@@ -97,6 +97,12 @@ export default function EmailSignInScreen() {
     }
   };
 
+  const handleTextChange = (inputText) => {
+    const formattedText = inputText.replace(/\s/g, '');
+    setEmail(formattedText);
+  };
+
+
   return (
     <ImageBackground
       source={require('../Assets/Images/GetStartedBackground.png')}
@@ -118,7 +124,7 @@ export default function EmailSignInScreen() {
             <Text style={styles.fieldLabelStyles}>Email</Text>
             <TextInput
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleTextChange}
               selectionColor={Colors.black}
               activeUnderlineColor={Colors.fontColor}
               style={styles.fieldStyles}

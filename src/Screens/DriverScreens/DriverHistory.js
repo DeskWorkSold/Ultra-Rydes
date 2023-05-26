@@ -1,8 +1,8 @@
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import React, {useCallback} from 'react';
-import {useState} from 'react';
-import {useEffect} from 'react';
+import React, { useCallback } from 'react';
+import { useState } from 'react';
+import { useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,10 @@ import {
 } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
-import {Dimensions} from 'react-native';
-import {ActivityIndicator} from 'react-native';
+import { Dimensions } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 
-function DriverHistory({navigation}) {
+function DriverHistory({ navigation }) {
   const [bookingData, setBookingData] = useState([]);
   const [cancelledBookingData, setCancelledBookingData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -95,24 +95,24 @@ function DriverHistory({navigation}) {
   const activateTab = index => {
     setCurrentTab(
       currentTab &&
-        currentTab.length > 0 &&
-        currentTab.map((e, i) => {
-          if (e.index == index) {
-            return {
-              ...e,
-              selected: true,
-            };
-          } else {
-            return {
-              ...e,
-              selected: false,
-            };
-          }
-        }),
+      currentTab.length > 0 &&
+      currentTab.map((e, i) => {
+        if (e.index == index) {
+          return {
+            ...e,
+            selected: true,
+          };
+        } else {
+          return {
+            ...e,
+            selected: false,
+          };
+        }
+      }),
     );
   };
 
-  const renderBookingData = ({item, index}) => {
+  const renderBookingData = ({ item, index }) => {
     let myFare = null;
 
     let items = item.passengerData ?? item;
@@ -136,31 +136,14 @@ function DriverHistory({navigation}) {
         items.fare = Number(totalCharges).toFixed(2);
         if (items.bidFare) {
           items.bidFare = (
-            (Number(totalCharges) * Number(percentageBid)) /
+            (Number(items.fare) * Number(percentageBid)) /
             100
           ).toFixed(2);
         }
       }
     });
 
-    let fare = null;
-    if (
-      item.passengerData &&
-      item.passengerData.bidFare &&
-      item.passengerData.bidFare > 0
-    ) {
-      item.passengerData.selectedCar[0].carMiles.map((e, i) => {
-        if (
-          item.passengerData.distance >= e.rangeMin &&
-          item.passengerData.distance <= e.rangeMax
-        ) {
-          let serviceCharges = e.serviceCharge;
-          let creditCardFee = (Number(item?.passengerData?.fare) * 5) / 100;
-          let totalCharges = Number(serviceCharges) + Number(creditCardFee);
-          fare = (Number(item.passengerData.bidFare) - totalCharges).toFixed(2);
-        }
-      });
-    }
+    item.passengerData = items
 
     return (
       <View>
@@ -175,30 +158,37 @@ function DriverHistory({navigation}) {
           onPress={() =>
             navigation.navigate('DriverHistorySingleData', {
               item,
-              fare: fare,
             })
           }>
           {/* Date is mentioned Here */}
-          <Text style={[styles.text, {marginTop: 5}]}>
+          <Text style={[styles.text, { marginTop: 5 }]}>
             {item.date.toDate().toString().slice(0, 15)}
           </Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}>
             {item.passengerData.pickupAddress}
           </Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}>
             {item.passengerData.dropOffAddress}
           </Text>
-          <Text style={[styles.text, {paddingTop: 5, fontSize: 14}]}>
+          <Text style={[styles.text, { paddingTop: 5, fontSize: 14 }]}>
             Fare: $
             {items.bidFare
               ? items.bidFare
               : items.fare
-              ? items.fare
-              : item.passengerData.fare}
+                ? items.fare
+                : item.passengerData.fare}
+          </Text>
+          <Text style={[styles.text, { paddingTop: 5, fontSize: 14 }]}>
+            Tip: $
+            {item?.tip ? (item.tip).toFixed(2) : 0}
+          </Text>
+          <Text style={[styles.text, { paddingTop: 5, fontSize: 14 }]}>
+            Toll: $
+            {item?.toll && item.toll !== "no toll" ? (item.toll).toFixed(2) : 0}
           </Text>
           {/* <Text
             style={[
@@ -212,29 +202,57 @@ function DriverHistory({navigation}) {
     );
   };
 
-  const renderCancelBookingData = ({item, index}) => {
-    let fare = null;
+  const renderCancelBookingData = ({ item, index }) => {
+    let myFare = null;
 
-    let date = item.date.toDate();
-    let stringDate = date.toString().slice(0, 15);
+    let items = item.passengerData ?? item;
 
-    if (
-      item.driverData &&
-      item.driverData.bidFare &&
-      item.driverData.bidFare > 0
-    ) {
-      item.passengerData.selectedCar[0].carMiles.map((e, i) => {
-        if (
-          item.passengerData.distance >= e.rangeMin &&
-          item.passengerData.distance <= e.rangeMax
-        ) {
-          let serviceCharges = e.serviceCharge;
-          let creditCardFee = (Number(item.passengerData.fare) * 5) / 100;
-          let totalCharges = Number(serviceCharges) + Number(creditCardFee);
-          fare = (Number(item.driverData.bidFare) + totalCharges).toFixed(2);
+    items.selectedCar[0].carMiles.map((e, i) => {
+      if (
+        Number(items.distance) >= e.rangeMin &&
+        items.distance <= e.rangeMax
+      ) {
+        let percentageBid = Math.round(
+          (Number(items?.bidFare) / Number(items?.fare)) * 100,
+        );
+
+        let baseCharge = items?.selectedCar[0]?.carMiles[0]?.mileCharge;
+        let myDistance = 0;
+        if (items.distance > 3) {
+          myDistance = items.distance - 3;
         }
-      });
-    }
+        let milesCharge = myDistance * e.mileCharge;
+        let totalCharges = baseCharge + milesCharge;
+        items.fare = Number(totalCharges).toFixed(2);
+        if (items?.bidFare) {
+          items.bidFare = (
+            (Number(totalCharges) * Number(percentageBid)) /
+            100
+          ).toFixed(2);
+        }
+      }
+    });
+
+    // let fare = null;
+    // if (
+    //   item.passengerData &&
+    //   item.passengerData.bidFare &&
+    //   item.passengerData.bidFare > 0
+    // ) {
+    //   item.passengerData.selectedCar[0].carMiles.map((e, i) => {
+    //     if (
+    //       item.passengerData.distance >= e.rangeMin &&
+    //       item.passengerData.distance <= e.rangeMax
+    //     ) {
+    //       let serviceCharges = e.serviceCharge;
+    //       let creditCardFee = (Number(item?.passengerData?.fare) * 5) / 100;
+    //       let totalCharges = Number(serviceCharges) + Number(creditCardFee);
+    //       fare = (Number(item.passengerData.bidFare) - totalCharges).toFixed(2);
+    //     }
+    //   });
+    // }
+
+    item.passengerData = items
 
     return (
       <View>
@@ -249,32 +267,30 @@ function DriverHistory({navigation}) {
           onPress={() =>
             navigation.navigate('DriverHistorySingleData', {
               item,
-              fare: fare,
             })
           }>
           {/* Date is mentioned Here */}
-          <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
+          <Text style={[styles.text, { marginTop: 5 }]}>{item.date.toDate().toString().slice(0, 15)}</Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}>
             {item.passengerData.pickupAddress}
           </Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}>
             {item.passengerData.dropOffAddress}
           </Text>
           <Text
             style={[
               styles.text,
-              {paddingTop: 5, fontSize: 14, marginBottom: 10},
+              { paddingTop: 5, fontSize: 14, marginBottom: 10 },
             ]}>
             Fare: $
-            {fare
-              ? fare
-              : item.passengerData.bidFare
-              ? item.passengerData.bidFare
-              : item.passengerData.fare}
+            {
+              items?.bidFare
+                ? items?.bidFare
+                : items?.fare}
           </Text>
         </TouchableOpacity>
       </View>
@@ -283,7 +299,7 @@ function DriverHistory({navigation}) {
 
   const firstRoute = useCallback(() => {
     return (
-      <View style={{marginVertical: 20}}>
+      <View style={{ marginVertical: 20 }}>
         {bookingData && bookingData.length == 0 ? (
           <View
             style={{
@@ -316,7 +332,7 @@ function DriverHistory({navigation}) {
 
   const secondeRoute = useCallback(() => {
     return (
-      <View style={{marginVertical: 20}}>
+      <View style={{ marginVertical: 20 }}>
         {cancelledBookingData && cancelledBookingData.length == 0 ? (
           <View
             style={{
@@ -359,7 +375,7 @@ function DriverHistory({navigation}) {
           source={require('../../Assets/Images/URWhiteLogo.png')}
         />
       </View>
-      <ScrollView style={{marginBottom: 40}}>
+      <ScrollView style={{ marginBottom: 40 }}>
         <Text style={styles.Heading}>Bookings History</Text>
         <View
           style={{

@@ -76,7 +76,7 @@ const Resturant = {
       textInputProps={{
         placeholderTextColor: type && type == 'route' ? Colors.black : Colors.gray,
         multiline: true, // Enable multiline input
-        numberOfLines: 2, // Set the number of lines to 2
+        numberOfLines: 3, // Set the number of lines to 2
       }}
     />
   ) : (
@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
     borderBottomWidth: 1.2,
     marginVertical: 5,
-    height: 50,
+    minHeight: 50,
+    maxHeight:70
   },
 });

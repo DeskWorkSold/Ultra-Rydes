@@ -1,6 +1,6 @@
 import React from 'react';
-import {useState} from 'react';
-import {useEffect} from 'react';
+import { useState } from 'react';
+import { useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,12 @@ import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
 import storage from '@react-native-firebase/storage';
 import Icon from 'react-native-vector-icons/AntDesign';
-import MapView, {Marker} from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import GoogleMapKey from '../Constants/GoogleMapKey';
-import {useRef} from 'react';
+import { useRef } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 
-function DriverHistorySingleDataScreen({navigation, route}) {
+function DriverHistorySingleDataScreen({ navigation, route }) {
   const [driverProfilePicUrl, setDriverProfilePicUrl] = useState('');
   const [passengerProfilePicUrl, setPassengerProfilePicUrl] = useState('');
   const [loader, setLoader] = useState(false);
@@ -33,7 +33,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
   let passengerprofilePic =
     data?.passengerData?.passengerPersonalDetails?.profilePicture;
 
-  let {fare} = route.params;
+  let { fare } = route.params;
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -71,18 +71,18 @@ function DriverHistorySingleDataScreen({navigation, route}) {
   }, [profilePic, passengerprofilePic]);
 
   return loader ? (
-    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <ActivityIndicator size={200} color={Colors.secondary} />
     </View>
   ) : (
     data &&
-      data.passengerData &&
-      driverProfilePicUrl &&
-      LATITUDE_DELTA &&
-      LONGITUDE_DELTA && (
-        <View style={{flex:1}} >
-          <ScrollView>
-          
+    data.passengerData &&
+    driverProfilePicUrl &&
+    LATITUDE_DELTA &&
+    LONGITUDE_DELTA && (
+      <View style={{ flex: 1 }} >
+        <ScrollView>
+
           <View style={styles.headerContainer}>
             <CustomHeader
               iconname={'chevron-back-outline'}
@@ -107,11 +107,11 @@ function DriverHistorySingleDataScreen({navigation, route}) {
               <ActivityIndicator size={'large'} color={Colors.secondary} />
             ) : (
               <Image
-                source={{uri: driverProfilePicUrl}}
-                style={{height: 60, width: 60}}
+                source={{ uri: driverProfilePicUrl }}
+                style={{ height: 60, width: 60 }}
               />
             )}
-            <View style={{marginLeft: 10}}>
+            <View style={{ marginLeft: 10 }}>
               <View
                 style={{
                   justifyContent: 'center',
@@ -128,7 +128,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                     flexDirection: 'row',
                     alignItems: 'center',
                   }}>
-                  <Text style={[styles.text, {fontSize: 20}]}>
+                  <Text style={[styles.text, { fontSize: 20 }]}>
                     {data?.driverData?.rating}
                   </Text>
                   <Icon name={'star'} size={20} color="yellow" />
@@ -158,11 +158,11 @@ function DriverHistorySingleDataScreen({navigation, route}) {
               <ActivityIndicator size={'large'} color={Colors.secondary} />
             ) : (
               <Image
-                source={{uri: passengerProfilePicUrl}}
-                style={{height: 60, width: 60}}
+                source={{ uri: passengerProfilePicUrl }}
+                style={{ height: 60, width: 60 }}
               />
             )}
-            <View style={{marginLeft: 10}}>
+            <View style={{ marginLeft: 10 }}>
               <View
                 style={{
                   flexDirection: 'row',
@@ -190,7 +190,7 @@ function DriverHistorySingleDataScreen({navigation, route}) {
             {data && data.passengerData && (
               <MapView
                 ref={mapRef}
-                style={{width: '100%', height: 200}}
+                style={{ width: '100%', height: 200 }}
                 initialRegion={{
                   latitude: data.passengerData.pickupCords.latitude,
                   longitude: data.passengerData.pickupCords.longitude,
@@ -222,39 +222,39 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                 height: '52%',
                 justifyContent: 'center',
               }}>
-              <View style={{flexDirection: 'row'}}>
+              <View style={{ flexDirection: 'row' }}>
                 <Icon name="calendar" size={20} color="black" />
-                <Text style={[styles.text, {marginLeft: 10}]}>
-                  {data.date && data.date.toDate().toString().slice(0, 15)}
+                <Text style={[styles.text, { marginLeft: 10 }]}>
+                  {data?.date && data?.date?.toDate().toString().slice(0, 15)}
                 </Text>
                 <Text
                   style={[
                     styles.text,
-                    {marginLeft: 10, color: Colors.secondary},
+                    { marginLeft: 10, color: Colors.secondary },
                   ]}>
-                  {`${data.date.toDate().getHours()}:${data.date
+                  {`${data?.date?.toDate().getHours()}:${data?.date
                     .toDate()
                     .getMinutes()}`}
                 </Text>
               </View>
-              <View style={{flexDirection: 'row', marginTop: 3}}>
-                <Text style={[styles.text, {fontSize: 16}]}>
+              <View style={{ flexDirection: 'row', marginTop: 3 }}>
+                <Text style={[styles.text, { fontSize: 16 }]}>
                   pickup:
-                  <Text style={{color: Colors.secondary, fontSize: 14}}>
-                    
+                  <Text style={{ color: Colors.secondary, fontSize: 14 }}>
+
                     {data?.passengerData?.pickupAddress}
                   </Text>
                 </Text>
               </View>
-              <View style={{flexDirection: 'row', marginTop: 3}}>
-                <Text style={[styles.text, {fontSize: 16}]}>
+              <View style={{ flexDirection: 'row', marginTop: 3 }}>
+                <Text style={[styles.text, { fontSize: 16 }]}>
                   Dropoff:
-                  <Text style={{color: Colors.secondary, fontSize: 14}}>
+                  <Text style={{ color: Colors.secondary, fontSize: 14 }}>
                     {data?.passengerData?.dropOffAddress}
                   </Text>
                 </Text>
               </View>
-
+              {/* 
               <View style={{flexDirection: 'row', marginTop: 3}}>
                 {data?.payment && (
                   <Text style={[styles.text, {fontSize: 16}]}>
@@ -264,20 +264,36 @@ function DriverHistorySingleDataScreen({navigation, route}) {
                     </Text>
                   </Text>
                 )}
-              </View>
-              <View style={{flexDirection: 'row', marginTop: 3}}>
-                <Text style={[styles.text, {fontSize: 16}]}>
+              </View> */}
+              <View style={{ flexDirection: 'row', marginTop: 3 }}>
+                <Text style={[styles.text, { fontSize: 16 }]}>
                   Fare:
-                  <Text style={{color: Colors.secondary, fontSize: 16}}>
-                    ${fare ? fare : data?.passengerData?.bidFare ? data?.passengerData?.bidFare : data?.passengerData?.fare}
+                  <Text style={{ color: Colors.secondary, fontSize: 16 }}>
+                    ${data?.passengerData?.bidFare ? data?.passengerData?.bidFare : data?.passengerData?.fare}
+                  </Text>
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', marginTop: 3 }} >
+                <Text style={[styles.text, { fontSize: 16 }]}>
+                  Tip:
+                  <Text style={{ color: Colors.secondary, fontSize: 16 }}>
+                    ${data?.tip ? Number(data?.tip).toFixed(2) : 0}
+                  </Text>
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', marginTop: 3 }} >
+                <Text style={[styles.text, { fontSize: 16 }]}>
+                  Toll:
+                  <Text style={{ color: Colors.secondary, fontSize: 16 }}>
+                    ${data?.toll && data?.toll !== "no toll" ? Number(data?.toll).toFixed(2) : 0}
                   </Text>
                 </Text>
               </View>
             </View>
           </View>
-          </ScrollView>
-        </View>
-      )
+        </ScrollView>
+      </View>
+    )
   );
 }
 

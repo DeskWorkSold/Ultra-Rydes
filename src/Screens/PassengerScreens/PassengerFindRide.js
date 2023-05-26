@@ -142,8 +142,6 @@ export default function PassengerFindRide({route}) {
             );
             
           })
-
-
       }
     };
 

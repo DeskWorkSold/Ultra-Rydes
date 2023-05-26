@@ -203,14 +203,14 @@ function PassengerHistorySingleData({navigation, route}) {
                   styles.text,
                   {marginLeft: 10, color: Colors.secondary},
                 ]}>
-                {data.date.toDate().toString().slice(0, 15)}
+                {data?.date?.toDate().toString().slice(0, 15)}
               </Text>
               <Text
                 style={[
                   styles.text,
                   {marginLeft: 10, color: Colors.secondary},
                 ]}>
-                {`${data.date.toDate().getHours()}:${data.date.toDate().getMinutes()}` }
+                {`${data?.date?.toDate().getHours()}:${data?.date?.toDate().getMinutes()}` }
               </Text>
 
             </View>
@@ -249,10 +249,26 @@ function PassengerHistorySingleData({navigation, route}) {
                 Fare:{' '}
                 <Text style={{color: Colors.secondary, fontSize: 14}}>
                   {' '}
-                  ${fare ? fare : data.driverData.fare}{' '}
+                  ${data?.passengerData?.bidFare ? data?.passengerData?.bidFare : data?.passengerData?.fare}{' '}
                 </Text>
               </Text>
             </View>
+            <View style={{ flexDirection: 'row', marginTop: 3 }} >
+                <Text style={[styles.text, { fontSize: 16 }]}>
+                  Tip:
+                  <Text style={{ color: Colors.secondary, fontSize: 16 }}>
+                    ${data?.tip ? Number(data?.tip).toFixed(2) : 0}
+                  </Text>
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', marginTop: 3 }} >
+                <Text style={[styles.text, { fontSize: 16 }]}>
+                  Toll:
+                  <Text style={{ color: Colors.secondary, fontSize: 16 }}>
+                    ${data?.toll && data?.toll !== "no toll" ? Number(data?.toll).toFixed(2) : 0}
+                  </Text>
+                </Text>
+              </View>
           </View>
         </View>
         </ScrollView>

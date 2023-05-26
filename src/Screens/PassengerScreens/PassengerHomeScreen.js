@@ -29,6 +29,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import IdleTimerManager from 'react-native-idle-timer';
+import storage from '@react-native-firebase/storage';
 import { LogBox } from 'react-native';
 import {
   locationPermission,
@@ -93,6 +94,7 @@ export default function PassengerHomeScreen({ navigation }) {
   const [feedBack, setFeedBack] = useState('');
   const [showFeedBackModal, setShowFeedBackModal] = useState(false);
   const [cancelRide, setCancelRide] = useState(false);
+  const [selectedDriverCarPic,setSelectedDriverCarPic] = useState("")
 
   const [location, setLocation] = useState({
     pickupCords: route.params ? route.params?.passengerData?.pickupCords : null,
@@ -403,11 +405,10 @@ export default function PassengerHomeScreen({ navigation }) {
       return () => backHandler.remove();
     }
   }, [route.params, focus, data, data?.driverArriveAtPickUpLocation, data?.driverArriveAtDropoffLocation]);
-
   useEffect(() => {
     if (data && !data?.driverData) {
       const backAction = () => {
-        return true;
+        return false;
       };
       const backHandler = BackHandler.addEventListener(
         'hardwareBackPress',
@@ -625,14 +626,6 @@ export default function PassengerHomeScreen({ navigation }) {
         .then(doc => {
           let passengerPersonalData = doc.data();
 
-          // const deviceTime = moment(); // get current time in device's time zone
-          // // or any other valid time zone identifier
-          // const convertedTime = moment.tz(deviceTime, mytimeZone);
-          // const dateTime = convertedTime.format('YYYY-MM-DD HH:mm:ss'); // get the date and time in the format you want
-          // const dateObj = moment(dateTime, 'YYYY-MM-DD HH:mm:ss').toDate(); // convert to JavaScript Date object
-
-
-
           let myData = {
             pickupCords: pickupCords,
             dropLocationCords: dropLocationCords,
@@ -648,7 +641,7 @@ export default function PassengerHomeScreen({ navigation }) {
             passengerPersonalDetails: passengerPersonalData,
             requestDate: new Date(),
           };
-          navigation.navigate('PassengerFindRide', data?.passengerData ?? myData);
+          navigation.navigate('PassengerFindRide', myData);
         });
     }
     if (bidFare || data?.bidFare) {
@@ -1768,6 +1761,7 @@ export default function PassengerHomeScreen({ navigation }) {
           driverData: route.params.driverData,
           rideCancelByPassenger: true,
           reasonForCancelRide: passengerReasonForCancelRide,
+          date: new Date()
         };
         firestore()
           .collection('Request')
@@ -2086,6 +2080,30 @@ export default function PassengerHomeScreen({ navigation }) {
       });
   };
 
+
+const getDriverCarPic = () => {  
+    let carPic = selectedDriver?.vehicleDetails?.vehiclePicFront
+
+    console.log(carPic,"pick")
+
+     storage().ref(carPic).getDownloadURL().then((res)=>{
+
+        selectedDriver.carPic = res  
+        setSelectedDriverCarPic(res)
+     })
+}
+
+useEffect(()=>{
+    if(selectedDriver && Object.keys(selectedDriver).length>0){
+      getDriverCarPic()
+    } 
+
+},[selectedDriver,route.params,focus])
+
+
+console.log(selectedDriverCarPic,"car pcik")
+
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -2293,20 +2311,21 @@ export default function PassengerHomeScreen({ navigation }) {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                   }}>
-                  <FlatList
-                    data={
-                      data &&
-                        Object.keys(data).length > 0 &&
-                        data?.passengerData?.selectedCar &&
-                        Object.keys(selectedDriver).length > 0
-                        ? data?.passengerData?.selectedCar
-                        : dummyDataCat
-                    }
+                  {!selectedDriver  && Object.keys(selectedDriver).length == 0 && <FlatList
+                    data={dummyDataCat}
                     renderItem={Categories}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     keyExtractor={item => item.id}
-                  />
+                  />}
+                  {
+                    selectedDriverCarPic && selectedDriver && Object.keys(selectedDriver).length > 0 && <View style={{padding:10,alignItems:"center"}} >
+
+                      <Image source={{uri:selectedDriverCarPic}} style={{width:50,height:50,borderRadius:10}} />
+                      <Text style={{color:Colors.black,fontSize:16,textAlign:"center",fontWeight:"600"}} > {selectedDriver.vehicleDetails.vehicleNumPlate} </Text>
+                      <Text style={{color:Colors.red,fontSize:16,textAlign:"center",fontWeight:"600",marginTop:5}} > {selectedDriver.vehicleDetails.vehicleCategory} </Text>
+                    </View>
+                  }
                   {selectedDriver && (
                     <View style={{ justifyContent: 'center', width: '70%' }}>
                       <TouchableOpacity style={{ width: '90%' }}>
@@ -2417,8 +2436,8 @@ export default function PassengerHomeScreen({ navigation }) {
                   <TextInput
                     placeholder="Fare"
                     placeholderTextColor={Colors.gray}
-                    value={data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData ? fare : data?.passengerData.bidFare
-                      ? data?.passengerData?.bidFare
+                    value={`${pickupAddress && dropOffAddress && "$"}${data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData && fare ? fare : data?.passengerData.bidFare
+                      ? data?.passengerData?.bidFare : data?.passengerData?.fare ? data?.passengerData?.fare 
                       : Object.keys(selectedDriver).length > 0 &&
                         selectedDriver.bidFare
                         ? selectedDriver.bidFare : selectedDriver &&
@@ -2427,7 +2446,7 @@ export default function PassengerHomeScreen({ navigation }) {
                           ? selectedDriver.fare
                           : bidFare
                             ? bidFare
-                            : fare}
+                            : fare}`}
                     onChangeText={setFare}
                     selectionColor={Colors.black}
                     activeUnderlineColor={Colors.gray}
@@ -2450,9 +2469,9 @@ export default function PassengerHomeScreen({ navigation }) {
                               ? 'Bid Fare'
                               : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
-                          $
-                          {data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData ? fare : data?.passengerData.bidFare
-                            ? data?.passengerData?.bidFare
+                          {pickupAddress&&dropOffAddress && "$"}
+                          {data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData && fare ? fare : data?.passengerData.bidFare
+                            ? data?.passengerData?.bidFare : data?.passengerData?.fare ? data?.passengerData?.fare  
                             : Object.keys(selectedDriver).length > 0 &&
                               selectedDriver.bidFare
                               ? selectedDriver.bidFare : selectedDriver &&

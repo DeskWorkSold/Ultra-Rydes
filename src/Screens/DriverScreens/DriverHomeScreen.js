@@ -29,7 +29,15 @@ import IdleTimerManager from 'react-native-idle-timer';
 import { useIsFocused } from '@react-navigation/native';
 
 export default function DriverHomeScreen({ route }) {
+
+
+
   let navigation = useNavigation();
+  let changeRoute = route.params
+
+    console.log(changeRoute,"change")
+
+
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
       latitude: 24.863,
@@ -178,9 +186,13 @@ export default function DriverHomeScreen({ route }) {
   });
 
   useEffect(() => {
-    setStatus(1);
-    setDriverStatus('offline');
-  }, [focus]);
+
+    if(changeRoute){
+    setDriverStatus('online');
+    setStatus(0)
+    getLocationUpdates()
+  }
+  }, [focus,changeRoute]);
 
   useEffect(() => {
     const backAction = () => {
@@ -1498,7 +1510,7 @@ export default function DriverHomeScreen({ route }) {
           </View>
           <View style={styles.statusContainer}>
             <SwitchSelector
-              initial={status}
+              initial={changeRoute ? 0 : 1}
               onPress={value => {
                 driverStatusHandler(value);
               }}

@@ -88,6 +88,11 @@ export default function EmailSignUpScreen({ navigation }) {
         }
     }
 
+    const handleTextChange = (inputText) => {
+        const formattedText = inputText.replace(/\s/g, '');
+        setEmail(formattedText);
+      };
+
 
     return (
         <ImageBackground
@@ -107,7 +112,7 @@ export default function EmailSignUpScreen({ navigation }) {
                             <Text style={styles.fieldLabelStyles}>Email</Text>
                             <TextInput
                                 value={email}
-                                onChangeText={setEmail}
+                                onChangeText={handleTextChange}
                                 selectionColor={Colors.black}
                                 activeUnderlineColor={Colors.fontColor}
                                 style={styles.fieldStyles}

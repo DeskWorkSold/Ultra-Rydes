@@ -1,8 +1,8 @@
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import React, {useCallback} from 'react';
-import {useState} from 'react';
-import {useEffect} from 'react';
+import React, { useCallback } from 'react';
+import { useState } from 'react';
+import { useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,10 @@ import {
 } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
-function PassengerHistory({navigation}) {
+function PassengerHistory({ navigation }) {
   const [bookingData, setBookingData] = useState([]);
   const [cancelledBookingData, setCancelledBookingData] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [currentTab, setCurrentTab] = useState([
     {
       index: 0,
@@ -83,26 +82,25 @@ function PassengerHistory({navigation}) {
   const activateTab = index => {
     setCurrentTab(
       currentTab &&
-        currentTab.length > 0 &&
-        currentTab.map((e, i) => {
-          if (e.index == index) {
-            return {
-              ...e,
-              selected: true,
-            };
-          } else {
-            return {
-              ...e,
-              selected: false,
-            };
-          }
-        }),
+      currentTab.length > 0 &&
+      currentTab.map((e, i) => {
+        if (e.index == index) {
+          return {
+            ...e,
+            selected: true,
+          };
+        } else {
+          return {
+            ...e,
+            selected: false,
+          };
+        }
+      }),
     );
   };
 
-  const renderBookingData = ({item, index}) => {
+  const renderBookingData = ({ item, index }) => {
     let date = item.date.toDate();
-
     let stringDate = date.toString();
     stringDate = stringDate.slice(0, 15);
 
@@ -144,39 +142,40 @@ function PassengerHistory({navigation}) {
           }
         >
           {/* Date is mentioned Here */}
-          <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
+          <Text style={[styles.text, { marginTop: 5 }]}>{stringDate}</Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}
           >
             {item.passengerData.pickupAddress}
           </Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}
           >
             {item.passengerData.dropOffAddress}
           </Text>
-          <Text style={[styles.text, {paddingTop: 5, fontSize: 14}]}>
+          <Text style={[styles.text, { paddingTop: 5, fontSize: 14 }]}>
             Fare:{' '}
-            ${fare
-              ? fare
-              : item.passengerData.bidFare
-              ? item.passengerData.bidFare
-              : item.passengerData.fare}
-            
+            ${item?.passengerData?.bidFare ?? item?.passengerData?.fare}
+          </Text>
+          <Text style={[styles.text, { paddingTop: 5, fontSize: 14 }]}>
+            Tip:{' '}
+            ${item?.tip ? (item.tip).toFixed(2) : 0}
+          </Text>
+          <Text style={[styles.text, { paddingTop: 5, fontSize: 14 }]}>
+            Toll:{' '}
+            ${item?.toll && item?.toll !== "no toll" ? item?.toll : 0}
           </Text>
         </TouchableOpacity>
       </View>
     );
   };
 
-  const renderCancelBookingData = ({item, index}) => {
+  const renderCancelBookingData = ({ item, index }) => {
     let fare = null;
-
-    let date = item.date.toDate();
-
-    let stringDate = date.toString().slice(0, 15);
+    let date = item?.date?.toDate();
+    let stringDate = date?.toString().slice(0, 15);
     if (
       item.driverData &&
       item.driverData.bidFare &&
@@ -214,15 +213,15 @@ function PassengerHistory({navigation}) {
           }
         >
           {/* Date is mentioned Here */}
-          <Text style={[styles.text, {marginTop: 5}]}>{stringDate}</Text>
+          <Text style={[styles.text, { marginTop: 5 }]}>{stringDate}</Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}
           >
             {item.passengerData.pickupAddress}
           </Text>
           <Text
-            style={[styles.text, {paddingTop: 5, fontSize: 14}]}
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}
           >
             {item.passengerData.dropOffAddress}
@@ -230,16 +229,15 @@ function PassengerHistory({navigation}) {
           <Text
             style={[
               styles.text,
-              {paddingTop: 5, fontSize: 14, marginBottom: 10},
+              { paddingTop: 5, fontSize: 14, marginBottom: 10 },
             ]}
           >
             Fare:{' '}
-            ${fare
-              ? fare
-              : item.passengerData.bidFare
-              ? item.passengerData.bidFare
-              : item.passengerData.fare}
-            
+            ${
+              item.passengerData.bidFare
+                ? item.passengerData.bidFare
+                : item.passengerData.fare}
+
           </Text>
         </TouchableOpacity>
       </View>
@@ -248,7 +246,7 @@ function PassengerHistory({navigation}) {
 
   const firstRoute = useCallback(() => {
     return (
-      <View style={{marginVertical: 20}}>
+      <View style={{ marginVertical: 20 }}>
         {bookingData && bookingData.length == 0 ? (
           <View
             style={{
@@ -283,7 +281,7 @@ function PassengerHistory({navigation}) {
 
   const secondeRoute = useCallback(() => {
     return (
-      <View style={{marginVertical: 20, flex: 1}}>
+      <View style={{ marginVertical: 20, flex: 1 }}>
         {cancelledBookingData && cancelledBookingData.length == 0 ? (
           <View
             style={{
@@ -328,7 +326,7 @@ function PassengerHistory({navigation}) {
           source={require('../../Assets/Images/URWhiteLogo.png')}
         />
       </View>
-      <ScrollView style={{marginBottom: 40}}>
+      <ScrollView style={{ marginBottom: 40 }}>
         <Text style={styles.Heading}>Bookings History</Text>
         <View
           style={{
@@ -397,7 +395,7 @@ function PassengerHistory({navigation}) {
             </Text>
           </TouchableOpacity>
         </View>
-        <View style={{flex: 1, justifyContent: 'center'}}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
           {loading ? (
             <View
               style={{
