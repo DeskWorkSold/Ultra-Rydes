@@ -94,7 +94,7 @@ export default function PassengerHomeScreen({ navigation }) {
   const [feedBack, setFeedBack] = useState('');
   const [showFeedBackModal, setShowFeedBackModal] = useState(false);
   const [cancelRide, setCancelRide] = useState(false);
-  const [selectedDriverCarPic,setSelectedDriverCarPic] = useState("")
+  const [selectedDriverCarPic, setSelectedDriverCarPic] = useState("")
 
   const [location, setLocation] = useState({
     pickupCords: route.params ? route.params?.passengerData?.pickupCords : null,
@@ -2081,27 +2081,27 @@ export default function PassengerHomeScreen({ navigation }) {
   };
 
 
-const getDriverCarPic = () => {  
+  const getDriverCarPic = () => {
     let carPic = selectedDriver?.vehicleDetails?.vehiclePicFront
 
-    console.log(carPic,"pick")
+    console.log(carPic, "pick")
 
-     storage().ref(carPic).getDownloadURL().then((res)=>{
+    storage().ref(carPic).getDownloadURL().then((res) => {
 
-        selectedDriver.carPic = res  
-        setSelectedDriverCarPic(res)
-     })
-}
+      selectedDriver.carPic = res
+      setSelectedDriverCarPic(res)
+    })
+  }
 
-useEffect(()=>{
-    if(selectedDriver && Object.keys(selectedDriver).length>0){
+  useEffect(() => {
+    if (selectedDriver && Object.keys(selectedDriver).length > 0) {
       getDriverCarPic()
-    } 
+    }
 
-},[selectedDriver,route.params,focus])
+  }, [selectedDriver, route.params, focus])
 
 
-console.log(selectedDriverCarPic,"car pcik")
+  console.log(selectedDriverCarPic, "car pcik")
 
 
   return (
@@ -2311,7 +2311,7 @@ console.log(selectedDriverCarPic,"car pcik")
                     justifyContent: 'space-between',
                     alignItems: 'center',
                   }}>
-                  {!selectedDriver  && Object.keys(selectedDriver).length == 0 && <FlatList
+                  {!selectedDriver && Object.keys(selectedDriver).length == 0 && <FlatList
                     data={dummyDataCat}
                     renderItem={Categories}
                     horizontal
@@ -2319,11 +2319,11 @@ console.log(selectedDriverCarPic,"car pcik")
                     keyExtractor={item => item.id}
                   />}
                   {
-                    selectedDriverCarPic && selectedDriver && Object.keys(selectedDriver).length > 0 && <View style={{padding:10,alignItems:"center"}} >
+                    selectedDriverCarPic && selectedDriver && Object.keys(selectedDriver).length > 0 && <View style={{ padding: 10, alignItems: "center" }} >
 
-                      <Image source={{uri:selectedDriverCarPic}} style={{width:50,height:50,borderRadius:10}} />
-                      <Text style={{color:Colors.black,fontSize:16,textAlign:"center",fontWeight:"600"}} > {selectedDriver.vehicleDetails.vehicleNumPlate} </Text>
-                      <Text style={{color:Colors.red,fontSize:16,textAlign:"center",fontWeight:"600",marginTop:5}} > {selectedDriver.vehicleDetails.vehicleCategory} </Text>
+                      <Image source={{ uri: selectedDriverCarPic }} style={{ width: 50, height: 50, borderRadius: 10 }} />
+                      <Text style={{ color: Colors.black, fontSize: 16, textAlign: "center", fontWeight: "600" }} > {selectedDriver.vehicleDetails.vehicleNumPlate} </Text>
+                      <Text style={{ color: Colors.red, fontSize: 16, textAlign: "center", fontWeight: "600", marginTop: 5 }} > {selectedDriver.vehicleDetails.vehicleCategory} </Text>
                     </View>
                   }
                   {selectedDriver && (
@@ -2437,16 +2437,16 @@ console.log(selectedDriverCarPic,"car pcik")
                     placeholder="Fare"
                     placeholderTextColor={Colors.gray}
                     value={`${pickupAddress && dropOffAddress && "$"}${data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData && fare ? fare : data?.passengerData.bidFare
-                      ? data?.passengerData?.bidFare : data?.passengerData?.fare ? data?.passengerData?.fare 
-                      : Object.keys(selectedDriver).length > 0 &&
-                        selectedDriver.bidFare
-                        ? selectedDriver.bidFare : selectedDriver &&
-                          Object.keys(selectedDriver).length > 0 &&
-                          !selectedDriver.bidFare
-                          ? selectedDriver.fare
-                          : bidFare
-                            ? bidFare
-                            : fare}`}
+                      ? data?.passengerData?.bidFare : data?.passengerData?.fare ? data?.passengerData?.fare
+                        : Object.keys(selectedDriver).length > 0 &&
+                          selectedDriver.bidFare
+                          ? selectedDriver.bidFare : selectedDriver &&
+                            Object.keys(selectedDriver).length > 0 &&
+                            !selectedDriver.bidFare
+                            ? selectedDriver.fare
+                            : bidFare
+                              ? bidFare
+                              : fare}`}
                     onChangeText={setFare}
                     selectionColor={Colors.black}
                     activeUnderlineColor={Colors.gray}
@@ -2469,18 +2469,18 @@ console.log(selectedDriverCarPic,"car pcik")
                               ? 'Bid Fare'
                               : 'Recommended Fare'}
                         <Text style={styles.valueStyle}>
-                          {pickupAddress&&dropOffAddress && "$"}
+                          {pickupAddress && dropOffAddress && "$"}
                           {data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData && fare ? fare : data?.passengerData.bidFare
-                            ? data?.passengerData?.bidFare : data?.passengerData?.fare ? data?.passengerData?.fare  
-                            : Object.keys(selectedDriver).length > 0 &&
-                              selectedDriver.bidFare
-                              ? selectedDriver.bidFare : selectedDriver &&
-                                Object.keys(selectedDriver).length > 0 &&
-                                !selectedDriver.bidFare
-                                ? selectedDriver.fare
-                                : bidFare
-                                  ? bidFare
-                                  : fare}
+                            ? data?.passengerData?.bidFare : data?.passengerData?.fare ? data?.passengerData?.fare
+                              : Object.keys(selectedDriver).length > 0 &&
+                                selectedDriver.bidFare
+                                ? selectedDriver.bidFare : selectedDriver &&
+                                  Object.keys(selectedDriver).length > 0 &&
+                                  !selectedDriver.bidFare
+                                  ? selectedDriver.fare
+                                  : bidFare
+                                    ? bidFare
+                                    : fare}
                         </Text>
                         Distance:
                         <Text style={styles.valueStyle}>{distance} miles </Text>
