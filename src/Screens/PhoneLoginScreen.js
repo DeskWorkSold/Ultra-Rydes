@@ -18,7 +18,9 @@ export default function PhoneLoginScreen({ navigation }) {
         try {
             setLoading(true)
             const response = await auth().signInWithPhoneNumber(phoneNumber);
-            console.log('Phone Number', response);
+            
+            console.log(response,"ressponse")
+
             setLoading(false);
             navigation.navigate('OtpScreen', { confirmation: response, phoneNum: phoneNumber });
             ToastAndroid.show("OTP Send Successfully!", ToastAndroid.SHORT);

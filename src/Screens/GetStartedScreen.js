@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ImageBackground,
   Text,
@@ -17,8 +17,9 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
-export default function GetStartedScreen({navigation}) {
+export default function GetStartedScreen({ navigation }) {
   useEffect(() => {
     GoogleSignin.configure({
       webClientId:
@@ -26,7 +27,7 @@ export default function GetStartedScreen({navigation}) {
     });
   }, []);
   const [loading, setLoading] = useState('');
-  const {height} = useWindowDimensions();
+  const { height } = useWindowDimensions();
 
   const phoneNumberHandler = () => {
     navigation.navigate('PhoneLoginScreen');
@@ -57,12 +58,16 @@ export default function GetStartedScreen({navigation}) {
   //         }
   //     }
   // };
+
+
+
+
   async function onGoogleButtonPress() {
     setLoading(true);
     // Check if your device supports Google Play
-    await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     // Get the users ID token
-    const {idToken} = await GoogleSignin.signIn();
+    const { idToken } = await GoogleSignin.signIn();
 
     // Create a Google credential with the token
     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
@@ -70,13 +75,23 @@ export default function GetStartedScreen({navigation}) {
     // Sign-in the user with the credential
     return auth().signInWithCredential(googleCredential);
   }
-  const afterGoogleLogin = () => {
-    ToastAndroid.show(
-      'User Registered Successfully Login to continue',
-      ToastAndroid.SHORT,
-    );
-    setLoading(false);
-    navigation.replace('AskScreen');
+  const afterGoogleLogin = (res) => {
+
+    let { user } = res
+
+    let { uid } = user
+
+    firestore().collection("login").doc(uid).set({
+      login: true
+    }).then(() => {
+      ToastAndroid.show(
+        'User Registered Successfully Login to continue',
+        ToastAndroid.SHORT,
+      );
+      setLoading(false);
+      navigation.replace('AskScreen');
+    })
+
   };
 
   return (
@@ -93,7 +108,7 @@ export default function GetStartedScreen({navigation}) {
           imageStyle={styles.backgroundImage}>
           <View style={styles.topContainer}>
             <Image
-              style={[styles.Logo, {height: height * 0.15}]}
+              style={[styles.Logo, { height: height * 0.15 }]}
               resizeMode="contain"
               source={require('../Assets/Images/URWhiteLogo.png')}
             />
@@ -124,7 +139,7 @@ export default function GetStartedScreen({navigation}) {
                 text="Continue with Google"
                 bgColor={Colors.googleBtnColor}
                 onPress={() =>
-                  onGoogleButtonPress().then(() => afterGoogleLogin()).catch((error)=>navigation.navigate("GetStartedScreen"))
+                  onGoogleButtonPress().then((res) => afterGoogleLogin(res)).catch((error) => navigation.navigate("GetStartedScreen"))
                 }
               />
             </View>
@@ -186,8 +201,8 @@ const styles = StyleSheet.create({
   socialBtnContainer: {
     alignItems: 'center',
     justifyContent: 'space-evenly',
-    height:200,
-    marginTop:30
+    height: 200,
+    marginTop: 30
   },
   signUpText: {
     color: Colors.fontColor,

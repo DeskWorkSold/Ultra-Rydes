@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Text,
   View,
@@ -14,19 +14,20 @@ import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
 import CustomButton from '../Components/CustomButton';
 import firestore from '@react-native-firebase/firestore';
-import auth, {firebase} from '@react-native-firebase/auth';
+import auth, { firebase } from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Modal} from 'react-native';
+import { Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {useNavigation} from '@react-navigation/native';
-import {useIsFocused} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
-export default function AskScreen({route}) {
+export default function AskScreen({ route }) {
   let email = route.params;
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState();
-  const {height} = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const [warningData, setWarningData] = useState([]);
   const [activeDriverData, setActiveDriverData] = useState({});
   const focus = useIsFocused();
@@ -59,12 +60,9 @@ export default function AskScreen({route}) {
     'hardwareBackPress',
     backAction,
   );
-
   const getDriverBookingData = async () => {
     let currentUser = auth().currentUser;
-
     let id = currentUser?.uid;
-
     try {
       let data = await AsyncStorage.getItem('driverBooking');
       let checkDriverArrive = await AsyncStorage.getItem(
@@ -73,9 +71,6 @@ export default function AskScreen({route}) {
       let startRide = await AsyncStorage.getItem('startRide');
       let endRide = await AsyncStorage.getItem('EndRide');
       data = JSON.parse(data);
-
-
-
 
       if (checkDriverArrive) {
         data.driverArriveAtPickupLocation = true;
@@ -96,8 +91,8 @@ export default function AskScreen({route}) {
             selectedDriver: data?.myDriversData
               ? data?.myDriversData
               : data?.driverData
-              ? data?.driverData
-              : activeDriverData,
+                ? data?.driverData
+                : activeDriverData,
             startRide: startRide ? true : false,
             driverArrive: checkDriverArrive ? true : false,
             endRide: endRide ? true : false,
@@ -137,7 +132,6 @@ export default function AskScreen({route}) {
 
   const hideModal = () => {
     let currentUser = auth().currentUser;
-
     if (currentUser) {
       let uid = currentUser.uid;
 
@@ -161,7 +155,7 @@ export default function AskScreen({route}) {
               firestore()
                 .collection('warning')
                 .doc(uid)
-                .set({warningToDriver: mergeData})
+                .set({ warningToDriver: mergeData })
                 .then(() => {
                   setWarningData([]);
                   ToastAndroid.show(
@@ -189,16 +183,16 @@ export default function AskScreen({route}) {
           transparent={true}
           visible={warningData && warningData.length > 0}>
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, {height: Dimensions.get("window").height > 700 ? '60%' : "70%"}]}>
+            <View style={[styles.modalView, { height: Dimensions.get("window").height > 700 ? '60%' : "70%" }]}>
               <View>
                 <Icon size={80} color="white" name="warning" />
               </View>
               <Text
-                style={[styles.modalText, {fontSize: 24, fontWeight: '900'}]}>
+                style={[styles.modalText, { fontSize: 24, fontWeight: '900' }]}>
                 Warning!
               </Text>
               <Text
-                style={[styles.modalText, {fontSize: 16, fontWeight: '900'}]}>
+                style={[styles.modalText, { fontSize: 16, fontWeight: '900' }]}>
                 Your car has been recently given the lowest rating either your
                 car is dirty or it has got some mechanical issues you are
                 directed to fix it before taking another ride..
@@ -206,13 +200,13 @@ export default function AskScreen({route}) {
               <TouchableOpacity
                 style={[
                   styles.button,
-                  {marginBottom: 10, backgroundColor: Colors.primary},
+                  { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
                 onPress={() => hideModal()}>
                 <Text
                   style={[
                     styles.textStyle1,
-                    {backgroundColor: Colors.primary},
+                    { backgroundColor: Colors.primary },
                   ]}>
                   confirm
                 </Text>
@@ -341,7 +335,7 @@ export default function AskScreen({route}) {
       let startRide = await AsyncStorage.getItem('onTheWayRideStart');
       JSON.parse(startRide);
 
-        console.log(startRide,"ride")
+      console.log(startRide, "ride")
 
       if (startRide && Object.keys(startRide.length > 0)) {
         navigation.navigate('DriverRoutes', {
@@ -421,7 +415,7 @@ export default function AskScreen({route}) {
             });
           } else if (!checkEmpty.vehicleDetails) {
             setLoading(false);
-            navigation.navigate('DriverRoutes', {screen: 'DriverVehicleAdd'});
+            navigation.navigate('DriverRoutes', { screen: 'DriverVehicleAdd' });
           } else {
             setLoading(false);
             navigation.navigate('DriverRideOption');
@@ -432,17 +426,49 @@ export default function AskScreen({route}) {
     }
   };
   const signOutHandler = async () => {
+
+    let currentUser = auth().currentUser
+
+    let id = currentUser?.uid
+
+    const user = await GoogleSignin.isSignedIn();
+
+    if (user) {
+
+      GoogleSignin.signOut().then(() => {
+
+        firestore().collection("login").doc(id).update({
+          login: false
+        }).then(() => {
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'GetStartedScreen',
+              },
+            ],
+          });
+        })
+      })
+
+    }
+
     await auth()
       .signOut()
       .then(() => {
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'GetStartedScreen',
-            },
-          ],
-        });
+        firestore().collection("login").doc(id).update({
+          login: false
+        }).then(async () => {
+
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'GetStartedScreen',
+              },
+            ],
+          });
+        })
       })
       .catch(() => {
         navigation.reset({
@@ -457,7 +483,7 @@ export default function AskScreen({route}) {
   };
 
   return (
-    <View style={{flex: 1, backgroundColor: Colors.white}}>
+    <View style={{ flex: 1, backgroundColor: Colors.white }}>
       <CustomHeader
         iconname={navigation.canGoBack() ? 'chevron-back-circle' : null}
         color={Colors.fontColor}
@@ -495,7 +521,7 @@ export default function AskScreen({route}) {
         </View>
         <View style={styles.midContainer}>
           <Image
-            style={[styles.img, {height: height * 0.2}]}
+            style={[styles.img, { height: height * 0.2 }]}
             resizeMode="contain"
             source={require('../Assets/Images/askImg.png')}
           />
@@ -503,7 +529,7 @@ export default function AskScreen({route}) {
         <View style={styles.bottomContainer}>
           <Text style={styles.textStyle}>Who are You</Text>
           <CustomButton text="Driver" onPress={driverModeHandler} />
-          <View style={{marginVertical: 10}}></View>
+          <View style={{ marginVertical: 10 }}></View>
           <CustomButton
             text="Passenger"
             onPress={passengerModeHandler}

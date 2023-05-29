@@ -6,9 +6,6 @@ import auth from '@react-native-firebase/auth'
 export default function SplashScreen({ navigation }) {
 
     setTimeout(() => {
-        navigation.replace('MyScreen')
-    }, 3000);
-    setTimeout(() => {
         const CheckUser = auth().currentUser;
         // console.log(JSON.stringify(CheckUser));
         if (CheckUser) {
@@ -18,7 +15,6 @@ export default function SplashScreen({ navigation }) {
             navigation.replace('MyScreen');
         }
     }, 3000);
-
 
     const { height } = useWindowDimensions();
     return (

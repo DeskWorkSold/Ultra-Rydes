@@ -1,12 +1,13 @@
-import React, {useCallback, useEffect, useState} from 'react';
-import {Text, StyleSheet, View, TouchableOpacity, Modal, Alert} from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Text, StyleSheet, View, TouchableOpacity, Modal, Alert } from 'react-native';
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {StackActions, useNavigation} from '@react-navigation/native';
+import { StackActions, useNavigation } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 import COLORS from '../../Constants/Colors';
 import firestore from '@react-native-firebase/firestore';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Icon from 'react-native-vector-icons/AntDesign';
 export default function SettingsPassenger() {
   const navigation = useNavigation();
@@ -26,15 +27,43 @@ export default function SettingsPassenger() {
       });
   }, []);
 
+
+
   const signOutHandler = async () => {
+
+    let currentUser = auth().currentUser
+
+    let id = currentUser?.uid
+
+    const user = await GoogleSignin.isSignedIn();
+
+    if (user) {
+
+      GoogleSignin.signOut().then(() => {
+        firestore().collection("login").doc(id).update({
+          login: false
+        }).then(() => {
+          navigation.dispatch(StackActions.replace('GetStartedScreen'))
+        })
+      })
+
+    }
     await auth()
       .signOut()
-      .then(() =>
-        navigation.dispatch(StackActions.replace('GetStartedScreen')),
-      );
+      .then(() => {
+        firestore().collection("login").doc(id).update({
+          login: false
+        }).then(() => {
+          navigation.dispatch(StackActions.replace('GetStartedScreen'))
+        })
+      })
+      .catch(() => {
+        navigation.dispatch(StackActions.replace('GetStartedScreen'))
+      });
   };
 
-  console.log(passengerData,"passenger")
+
+
 
   return (
     <View style={styles.container}>
@@ -52,42 +81,42 @@ export default function SettingsPassenger() {
         <Text style={styles.heading}>Settings</Text>
       </View>
       <View style={styles.fieldItemContainer}>
-        <TouchableOpacity style={styles.button} onPress={()=>Alert.alert("","Do you want to use a new phone number",[
-            {
-                text  : "Cancel",
-                onPress : () => console.log("cancel pressed"),
-                style: "cancel",
-            },
-            {
-                text  : "Ok",
-                onPress : () => navigation.navigate("passengerPhoneNumberChangeScreen",passengerData)
-            }
+        <TouchableOpacity style={styles.button} onPress={() => Alert.alert("", "Do you want to use a new phone number", [
+          {
+            text: "Cancel",
+            onPress: () => console.log("cancel pressed"),
+            style: "cancel",
+          },
+          {
+            text: "Ok",
+            onPress: () => navigation.navigate("passengerPhoneNumberChangeScreen", passengerData)
+          }
         ])} >
           <View>
             <Text style={styles.text}>Phone Number</Text>
-            <Text style={[styles.text, {fontSize: 14, color: COLORS.gray}]}>
+            <Text style={[styles.text, { fontSize: 14, color: COLORS.gray }]}>
               {passengerData.mobileNumber}
             </Text>
           </View>
           <Icon name="right" size={20} color={COLORS.black} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={()=>navigation.navigate("passengerLanguageScreen")} style={styles.button}>
+        <TouchableOpacity onPress={() => navigation.navigate("passengerLanguageScreen")} style={styles.button}>
           <View>
             <Text style={styles.text}>Language</Text>
-            <Text style={[styles.text, {fontSize: 14, color: Colors.gray}]}>
+            <Text style={[styles.text, { fontSize: 14, color: Colors.gray }]}>
               Default Language
             </Text>
           </View>
           <Icon name="right" size={20} color={COLORS.black} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={()=>navigation.navigate("passengerRulesAndTermsScreen")} >
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("passengerRulesAndTermsScreen")} >
           <View>
             <Text style={styles.text}>Rules and Terms</Text>
           </View>
           <Icon name="right" size={20} color={COLORS.black} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, {justifyContent: 'flex-start'}]}
+          style={[styles.button, { justifyContent: 'flex-start' }]}
           onPress={signOutHandler}
         >
           <MaterialCommunityIcons
@@ -98,7 +127,7 @@ export default function SettingsPassenger() {
           <Text
             style={[
               styles.fieldItemText,
-              {color: COLORS.secondary, fontWeight: '600', fontSize: 22},
+              { color: COLORS.secondary, fontWeight: '600', fontSize: 22 },
             ]}
           >
             Logout

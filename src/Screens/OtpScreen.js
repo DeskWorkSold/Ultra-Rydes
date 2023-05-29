@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   Text,
   StyleSheet,
@@ -12,24 +12,35 @@ import {
 } from 'react-native';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
-import {TextInput} from 'react-native-paper';
+import { TextInput } from 'react-native-paper';
 import CustomButton from '../Components/CustomButton';
 import { useNavigation } from '@react-navigation/native';
+import firestore from '@react-native-firebase/firestore';
 
-export default function OtpScreen({route}) {
+
+export default function OtpScreen({ route }) {
 
   const navigation = useNavigation()
 
-  const {height} = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
-  const {confirmation, phoneNum} = route.params;
+  const { confirmation, phoneNum } = route.params;
 
   const onConfirmPressed = async () => {
     try {
       const response = await confirmation
         .confirm(code)
-        // .then(navigation.navigate('AskScreen'));
+
+      console.log(response, "response")
+
+      let { user } = response
+
+      let { uid } = user
+
+      firestore().collection("login").doc(uid).set({
+        login: true
+      }).then((res) => {
         navigation.reset({
           index: 0,
           routes: [
@@ -37,7 +48,9 @@ export default function OtpScreen({route}) {
               name: 'AskScreen',
             },
           ],
-        });
+        })
+        // .then(navigation.navigate('AskScreen'));
+      });
     } catch (error) {
       console.log('Invalid code.' + error);
     }
@@ -84,7 +97,7 @@ export default function OtpScreen({route}) {
                 <Image
                   source={require('../Assets/Images/enterCode.png')}
                   resizeMode="contain"
-                  style={[styles.imgStyles, {height: height * 0.2}]}
+                  style={[styles.imgStyles, { height: height * 0.2 }]}
                 />
               </ImageBackground>
             </View>

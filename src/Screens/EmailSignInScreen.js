@@ -18,6 +18,10 @@ import { TextInput } from 'react-native-paper';
 import auth from '@react-native-firebase/auth';
 import { CommonActions } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from 'react';
+import { log } from 'react-native-reanimated';
+import firestore from '@react-native-firebase/firestore';
 
 export default function EmailSignInScreen() {
 
@@ -37,24 +41,41 @@ export default function EmailSignInScreen() {
       setLoading(true);
       const isUserLogin = await auth()
         .signInWithEmailAndPassword(email, password)
-        .then(res => {
+        .then(async res => {
           let { user } = res;
-          setEmail('');
-          setPassword('');
-          setLoading(false);
-          ToastAndroid.show('Login Successfully', ToastAndroid.SHORT);
 
-          navigation.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'AskScreen',
-                params: {
-                  email: user.email,
+          let {uid} = user
+
+          firestore().collection("login").doc(uid).set({
+            login : true
+          }).then( async (res)=>{
+            let loginAuth = {
+              email: email,
+              password: password
+            }
+  
+            loginAuth = JSON.stringify(loginAuth)
+  
+            await AsyncStorage.setItem("login", loginAuth)
+            setEmail('');
+            setPassword('');
+            setLoading(false);
+            ToastAndroid.show('Login Successfully', ToastAndroid.SHORT);
+  
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'AskScreen',
+                  params: {
+                    email: user.email,
+                  },
                 },
-              },
-            ],
-          });
+              ],
+            });
+          })
+
+
 
           // navigation.dispatch(StackActions.replace(0, { screen: 'AskScreen',params :user.email}));
 
@@ -69,6 +90,35 @@ export default function EmailSignInScreen() {
       );
     }
   };
+
+const getOldLoginData = async () => {
+
+  try {
+    let login = await AsyncStorage.getItem("login")
+
+    login = JSON.parse(login)
+
+    if(login){
+
+
+
+      setEmail(login.email)
+      setPassword(login.password)
+
+    }
+
+  }catch(error){
+
+
+
+  }
+
+}
+
+  useEffect(()=>{
+      getOldLoginData()
+  },[])
+
   const signInValidation = () => {
     // const strongRegex = new RegExp("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$");
     if (!email) {

@@ -17,6 +17,7 @@ import auth from '@react-native-firebase/auth';
 import COLORS from '../../Constants/Colors';
 import firestore from '@react-native-firebase/firestore';
 import Icon from 'react-native-vector-icons/AntDesign';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 export default function SettingsPassenger() {
   const [DriverData, setDriverData] = useState({});
   const [loader, setLoader] = useState(false);
@@ -50,9 +51,17 @@ export default function SettingsPassenger() {
             status: 'offline',
           })
           .then(() => {
-            setLoader(false);
-            ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
-            navigation.dispatch(StackActions.replace('GetStartedScreen'));
+            
+            firestore().collection("login").doc(id).update({
+              login: false
+            }).then(res=>{
+              GoogleSignin.signOut()
+              setLoader(false);
+              ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
+              navigation.dispatch(StackActions.replace('GetStartedScreen'));
+            })
+            
+            
           })
           .catch(error => {
             setLoader(false);

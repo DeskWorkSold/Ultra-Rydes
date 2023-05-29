@@ -1427,6 +1427,8 @@ export default function DriverHomeScreen({ route }) {
       return;
     }
 
+    let id = currentUser.uid
+
     await auth()
       .signOut()
       .then(() => {
@@ -1438,16 +1440,20 @@ export default function DriverHomeScreen({ route }) {
             status: 'offline',
           })
           .then(() => {
-            setLoader(false);
-            ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
-            navigation.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'GetStartedScreen',
-                },
-              ],
-            });
+            firestore().collection("login").doc(id).update({
+              login: false
+            }).then(()=>{
+              setLoader(false);
+              ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'GetStartedScreen',
+                  },
+                ],
+              });
+            })
           })
           .catch(error => {
             setLoader(false);
