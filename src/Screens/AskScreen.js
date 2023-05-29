@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ToastAndroid,
   BackHandler,
+  Dimensions,
 } from 'react-native';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
@@ -188,7 +189,7 @@ export default function AskScreen({route}) {
           transparent={true}
           visible={warningData && warningData.length > 0}>
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, {height: '60%'}]}>
+            <View style={[styles.modalView, {height: Dimensions.get("window").height > 700 ? '60%' : "70%"}]}>
               <View>
                 <Icon size={80} color="white" name="warning" />
               </View>

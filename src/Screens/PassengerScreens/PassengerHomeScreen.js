@@ -1445,7 +1445,7 @@ export default function PassengerHomeScreen({ navigation }) {
             transparent={true}
             visible={driverArriveAtdropoffLocation && !showFeedBackModal}>
             <View style={[styles.centeredView]}>
-              <View style={[styles.modalView, { width: '90%', height: 550 }]}>
+              <View style={[styles.modalView, { width: '90%', height: Dimensions.get("window").height > 700 ? 550 : Dimensions.get("window").height }]}>
                 <Text style={[styles.modalText, { fontSize: 26 }]}>
                   Congratulations!
                 </Text>
@@ -1898,7 +1898,7 @@ export default function PassengerHomeScreen({ navigation }) {
                 style={[
                   styles.modalView,
                   {
-                    height: input ? '65%' : reasonForCancelRide ? '40%' : '45%',
+                    height: input ? '65%' : reasonForCancelRide ? Dimensions.get("window").height > 700 ? "40%" : "60%" :  Dimensions.get("window").height > 700 ? '45%' : "65%",
                     width: '90%',
                   },
                 ]}>

@@ -121,6 +121,7 @@ export default function DriverBiddingScreen({ navigation }) {
   const [arriveModal, setArriveModal] = useState(false)
   const [riderOnCabConfirmation, setRiderOnCabConfirmation] = useState(false)
   const [confirm, setConfirm] = useState(false)
+  const [hasDriverArrived, setHasDriverArrived] = useState(false)
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -148,7 +149,6 @@ export default function DriverBiddingScreen({ navigation }) {
     let checkDriverArrive = await AsyncStorage.getItem(
       'ArrivedAtpickUpLocation',
     );
-
 
 
 
@@ -207,6 +207,61 @@ export default function DriverBiddingScreen({ navigation }) {
     ) {
       setArriveDropOffLocation(true);
     }
+
+    if (driverCurrentLocation.latitude && driverCurrentLocation.longitude && dropLocationCords.latitude && dropLocationCords.longitude && !hasDriverArrived) {
+      const dis = getPreciseDistance(
+        {
+          latitude: driverCurrentLocation.latitude,
+          longitude: driverCurrentLocation.longitude,
+        },
+        {
+          latitude: dropLocationCords.latitude,
+          longitude: dropLocationCords.longitude,
+        },
+      );
+
+      mileDistance = (dis / 1609.34)?.toFixed(2);
+
+
+      let distance = data?.passengerData ? data?.passengerData?.distance : data?.distance
+
+      distance = Number(distance)
+
+      if (distance <= 3) {
+
+        if (mileDistance < ((distance * 75) / 100)) {
+
+          firestore().collection("Request").doc(data?.passengerData ? data?.passengerData?.id : data?.id).update({
+            hasDriverArrived: true
+          }).then(async (res) => {
+
+            await AsyncStorage.setItem("hasDriverArrived", "true")
+            setHasDriverArrived(true)
+
+          })
+
+        }
+
+      }
+
+      if (distance > 3) {
+
+
+
+        if (mileDistance < ((distance * 50) / 100)) {
+
+          firestore().collection("Request").doc(data?.passengerData ? data?.passengerData?.id : data?.id).update({
+            hasDriverArrived: true
+          }).then(async (res) => {
+            await AsyncStorage.setItem("hasDriverArrived", "true")
+            setHasDriverArrived(true)
+          })
+        }
+      }
+    }
+
+
+
 
     getCurrentLocation()
       .then(res => {
@@ -747,8 +802,8 @@ export default function DriverBiddingScreen({ navigation }) {
         setSelectedDriver([]);
         navigation.navigate('DriverRoutes', {
           screen: 'DriverHomeScreen',
-          params : {
-            data : "changed route"
+          params: {
+            data: "changed route"
           }
         });
       })
@@ -801,6 +856,7 @@ export default function DriverBiddingScreen({ navigation }) {
                     marginHorizontal: 5,
                     fontWeight: '500',
                     fontSize: 14,
+                    color: "white",
                     alignSelf: 'flex-start',
                   },
                 ]}>
@@ -821,6 +877,7 @@ export default function DriverBiddingScreen({ navigation }) {
                     marginHorizontal: 5,
                     fontWeight: '500',
                     fontSize: 14,
+                    color: "white",
                     alignSelf: 'flex-start',
                   },
                 ]}>
@@ -838,6 +895,7 @@ export default function DriverBiddingScreen({ navigation }) {
                     marginHorizontal: 5,
                     fontWeight: '500',
                     fontSize: 14,
+                    color: "white",
                     alignSelf: 'flex-start',
                   },
                 ]}>
@@ -855,6 +913,7 @@ export default function DriverBiddingScreen({ navigation }) {
                     marginHorizontal: 5,
                     fontWeight: '500',
                     fontSize: 22,
+                    color: "white",
                     alignSelf: 'flex-start',
                   },
                 ]}>
@@ -1601,6 +1660,9 @@ export default function DriverBiddingScreen({ navigation }) {
   };
   const rideEndByDriver = async () => {
 
+
+    let driverArrived = await AsyncStorage.getItem("hasDriverArrived")
+
     const dis = getPreciseDistance(
       {
         latitude: driverCurrentLocation.latitude,
@@ -1618,6 +1680,30 @@ export default function DriverBiddingScreen({ navigation }) {
     let distance = data?.passengerData ? data?.passengerData?.distance : data?.distance
 
     distance = Number(distance)
+
+
+    if (hasDriverArrived) {
+
+      setEndRide(true);
+      setArriveDropOffLocation(false);
+      await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
+
+      return
+
+    }
+
+    if (driverArrived) {
+
+      setEndRide(true);
+      setArriveDropOffLocation(false);
+      await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
+
+      return
+
+    }
+
+
+
 
     if (distance <= 3) {
 
