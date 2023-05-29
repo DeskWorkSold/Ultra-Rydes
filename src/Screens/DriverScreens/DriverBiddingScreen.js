@@ -991,7 +991,7 @@ export default function DriverBiddingScreen({ navigation }) {
         myDriversData: null,
         requestStatus: null,
         driverArriveAtPickupLocation: null,
-        // driverData: null,
+        driverData: null,
         requestDate: new Date()
       })
       .then(() => {

@@ -536,7 +536,7 @@ export default function PassengerFindRide({route}) {
             let remainingDis =
               DriverPickAndDriveDropMileDis -
               passengerPickAndPassengerDropMileDis;
-            remainingDis = remainingDis + 2;
+            remainingDis = remainingDis + 4;
 
             if (
               Number(pickupMileDistance) <= 5 &&

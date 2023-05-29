@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Text,
   View,
@@ -13,25 +13,25 @@ import {
   AppState,
   Alert,
 } from 'react-native';
-import MapView, {Marker} from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import GoogleMapKey from '../../Constants/GoogleMapKey';
 import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import CustomButton from '../../Components/CustomButton';
-import {useIsFocused} from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 import {
   getCurrentLocation,
   locationPermission,
 } from '../../Helper/HelperFunction';
 import firestore from '@react-native-firebase/firestore';
-import {ActivityIndicator} from 'react-native-paper';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import { ActivityIndicator } from 'react-native-paper';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AddressPickup from '../../Components/AddressPickup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getPreciseDistance} from 'geolib';
-import Sound, {setCategory} from 'react-native-sound';
+import { getPreciseDistance } from 'geolib';
+import Sound, { setCategory } from 'react-native-sound';
 import mytone from '../../Assets/my_sound.mp3';
 import IdleTimerManager from 'react-native-idle-timer';
 
@@ -68,8 +68,8 @@ export default function DriverOnTheWay() {
   });
   const [startRide, setStartRide] = useState(false);
   const [requestTime, setRequestTime] = useState(30);
-  const {pickupCords, dropLocationCords} = location;
-
+  const { pickupCords, dropLocationCords } = location;
+  const [startLoding, setStartLoading] = useState(false)
   const [myDriverData, setMyDriverData] = useState({});
   const [minutesAndDistanceDifference, setMinutesAndDistanceDifference] =
     useState({
@@ -244,7 +244,7 @@ export default function DriverOnTheWay() {
                 let myData = JSON.stringify(requestData ?? data);
 
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
 
               firestore()
                 .collection('inlinedDriver')
@@ -295,7 +295,7 @@ export default function DriverOnTheWay() {
                 requestData.driverData = myDriverData;
                 let myData = JSON.stringify(requestData ?? data);
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
 
               firestore()
                 .collection('inlinedDriver')
@@ -450,14 +450,14 @@ export default function DriverOnTheWay() {
     if (passengersData.length < requestIds.length) {
       setRequestIds(
         passengersData &&
-          passengersData.length > 0 &&
-          passengersData.map((e, i) => {
-            if (e?.passengerData) {
-              return e.passengerData.id;
-            } else {
-              return e?.id;
-            }
-          }),
+        passengersData.length > 0 &&
+        passengersData.map((e, i) => {
+          if (e?.passengerData) {
+            return e.passengerData.id;
+          } else {
+            return e?.id;
+          }
+        }),
       );
     } else if (passengersData.length == 0) {
       !requestLoader && setRequestIds([]);
@@ -513,14 +513,14 @@ export default function DriverOnTheWay() {
           let interval = setTimeout(() => {
             setRequestIds(
               passengersData &&
-                passengersData.length > 0 &&
-                passengersData.map((e, i) => {
-                  if (e?.passengerData) {
-                    return e.passengerData.id;
-                  } else {
-                    return e.id;
-                  }
-                }),
+              passengersData.length > 0 &&
+              passengersData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
             );
           }, 30000);
         } else {
@@ -536,14 +536,14 @@ export default function DriverOnTheWay() {
           setTimeout(() => {
             setRequestIds(
               passengersData &&
-                passengersData.length > 0 &&
-                passengersData.map((e, i) => {
-                  if (e?.passengerData) {
-                    return e.passengerData.id;
-                  } else {
-                    return e.id;
-                  }
-                }),
+              passengersData.length > 0 &&
+              passengersData.map((e, i) => {
+                if (e?.passengerData) {
+                  return e.passengerData.id;
+                } else {
+                  return e.id;
+                }
+              }),
             );
           }, 30000);
         }
@@ -565,7 +565,7 @@ export default function DriverOnTheWay() {
 
             if (driverData && !Array.isArray(driverData)) {
               let id = auth().currentUser?.uid;
-              if (driverData.id == id && !driverData.requestStatus ) {
+              if (driverData.id == id && !driverData.requestStatus) {
                 firestore()
                   .collection('Request')
                   .doc(requestData?.id)
@@ -575,7 +575,7 @@ export default function DriverOnTheWay() {
                   .then(res => {
                     setRequestLoader(false);
                     setRequestData({});
-                    if(focus){
+                    if (focus) {
                       ToastAndroid.show('No response from the passenger', ToastAndroid.SHORT);
                     }
                   });
@@ -590,37 +590,37 @@ export default function DriverOnTheWay() {
                 return e?.id !== id;
               });
 
-              let myData = driverData.filter((e,i)=>{
-                  return e?.id == id && e.requestStatus
+              let myData = driverData.filter((e, i) => {
+                return e?.id == id && e.requestStatus
               })
 
               let allData = []
-              if(myData.length > 0){
+              if (myData.length > 0) {
                 myData = myData[0]
-               allData = [...otherDriversData,myData]
-            }else{
+                allData = [...otherDriversData, myData]
+              } else {
                 allData = otherDriversData
+              }
+              if (requestLoader) {
+                firestore()
+                  .collection('Request')
+                  .doc(requestData?.id)
+                  .update({
+                    myDriversData:
+                      allData.length > 0 ? allData : null,
+                  })
+                  .then(res => {
+                    setRequestLoader(false);
+                    setRequestData({});
+                    if (focus) {
+                      ToastAndroid.show('No response from the passenger', ToastAndroid.SHORT);
+                    }
+                  });
+              }
             }
-            if(requestLoader){
-              firestore()
-                .collection('Request')
-                .doc(requestData?.id)
-                .update({
-                  myDriversData:
-                    allData.length > 0 ? allData : null,
-                })
-                .then(res => {
-                  setRequestLoader(false);
-                  setRequestData({});
-                  if(focus){
-                  ToastAndroid.show('No response from the passenger', ToastAndroid.SHORT);
-                }
-                });
-            }
-          }
           });
         setRequestLoader(false);
-        
+
       }
     }, 30000);
   }, [requestLoader, focus]);
@@ -774,14 +774,14 @@ export default function DriverOnTheWay() {
             let remainingDis =
               DriverPickAndDriveDropMileDis -
               passengerPickAndPassengerDropMileDis;
-            remainingDis = remainingDis + 2;
+            remainingDis = remainingDis + 4;
 
             if (
               Number(pickupMileDistance) <= 5 &&
               Number(passengerDropAndDriverDropMileDis) <
-                Number(passengerpickAndDriverDropMileDis) &&
+              Number(passengerpickAndDriverDropMileDis) &&
               Number(DriverPickAndDriveDropMileDis) >=
-                Number(passengerPickAndPassengerDropMileDis) &&
+              Number(passengerPickAndPassengerDropMileDis) &&
               Number(passengerDropAndDriverDropMileDis) < remainingDis
             ) {
               if (data) {
@@ -958,6 +958,7 @@ export default function DriverOnTheWay() {
   };
 
   const handleRideStart = async () => {
+    setStartLoading(true)
     try {
       if (!dropLocationCords.latitude && !dropLocationCords.longitude) {
         ToastAndroid.show('Kindly Enter DropLocation', ToastAndroid.SHORT);
@@ -982,13 +983,16 @@ export default function DriverOnTheWay() {
           dataToSave = JSON.stringify(dataToSave);
           AsyncStorage.setItem('onTheWayRideStart', dataToSave);
           setStartRide(true);
+          setStartLoading(false)
           ToastAndroid.show('Your ride has been started', ToastAndroid.SHORT);
         })
         .catch(error => {
+          setStartLoading(false)
           ToastAndroid.show('Error', ToastAndroid.SHORT);
         });
     } catch (error) {
       console.log(error, 'error');
+      setStartLoading(false)
     }
   };
 
@@ -1019,7 +1023,7 @@ export default function DriverOnTheWay() {
                 data.driverData = item.driverData;
                 let myData = JSON.stringify(data);
                 AsyncStorage.setItem('driverBooking', myData);
-              } catch (error) {}
+              } catch (error) { }
               firestore()
                 .collection('inlinedDriver')
                 .doc(myDriverData.id)
@@ -1361,7 +1365,7 @@ export default function DriverOnTheWay() {
                   style={{
                     width: 40,
                     height: 40,
-                    transform: [{rotate: `${state.heading}deg`}],
+                    transform: [{ rotate: `${state.heading}deg` }],
                   }}
                   resizeMode="contain"
                 />
@@ -1441,12 +1445,11 @@ export default function DriverOnTheWay() {
                   placeholderText={'Enter Destination Location'}
                   fetchAddress={fetchDestinationCords}
                 />
-
                 {!selectedDriver && (
                   <View style={styles.btnContainer}>
                     <CustomButton
-                      text="Start Ride"
-                      onPress={() => handleRideStart()}
+                      text={startLoding ? <ActivityIndicator color={Colors.black} size={"small"} /> : "Start Ride"}
+                      onPress={() => !startLoding && handleRideStart()}
                     />
                   </View>
                 )}
@@ -1455,9 +1458,8 @@ export default function DriverOnTheWay() {
           </KeyboardAvoidingView>
         </View>
       )}
-
       {passengersData && passengersData.length > 0 && startRide && (
-        <View style={{width: '100%', marginTop: 20}}>
+        <View style={{ width: '100%', marginTop: 20 }}>
           {passengersData &&
             passengersData.length > 0 &&
             passengersData.map((item, index) => {
@@ -1493,7 +1495,7 @@ export default function DriverOnTheWay() {
                 <View
                   style={styles.listItemContainer}
                   key={item.passengerData ? item.passengerData.id : item.id}
-                  
+
                 >
                   <View
                     style={{
@@ -1552,7 +1554,7 @@ export default function DriverOnTheWay() {
                     <Text
                       style={[
                         styles.itemTextStyle,
-                        {width: '50%', textAlign: 'center'},
+                        { width: '50%', textAlign: 'center' },
                       ]}>
                       Fare:
                       <Text style={styles.itemLocStyle}>
@@ -1565,10 +1567,10 @@ export default function DriverOnTheWay() {
                     <Text
                       style={[
                         styles.itemTextStyle,
-                        {width: '50%', textAlign: 'center'},
+                        { width: '50%', textAlign: 'center' },
                       ]}>
                       Distance:
-                      <Text style={[styles.itemLocStyle, {fontSize: 18}]}>
+                      <Text style={[styles.itemLocStyle, { fontSize: 18 }]}>
                         {item.passengerData
                           ? item.passengerData.distance
                           : item.distance}{' '}
@@ -1588,7 +1590,7 @@ export default function DriverOnTheWay() {
                       <Text
                         style={[
                           styles.itemTextStyle,
-                          {width: '50%', textAlign: 'center'},
+                          { width: '50%', textAlign: 'center' },
                         ]}>
                         Bid Fare:
                         <Text style={styles.itemLocStyle}>
@@ -1599,7 +1601,7 @@ export default function DriverOnTheWay() {
                     <Text
                       style={[
                         styles.itemTextStyle,
-                        {width: '50%', textAlign: 'center'},
+                        { width: '50%', textAlign: 'center' },
                       ]}>
                       Minutes:
                       <Text style={styles.itemLocStyle}>
@@ -1619,7 +1621,7 @@ export default function DriverOnTheWay() {
                     <CustomButton
                       onPress={() => AcceptRequest(item)}
                       text={'Accept'}
-                      styleContainer={{width: '45%'}}
+                      styleContainer={{ width: '45%' }}
                     />
                     <CustomButton
                       text={
@@ -1630,7 +1632,7 @@ export default function DriverOnTheWay() {
                         )
                       }
                       onPress={() => rejectRequest(item)}
-                      styleContainer={{width: '45%'}}
+                      styleContainer={{ width: '45%' }}
                     />
                   </View>
                 </View>

@@ -7,15 +7,13 @@ export default function SplashScreen({ navigation }) {
 
     setTimeout(() => {
         const CheckUser = auth().currentUser;
-        // console.log(JSON.stringify(CheckUser));
+
         if (CheckUser) {
-            // console.log("user " + JSON.stringify(CheckUser))
             navigation.replace('AskScreen');
         } else {
             navigation.replace('MyScreen');
         }
     }, 3000);
-
     const { height } = useWindowDimensions();
     return (
         <ImageBackground
