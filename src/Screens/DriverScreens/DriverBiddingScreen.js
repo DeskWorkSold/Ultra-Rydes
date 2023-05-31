@@ -932,7 +932,7 @@ export default function DriverBiddingScreen({ navigation }) {
                   {buttonLoader ? (
                     <ActivityIndicator size={'large'} color={Colors.black} />
                   ) : (
-                    'confirm'
+                    'Take Next Ride'
                   )}
                 </Text>
               </TouchableOpacity>

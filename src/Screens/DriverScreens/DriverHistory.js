@@ -57,7 +57,10 @@ function DriverHistory({ navigation }) {
             setLoading(false);
           }
         });
-        setBookingData(driverBookingData);
+
+
+        const sortedBookings = driverBookingData.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setBookingData(sortedBookings);
         setLoading(false);
       });
   };

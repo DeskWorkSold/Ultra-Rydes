@@ -9,6 +9,7 @@ import {
   ToastAndroid,
   BackHandler,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
@@ -131,6 +132,7 @@ export default function AskScreen({ route }) {
   }, []);
 
   const hideModal = () => {
+    setLoading(true)
     let currentUser = auth().currentUser;
     if (currentUser) {
       let uid = currentUser.uid;
@@ -157,6 +159,7 @@ export default function AskScreen({ route }) {
                 .doc(uid)
                 .set({ warningToDriver: mergeData })
                 .then(() => {
+                  setLoading(false)
                   setWarningData([]);
                   ToastAndroid.show(
                     'You have successfully acknowledge this warning',
@@ -164,12 +167,14 @@ export default function AskScreen({ route }) {
                   );
                 })
                 .catch(error => {
+                  setLoading(false)
                   console.log(error);
                 });
             }
           }
         })
         .catch(error => {
+          setLoading(false)
           console.log(error);
         });
     }
@@ -183,7 +188,7 @@ export default function AskScreen({ route }) {
           transparent={true}
           visible={warningData && warningData.length > 0}>
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, { height: Dimensions.get("window").height > 700 ? '60%' : "70%" }]}>
+            <View style={[styles.modalView, { height: Dimensions.get("window").height > 700 ? '60%' : Dimensions.get("window").height > 600 ? "70%" : "90%" }]}>
               <View>
                 <Icon size={80} color="white" name="warning" />
               </View>
@@ -192,7 +197,7 @@ export default function AskScreen({ route }) {
                 Warning!
               </Text>
               <Text
-                style={[styles.modalText, { fontSize: 16, fontWeight: '900' }]}>
+                style={[styles.modalText, { fontSize: 18, fontWeight: '900' }]}>
                 Your car has been recently given the lowest rating either your
                 car is dirty or it has got some mechanical issues you are
                 directed to fix it before taking another ride..
@@ -202,21 +207,21 @@ export default function AskScreen({ route }) {
                   styles.button,
                   { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
-                onPress={() => hideModal()}>
-                <Text
+                onPress={() => !loading && hideModal()}>
+                {loading ? <ActivityIndicator size="small" color={Colors.black} /> : <Text
                   style={[
                     styles.textStyle1,
                     { backgroundColor: Colors.primary },
                   ]}>
                   confirm
-                </Text>
+                </Text>}
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
       </View>
     );
-  }, [warningData]);
+  }, [warningData,loading]);
 
   const getPassengerBookingData = async () => {
     let currentUser = auth().currentUser;

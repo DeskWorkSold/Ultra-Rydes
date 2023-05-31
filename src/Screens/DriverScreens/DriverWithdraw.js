@@ -8,16 +8,32 @@ import {FlatList} from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 function DriverWithdrawScreen ({route, navigation}) {
   const [allWalletData, setAllWalletData] = useState(true);
+  const [allMonthlyData,setAllMonthlyData] = useState(false)
 
   let data = route.params.data;
 
-  let {allData, monthlyData} = data;
+  let {allData, monthlyData,todayData} = data;
 
-  console.log(data,"dataaaaa")
-  
+  const getSortedDetails = () => {
+    if (allWalletData) {
+      setAllWalletData(false)
+      setAllMonthlyData(true)
+      return
+    }
+    if (allMonthlyData) {
+      setAllMonthlyData(false)
+      return
+    }
+    if (!allMonthlyData) {
+      setAllWalletData(true)
+    }
+  }
+
+
+
+
   const renderDepositData  = ({item, index}) => {
     let date = item.date.toDate().toString().slice(0, 15);
-
 
     if(item.withdraw){
 
@@ -91,7 +107,7 @@ function DriverWithdrawScreen ({route, navigation}) {
               flexDirection: 'row',
               alignItems: 'center',
             }}
-            onPress={() => setAllWalletData(allWalletData ? false : true)}
+            onPress={() => getSortedDetails()}
           >
             <Text
               style={{
@@ -99,7 +115,7 @@ function DriverWithdrawScreen ({route, navigation}) {
                 paddingRight: 5,
               }}
             >
-              {allWalletData ? 'All Data' : 'This Month'}
+              {allWalletData ? 'All Data' : allMonthlyData ? 'This Month' : "Today"}
             </Text>
             <TouchableOpacity>
               <Icon name="down" color={Colors.secondary} />
@@ -107,7 +123,7 @@ function DriverWithdrawScreen ({route, navigation}) {
           </TouchableOpacity>
         </View>
         <FlatList
-          data={allWalletData ? allData : monthlyData}
+          data={allWalletData ? allData : allMonthlyData ? monthlyData : todayData }
           renderItem={renderDepositData}
           keyExtractor={(item, i) => i}
         />

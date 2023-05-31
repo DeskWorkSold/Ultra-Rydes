@@ -29,7 +29,9 @@ import { BASE_URI } from '../../Constants/Base_uri';
 const CurrentBalanceScreen = ({ navigation }) => {
   const [currentwallet, setCurrentWallet] = useState(null);
   const [allWalletData, setAllWalletData] = useState(true);
+  const [allMonthlyData, setAllMonthlyData] = useState(false)
   const [monthlyWalletData, setMonthlyWalletData] = useState([]);
+  const [todayData, setTodayData] = useState([])
   const [allData, setAllData] = useState([]);
   const [addAmount, setAddAmount] = useState('');
   const [openCreateAccountModal, setOpenCreateAccountModal] = useState(false);
@@ -43,10 +45,12 @@ const CurrentBalanceScreen = ({ navigation }) => {
   const [earn, setEarn] = useState({
     monthly: null,
     total: null,
+    daily: null
   });
   const [withdraw, setWithdraw] = useState({
     monthly: null,
     total: null,
+    daily: null
   });
 
   const focus = useIsFocused();
@@ -106,6 +110,7 @@ const CurrentBalanceScreen = ({ navigation }) => {
           let currentMonth = date.getMonth();
           let currentYear = date.getFullYear();
           let currentDate = date.getDate();
+
           setMonthlyWalletData(
             data &&
             data.length > 0 &&
@@ -118,9 +123,26 @@ const CurrentBalanceScreen = ({ navigation }) => {
               }
             }),
           );
+          setTodayData(
+            data &&
+            data.length > 0 &&
+            data.filter((e, i) => {
+              let walletDate = e.date.toDate();
+              let walletMonth = walletDate.getMonth();
+              let walletYear = walletDate.getFullYear();
+              let Date = walletDate.getDate()
+              console.log(Date, "walletData")
+              console.log(currentDate, "datae")
+              if (walletMonth == currentMonth && walletYear == currentYear && Date == currentDate) {
+                return e;
+              }
+            }),
+          );
         }
       });
   };
+
+console.log(todayData,"todayData")
 
   useEffect(() => {
     getWalletData();
@@ -233,6 +255,55 @@ const CurrentBalanceScreen = ({ navigation }) => {
 
     mySpents && setEarn({ ...earn, monthly: mySpents });
   };
+  const getDailyAmountEarnFromWallet = () => {
+    let mySpentData = [];
+
+    todayData &&
+      todayData.length > 0 &&
+      todayData.map((e, i) => {
+        if (e && e.fare) {
+          let tip = 0;
+          let toll = 0;
+
+          if (e?.tip) {
+            tip = e.tip;
+          }
+          if (e?.toll) {
+            toll = e.toll;
+          }
+
+          mySpentData.push(Number(e.fare) + Number(tip) + Number(toll));
+        }
+      });
+    let mySpents =
+      mySpentData &&
+      mySpentData.length > 0 &&
+      mySpentData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+    mySpents && setEarn({ ...earn, daily: mySpents });
+  };
+
+  const getDailyAmountWithdrawFromWallet = () => {
+    let myDepositData = [];
+    todayData &&
+      todayData.length > 0 &&
+      todayData.map((e, i) => {
+        if (e && e.withdraw) {
+          myDepositData.push(Number(e.withdraw));
+        }
+      });
+    let myDeposits =
+      myDepositData &&
+      myDepositData.length > 0 &&
+      myDepositData.reduce((previous, current) => {
+        return previous + current;
+      }, 0);
+
+      
+    myDeposits && setWithdraw({ ...withdraw, daily: myDeposits });
+  };
 
   useEffect(() => {
     if ((earn && earn.total) || withdraw.total) {
@@ -250,7 +321,15 @@ const CurrentBalanceScreen = ({ navigation }) => {
       getMonthlyAmountEarnFromWallet();
       getMonthlyAmountWithdrawFromWallet();
     }
-  }, [allData, monthlyWalletData]);
+
+    if (todayData && todayData.length > 0) {
+
+      getDailyAmountEarnFromWallet();
+      getDailyAmountWithdrawFromWallet();
+
+    }
+
+  }, [allData, monthlyWalletData, todayData]);
 
   const checkStripeAccount = () => {
     if (!stripeId) {
@@ -373,6 +452,29 @@ const CurrentBalanceScreen = ({ navigation }) => {
       });
   };
 
+  const getSortedDetails = () => {
+
+
+    if (allWalletData) {
+      setAllWalletData(false)
+      setAllMonthlyData(true)
+      return
+    }
+
+    if (allMonthlyData) {
+      setAllMonthlyData(false)
+      return
+    }
+
+    if (!allMonthlyData) {
+      setAllWalletData(true)
+    }
+
+
+
+  }
+
+
   const CreateAccountModal = useCallback(() => {
     return (
       <View style={styles.centeredView}>
@@ -416,6 +518,9 @@ const CurrentBalanceScreen = ({ navigation }) => {
       </View>
     );
   }, [openCreateAccountModal, modalLoading]);
+
+
+console.log(earn.daily,"daily")
 
   return (
     <SafeAreaView>
@@ -524,13 +629,13 @@ const CurrentBalanceScreen = ({ navigation }) => {
                   flexDirection: 'row',
                   alignItems: 'center',
                 }}
-                onPress={() => setAllWalletData(allWalletData ? false : true)}>
+                onPress={() => getSortedDetails()} >
                 <Text
                   style={{
                     color: COLORS.black,
                     paddingRight: 5,
                   }}>
-                  {allWalletData ? 'All Data' : 'This Month'}
+                  {allWalletData ? 'All Data' : allMonthlyData ? 'This Month' : "Today"}
                 </Text>
                 <TouchableOpacity>
                   <Icon name="down" color={COLORS.secondary} />
@@ -559,6 +664,7 @@ const CurrentBalanceScreen = ({ navigation }) => {
                     data: {
                       allData: allData,
                       monthlyData: monthlyWalletData,
+                      todayData,todayData
                     },
                   })
                 }>
@@ -595,8 +701,8 @@ const CurrentBalanceScreen = ({ navigation }) => {
                     }}>
                     $
                     {allWalletData
-                      ? earn.total && (earn.total.toFixed(2) ?? 0)
-                      : earn.monthly && (earn.monthly.toFixed(2) ?? 0)}
+                      ? (earn.total ? earn.total.toFixed(2) : 0) : allMonthlyData ? (earn.monthly ? earn.monthly.toFixed(2) : 0)
+                        : earn.daily ? (earn.daily.toFixed(2)) : 0}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -607,6 +713,7 @@ const CurrentBalanceScreen = ({ navigation }) => {
                     data: {
                       allData: allData,
                       monthlyData: monthlyWalletData,
+                      todayData : todayData
                     },
                   })
                 }
@@ -653,10 +760,11 @@ const CurrentBalanceScreen = ({ navigation }) => {
                     $
                     {allWalletData
                       ? withdraw.total
-                        ? withdraw.total
+                        ? (withdraw.total).toFixed(2)
                         : 0
-                      : (withdraw.monthly ?? 0) &&
-                      (withdraw.monthly.toFixed(2) ?? 0)}
+                      : allMonthlyData ? 
+                        (withdraw.monthly.toFixed(2) ?? 0) : 
+                      ((withdraw.daily).toFixed(2) ?? 0)}
                   </Text>
                 </View>
               </TouchableOpacity>
