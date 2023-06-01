@@ -41,7 +41,7 @@ import { useRoute } from '@react-navigation/native';
 import { Linking, Platform } from 'react-native';
 import axios from 'axios';
 import IdleTimerManager from 'react-native-idle-timer';
-
+import { BASE_URI } from '../../Constants/Base_uri';
 
 export default function DriverBiddingScreen({ navigation }) {
   const route = useRoute();
@@ -122,6 +122,7 @@ export default function DriverBiddingScreen({ navigation }) {
   const [riderOnCabConfirmation, setRiderOnCabConfirmation] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [hasDriverArrived, setHasDriverArrived] = useState(false)
+  const [stripeId, setStripeId] = useState("")
 
   useEffect(() => {
     if (!selectedDriver) {
@@ -134,6 +135,7 @@ export default function DriverBiddingScreen({ navigation }) {
     }
   }, [data]);
 
+
   useEffect(() => {
     // Disable screen timeout when the component mounts
     IdleTimerManager.setIdleTimerDisabled(true);
@@ -142,6 +144,9 @@ export default function DriverBiddingScreen({ navigation }) {
     return () => {
       IdleTimerManager.setIdleTimerDisabled(false);
     };
+
+
+
   }, []);
 
 
@@ -385,9 +390,6 @@ export default function DriverBiddingScreen({ navigation }) {
         });
     }
   };
-
-
-  console.log(tipAmount, "tollAmount")
 
   // const checkRequestStatus = async () => {
   //   if (!selectedDriver) {
@@ -702,115 +704,162 @@ export default function DriverBiddingScreen({ navigation }) {
   const bookingComplete = (myTip, myToll) => {
     setButtonLoader(true);
 
+
+
     let uid = auth().currentUser.uid;
-    let walletData = {
-      fare: selectedDriver?.bidFare
-        ? selectedDriver?.bidFare
-        : data.bidFare
+
+    firestore().collection("DriverstripeAccount").doc(uid).get().then(doc => {
+      let stripeAccountData = doc?.data()
+
+      let stripeAccountId = stripeAccountData?.id
+
+      let fare = data?.bidFare ? Number(data?.bidFare) : Number(data?.passengerData?.fare)
+      let tip = myTip ? Number(myTip) : tipAmount ? Number(tipAmount) : 0
+      let toll = myToll ? Number(myToll) : tollAmount ? Number(tollAmount) : 0
+
+
+      let walletData = {
+        fare: data?.bidFare
           ? data.bidFare
           : data.passengerData.fare,
-      withdraw: 0,
-      date: new Date(),
-      remainingWallet:
-        myTip ?? tipAmount ?? 0 +
-        myToll ?? tollAmount ?? 0 +
-        (data.bidFare ? Number(data.bidFare) : Number(data.fare)),
-      tip: myTip ?? tipAmount ?? 0,
-      toll: myToll ?? tollAmount ?? 0,
-    };
+        withdraw: 0,
+        date: new Date(),
+        remainingWallet: (fare + tip + toll).toFixed(2),
+        tip: myTip ? Number(myTip).toFixed(2) : tipAmount ? Number(tipAmount).toFixed(2) : 0,
+        toll: myToll ? Number(myToll).toFixed(2) : tollAmount ? Number(tollAmount).toFixed(2) : 0,
+      };
 
-    firestore()
-      .collection('driverWallet')
-      .doc(uid)
-      .set(
-        {
-          driverWallet: firestore.FieldValue.arrayUnion(walletData),
-        },
-        { merge: true },
-      )
-      .then(() => {
-        ToastAndroid.show(
-          'Amount has been successfully added in your wallet',
-          ToastAndroid.SHORT,
-        );
-      })
-      .catch(error => {
-        console.log(error);
-        setButtonLoader(false);
-      });
 
-    firestore()
-      .collection('Request')
-      .doc(
-        route.params?.data?.id
-          ? route.params.data.id
-          : route.params?.data?.passengerData.id,
-      )
-      .update({
-        bookingStatus: 'complete',
-      });
+      let myData = {
+        amount: walletData?.remainingWallet,
+        accountId: stripeAccountId,
+      };
 
-    firestore()
-      .collection('inlinedDriver')
-      .doc(uid)
-      .update({
-        inlined: false,
-      })
-      .then(() => {
-        console.log('driver has been successfully lined');
-      })
-      .catch(error => {
-        setButtonLoader(false);
-        console.log(error);
-      });
-    firestore()
-      .collection('Request')
-      .doc(data.id ?? data.passengerData.id)
-      .update({
-        driverArriveAtDropoffLocation: true,
-      })
-      .then(async () => {
-        let startRide = await AsyncStorage.getItem('onTheWayRideStart');
 
-        if (startRide) {
-          setButtonLoader(false);
-          setArrivePickupLocation(false);
-          setArriveDropOffLocation(false);
-          setStartRide(false);
-          setSelectedDriver([]);
-          AsyncStorage.removeItem('driverBooking');
-          AsyncStorage.removeItem('ArrivedAtpickUpLocation');
-          AsyncStorage.removeItem('startRide');
-          AsyncStorage.removeItem('EndRide');
-          navigation.navigate('DriverRoutes', {
-            screen: 'DriverOnTheWayScreen',
-            params: {
-              data: startRide,
-            },
-          });
-          return;
-        }
-        setButtonLoader(false);
-        AsyncStorage.removeItem('driverBooking');
-        AsyncStorage.removeItem('ArrivedAtpickUpLocation');
-        AsyncStorage.removeItem('startRide');
-        AsyncStorage.removeItem('EndRide');
-        setEndRide(false);
-        setArrivePickupLocation(false);
-        setArriveDropOffLocation(false);
-        setStartRide(false);
-        setSelectedDriver([]);
-        navigation.navigate('DriverRoutes', {
-          screen: 'DriverHomeScreen',
-          params: {
-            data: "changed route"
-          }
-        });
-      })
-      .catch(error => {
-        setButtonLoader(false);
-        console.log(error);
-      });
+      axios
+        .post(`${BASE_URI}tranferPayment`, myData)
+        .then(res => {
+          let transferAmount = res.data;
+          console.log(transferAmount, "transfer")
+          let id = auth().currentUser.uid;
+          firestore()
+            .collection('driverWallet')
+            .doc(id)
+            .set(
+              {
+                driverWallet: firestore.FieldValue.arrayUnion(walletData),
+              },
+              { merge: true },
+            )
+            .then(() => {
+
+              firestore()
+                .collection('Request')
+                .doc(
+                  route.params?.data?.id
+                    ? route.params.data.id
+                    : route.params?.data?.passengerData.id,
+                )
+                .update({
+                  bookingStatus: 'complete',
+                }).then(() => {
+
+                  firestore()
+                    .collection('inlinedDriver')
+                    .doc(uid)
+                    .update({
+                      inlined: false,
+                    })
+                    .then(() => {
+
+                      firestore()
+                        .collection('Request')
+                        .doc(data?.id ?? data?.passengerData?.id)
+                        .update({
+                          driverArriveAtDropoffLocation: true,
+                        })
+                        .then(async () => {
+                          let startRide = await AsyncStorage.getItem('onTheWayRideStart');
+
+                          if (startRide) {
+                            setButtonLoader(false);
+                            setArrivePickupLocation(false);
+                            setArriveDropOffLocation(false);
+                            setStartRide(false);
+                            setSelectedDriver([]);
+                            AsyncStorage.removeItem('driverBooking');
+                            AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+                            AsyncStorage.removeItem('startRide');
+                            AsyncStorage.removeItem('EndRide');
+                            navigation.navigate('DriverRoutes', {
+                              screen: 'DriverOnTheWayScreen',
+                              params: {
+                                data: startRide,
+                              },
+                            });
+                            return;
+                          }
+                          setButtonLoader(false);
+                          AsyncStorage.removeItem('driverBooking');
+                          AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+                          AsyncStorage.removeItem('startRide');
+                          AsyncStorage.removeItem('EndRide');
+                          AsyncStorage.removeItem("hasDriverArrived")
+                          setEndRide(false);
+                          setArrivePickupLocation(false);
+                          setArriveDropOffLocation(false);
+                          setStartRide(false);
+                          setSelectedDriver([]);
+                          navigation.navigate('DriverRoutes', {
+                            screen: 'DriverHomeScreen',
+                            params: {
+                              data: "changed route"
+                            }
+                          });
+                        })
+                        .catch(error => {
+                          setButtonLoader(false);
+                          ToastAndroid.show(error.message, ToastAndroid.SHORT)
+                          console.log(error);
+                        });
+
+                    })
+                    .catch(error => {
+                      setButtonLoader(false);
+                      ToastAndroid.show(error.message, ToastAndroid.SHORT)
+                      console.log(error);
+                    });
+
+
+                }).catch((error) => {
+                  ToastAndroid.show(error.message, ToastAndroid.SHORT)
+                  setButtonLoader(false)
+                })
+
+            })
+            .catch(error => {
+              ToastAndroid.show(error.message, ToastAndroid.SHORT)
+              setButtonLoader(false);
+            });
+
+        }).catch((error) => {
+          ToastAndroid.show("Network error", ToastAndroid.SHORT)
+          setButtonLoader(false)
+        })
+
+    }).catch((error) => {
+
+      ToastAndroid.show(error.message, ToastAndroid.SHORT)
+      setButtonLoader(false)
+
+    })
+
+
+
+
+
+
+
   };
 
   const DropOffModal = useCallback((tip, toll) => {
@@ -927,7 +976,7 @@ export default function DriverBiddingScreen({ navigation }) {
                   styles.button,
                   { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
-                onPress={() => !buttonLoader && bookingComplete(myTip, myToll)}>
+                onPress={() => bookingComplete(myTip, myToll)}>
                 <Text style={styles.textStyle}>
                   {buttonLoader ? (
                     <ActivityIndicator size={'large'} color={Colors.black} />
@@ -1722,7 +1771,6 @@ export default function DriverBiddingScreen({ navigation }) {
 
     if (distance > 3) {
 
-      console.log("hello")
 
       if (mileDistance < ((distance * 50) / 100)) {
         setEndRide(true);

@@ -57,10 +57,10 @@ function DriverHistory({ navigation }) {
             setLoading(false);
           }
         });
+        let sortedBookings = driverBookingData.length>0 && driverBookingData.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+        sortedBookings = sortedBookings.length >0 && sortedBookings.reverse()
+        setBookingData(sortedBookings.length >0 ? sortedBookings : []);
 
-
-        const sortedBookings = driverBookingData.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setBookingData(sortedBookings);
         setLoading(false);
       });
   };
@@ -84,7 +84,12 @@ function DriverHistory({ navigation }) {
               }
             });
         });
-        setCancelledBookingData(myNames);
+
+
+
+        let sortedBookings = myNames.length>0 && myNames.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+        sortedBookings = sortedBookings.length>0 && sortedBookings.reverse()
+        setCancelledBookingData(sortedBookings.length >0 ? sortedBookings : []);
         setLoading(false);
       });
     setLoading(false);

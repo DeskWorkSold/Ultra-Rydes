@@ -42,6 +42,8 @@ const CurrentBalanceScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [amountWithdrawn, setAmountWithdrawn] = useState(false);
+  const [availableBalance, setAvailableBalance] = useState(null)
+  const [pendingBalance, setPendingBalance] = useState(null)
   const [earn, setEarn] = useState({
     monthly: null,
     total: null,
@@ -76,9 +78,13 @@ const CurrentBalanceScreen = ({ navigation }) => {
 
                 let { transfers, card_payments } = capabilities;
 
+                console.log(capabilities, "capa")
+
                 if (transfers == 'active' && card_payments == 'active') {
                   setStripeVerifiedAccount(true);
                   setLoading(false);
+                } else {
+                  setLoading(false)
                 }
               })
               .catch(error => {
@@ -92,9 +98,43 @@ const CurrentBalanceScreen = ({ navigation }) => {
       });
   };
 
+
+  const getDriverStripeBalance = () => {
+
+
+
+    axios.post(`${BASE_URI}retrieveBalance`, { id: stripeId }).then((res) => {
+
+      let { data } = res.data
+
+      let availableBalance = data?.available[0].amount
+      let pendingBalance = data?.pending[0].amount
+
+      setAvailableBalance(availableBalance)
+      setPendingBalance(pendingBalance)
+
+
+
+
+    }).catch((error) => {
+      console.log(error)
+    })
+
+
+  }
+
   useEffect(() => {
-    getAccountId();
+    if (!stripeId || !stripeVerifiedAccount)
+      getAccountId();
   }, [focus]);
+
+  useEffect(() => {
+
+
+    if (stripeId) {
+      getDriverStripeBalance()
+    }
+  }, [stripeId])
 
   const getWalletData = async () => {
     const userId = auth().currentUser.uid;
@@ -105,6 +145,11 @@ const CurrentBalanceScreen = ({ navigation }) => {
       .onSnapshot(querySnapshot => {
         if (querySnapshot._exists) {
           let data = querySnapshot.data().driverWallet;
+
+          data = data.length > 0 && data.sort((a, b) => a.date.toDate().getTime() - b.date.toDate().getTime())
+
+          data = data.reverse()
+
           setAllData(data);
           let date = new Date();
           let currentMonth = date.getMonth();
@@ -141,8 +186,6 @@ const CurrentBalanceScreen = ({ navigation }) => {
         }
       });
   };
-
-console.log(todayData,"todayData")
 
   useEffect(() => {
     getWalletData();
@@ -301,7 +344,7 @@ console.log(todayData,"todayData")
         return previous + current;
       }, 0);
 
-      
+
     myDeposits && setWithdraw({ ...withdraw, daily: myDeposits });
   };
 
@@ -519,9 +562,6 @@ console.log(todayData,"todayData")
     );
   }, [openCreateAccountModal, modalLoading]);
 
-
-console.log(earn.daily,"daily")
-
   return (
     <SafeAreaView>
       <StatusBar backgroundColor={COLORS.black} />
@@ -601,7 +641,7 @@ console.log(earn.daily,"daily")
                     fontSize: 18,
                     color: COLORS.black,
                   }}>
-                  ${currentwallet ?? 0}
+                  ${availableBalance ? (Number(availableBalance) / 100).toFixed(2) : 0 + pendingBalance ? (Number(pendingBalance) / 100).toFixed(2) : 0}
                 </Text>
               </View>
             </View>
@@ -664,7 +704,7 @@ console.log(earn.daily,"daily")
                     data: {
                       allData: allData,
                       monthlyData: monthlyWalletData,
-                      todayData,todayData
+                      todayData, todayData
                     },
                   })
                 }>
@@ -707,13 +747,13 @@ console.log(earn.daily,"daily")
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={() =>
                   navigation.navigate('driverWithdrawScreen', {
                     data: {
                       allData: allData,
                       monthlyData: monthlyWalletData,
-                      todayData : todayData
+                      todayData: todayData
                     },
                   })
                 }
@@ -725,8 +765,8 @@ console.log(earn.daily,"daily")
                   paddingVertical: 20,
                   alignItems: 'center',
                   width: '49%',
-                }}>
-                <View>
+                }}> */}
+              {/* <View>
                   <Image
                     source={require('../../Assets/Images/walletSpent.png')}
                     resizeMode="contain"
@@ -735,8 +775,8 @@ console.log(earn.daily,"daily")
                       marginRight: 10,
                     }}
                   />
-                </View>
-                <View
+                </View> */}
+              {/* <View
                   style={{
                     flexDirection: 'row',
                     paddingTop: 10,
@@ -762,12 +802,12 @@ console.log(earn.daily,"daily")
                       ? withdraw.total
                         ? (withdraw.total).toFixed(2)
                         : 0
-                      : allMonthlyData ? 
-                        (withdraw.monthly.toFixed(2) ?? 0) : 
-                      ((withdraw.daily).toFixed(2) ?? 0)}
+                      : allMonthlyData ?
+                        ((withdraw.monthly && withdraw.monthly.toFixed(2)) ?? 0) :
+                        ((withdraw.daily && (withdraw.daily).toFixed(2)) ?? 0)}
                   </Text>
-                </View>
-              </TouchableOpacity>
+                </View> */}
+              {/* </TouchableOpacity> */}
             </View>
 
             <View
@@ -775,7 +815,7 @@ console.log(earn.daily,"daily")
                 paddingHorizontal: 25,
                 paddingVertical: 20,
               }}>
-              <View
+              {/* <View
                 style={{
                   paddingBottom: 5,
                 }}>
@@ -787,11 +827,11 @@ console.log(earn.daily,"daily")
                   }}>
                   Withdraw Balance
                 </Text>
-              </View>
+              </View> */}
             </View>
             <View style={{ alignItems: 'center' }}>
               <View>
-                <View>
+                {/* <View>
                   <Text style={{ color: COLORS.black }}>Amount</Text>
                 </View>
                 <View style={styles.NumberInput}>
@@ -803,12 +843,12 @@ console.log(earn.daily,"daily")
                     onChangeText={setAddAmount}
                     placeholderTextColor={COLORS.black}
                   />
-                </View>
+                </View> */}
               </View>
             </View>
           </View>
-          {openCreateAccountModal && CreateAccountModal()}
-          <View
+          {/* {openCreateAccountModal && CreateAccountModal()} */}
+          {/* <View
             style={{
               paddingTop: 20,
               alignItems: 'center',
@@ -828,7 +868,7 @@ console.log(earn.daily,"daily")
               }
               btnTextStyle={{ color: COLORS.white }}
             />
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </SafeAreaView>

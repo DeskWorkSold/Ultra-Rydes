@@ -312,7 +312,7 @@ export default function DriverVehicleAdd({navigation}) {
             console.log('User added!');
           });
         setLoading(false);
-        navigation.replace('DriverRideOption');
+        navigation.replace('driverPaymentDetail');
       } catch (err) {
         console.log(err);
       }

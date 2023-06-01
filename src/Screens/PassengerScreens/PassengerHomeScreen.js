@@ -68,6 +68,7 @@ export default function PassengerHomeScreen({ navigation }) {
   const [result, setResult] = useState();
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
   const [wallet, setWallet] = useState(0);
+  const [bookingStatus,setBookingStatus] = useState(false)
   const [bidFare, setBidFare] = useState(null);
   const [toll, setToll] = useState(null);
   const [driverArrive, setDriverArrive] = useState({
@@ -259,6 +260,10 @@ export default function PassengerHomeScreen({ navigation }) {
               selectedDriver = selectedDriver[0];
               setSelectedLocation(selectedDriver?.currentLocation);
             }
+          }
+
+          if(myData?.carRating){
+            setBookingStatus(true)
           }
         });
     }
@@ -1235,7 +1240,7 @@ export default function PassengerHomeScreen({ navigation }) {
             driverArrive.pickupLocation && !driverArriveAtPickUpLocation
           }>
           <View style={styles.centeredView}>
-            <View style={styles.modalView}>
+            <View style={[styles.modalView, { height: 300 }]}>
               <View>
                 <Ionicons size={80} color="white" name="car-outline" />
               </View>
@@ -1455,6 +1460,7 @@ export default function PassengerHomeScreen({ navigation }) {
                     {
                       marginTop: 0,
                       paddingHorizontal: 2,
+                      color: "white",
                       marginHorizontal: 0,
                       fontWeight: '500',
                     },
@@ -1470,6 +1476,7 @@ export default function PassengerHomeScreen({ navigation }) {
                       marginHorizontal: 5,
                       fontWeight: '500',
                       fontSize: 14,
+                      color: "white",
                       alignSelf: 'flex-start',
                     },
                   ]}>
@@ -1489,6 +1496,7 @@ export default function PassengerHomeScreen({ navigation }) {
                       marginHorizontal: 5,
                       fontWeight: '500',
                       fontSize: 14,
+                      color: "white",
                       alignSelf: 'flex-start',
                     },
                   ]}>
@@ -1506,6 +1514,7 @@ export default function PassengerHomeScreen({ navigation }) {
                       marginHorizontal: 5,
                       fontWeight: '500',
                       fontSize: 14,
+                      color: "white",
                       alignSelf: 'flex-start',
                     },
                   ]}>
@@ -1521,6 +1530,7 @@ export default function PassengerHomeScreen({ navigation }) {
                       marginTop: 0,
                       paddingHorizontal: 2,
                       marginHorizontal: 5,
+                      color: "white",
                       fontWeight: '500',
                       fontSize: 14,
                       alignSelf: 'flex-start',
@@ -1625,7 +1635,7 @@ export default function PassengerHomeScreen({ navigation }) {
         <Modal
           animationType="slide"
           transparent={true}
-          visible={showFeedBackModal}>
+          visible={(showFeedBackModal || bookingStatus)}>
           <View style={[styles.centeredView]}>
             <View style={[styles.modalView, { width: '90%', height: Dimensions.get("window").height > 700 ? "70%" : Dimensions.get("window").height > 600 ? "80%" : "90%" }]}>
               <MaterialIcon size={80} color="white" name="feedback" />
@@ -1635,6 +1645,7 @@ export default function PassengerHomeScreen({ navigation }) {
                   {
                     marginTop: 0,
                     paddingHorizontal: 2,
+                    color: "white",
                     marginHorizontal: 0,
                     fontWeight: '500',
                   },
@@ -1669,7 +1680,7 @@ export default function PassengerHomeScreen({ navigation }) {
                     marginTop: 10,
                   },
                 ]}
-                onPress={!buttonLoader && bookingComplete}>
+                onPress={()=>!buttonLoader && bookingComplete()}>
                 <Text
                   style={[styles.textStyle, { backgroundColor: Colors.primary }]}>
                   {buttonLoader ? (
@@ -1684,7 +1695,7 @@ export default function PassengerHomeScreen({ navigation }) {
         </Modal>
       </View>
     );
-  }, [showFeedBackModal, feedBack, buttonLoader]);
+  }, [showFeedBackModal, feedBack, buttonLoader,bookingStatus]);
 
   const getMinutesAndDistance = result => {
     setMinutesAndDistanceDifference({
@@ -1900,6 +1911,7 @@ export default function PassengerHomeScreen({ navigation }) {
                   {
                     height: input ? '65%' : reasonForCancelRide ? Dimensions.get("window").height > 700 ? "40%" : "60%" : Dimensions.get("window").height > 700 ? '45%' : "65%",
                     width: '90%',
+
                   },
                 ]}>
                 {!reasonForCancelRide && (
@@ -1919,6 +1931,7 @@ export default function PassengerHomeScreen({ navigation }) {
                         fontWeight: '600',
                         fontSize: 26,
                         marginTop: 0,
+                        color: "white",
                         textAlign: 'left',
                       },
                     ]}>
@@ -1933,6 +1946,7 @@ export default function PassengerHomeScreen({ navigation }) {
                         fontSize: 20,
                         alignSelf: 'flex-start',
                         marginTop: 0,
+                        color: "white",
                         fontWeight: '400',
                       },
                     ]}>
@@ -1998,6 +2012,7 @@ export default function PassengerHomeScreen({ navigation }) {
                         {
                           alignSelf: 'flex-start',
                           fontWeight: '600',
+                          color: "white",
                           fontSize: 26,
                           marginTop: 0,
                           textAlign: 'left',
@@ -2080,6 +2095,8 @@ export default function PassengerHomeScreen({ navigation }) {
       });
   };
 
+
+  console.log(bookingStatus,"status")
 
   const getDriverCarPic = () => {
     let carPic = selectedDriver?.vehicleDetails?.vehiclePicFront
@@ -2528,8 +2545,8 @@ export default function PassengerHomeScreen({ navigation }) {
                     focus &&
                     ArriveModal()}
                   {driverArriveAtdropoffLocation && getTollAmount()}
-                  {toll && focus && dropOffModal()}
-                  {showFeedBackModal && FeedBackModal()}
+                  {toll && focus && !bookingStatus && dropOffModal()}
+                  {(showFeedBackModal || bookingStatus) && FeedBackModal()}
                   {cancelRide && cancelRideModal()}
 
                   <TextInput

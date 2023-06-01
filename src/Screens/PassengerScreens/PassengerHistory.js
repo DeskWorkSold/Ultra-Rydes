@@ -43,7 +43,9 @@ function PassengerHistory({ navigation }) {
       .then(doc => {
         if (doc.exists) {
           let data = doc.data();
-          setBookingData(data.bookingData);
+          let sortedBookings = data?.bookingData.length>0 && data?.bookingData?.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+          sortedBookings = sortedBookings.length>0 && sortedBookings.reverse()
+          setBookingData(sortedBookings.length >0 ? sortedBookings : []);
           setLoading(false);
         }
       });
@@ -69,7 +71,9 @@ function PassengerHistory({ navigation }) {
               }
             });
         });
-        setCancelledBookingData(myNames);
+        let sortedBookings = myNames.length > 0 && myNames.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+        sortedBookings = sortedBookings.reverse()
+        setCancelledBookingData(sortedBookings.length >0 ? sortedBookings : []);
         setLoading(false);
       });
   };

@@ -958,8 +958,8 @@ export default function DriverOnTheWay() {
   };
 
   const handleRideStart = async () => {
-    setStartLoading(true)
     try {
+      setStartLoading(true)
       if (!dropLocationCords.latitude && !dropLocationCords.longitude) {
         ToastAndroid.show('Kindly Enter DropLocation', ToastAndroid.SHORT);
         return;

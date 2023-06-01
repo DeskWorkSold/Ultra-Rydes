@@ -59,6 +59,7 @@ import DriverRideOption from '../Screens/DriverScreens/DriverRideOptionsScreen';
 import DriverOnTheWay from '../Screens/DriverScreens/DriverOnTheWayScreen';
 import CustomButton from '../Components/CustomButton';
 import { ScreenStackHeaderBackButtonImage } from 'react-native-screens';
+import DriverPaymentDetail from '../Screens/driverPaymentDetailScreen';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
@@ -337,6 +338,11 @@ export default function Navigation() {
         <Stack.Screen
           name="passengerAddPlacesScreen"
           component={PredefinedPlaces}
+        />
+        <Stack.Screen
+        options={{unmountOnBlur:true}}
+          name="driverPaymentDetail"
+          component={DriverPaymentDetail}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -34,7 +34,6 @@ export default function AskScreen({ route }) {
   const focus = useIsFocused();
   const getDriverData = () => {
     let id = auth().currentUser.uid;
-
     firestore()
       .collection('Drivers')
       .doc(id)
@@ -62,9 +61,9 @@ export default function AskScreen({ route }) {
     backAction,
   );
   const getDriverBookingData = async () => {
-    let currentUser = auth().currentUser;
-    let id = currentUser?.uid;
     try {
+      let currentUser = auth().currentUser;
+      let id = currentUser?.uid;
       let data = await AsyncStorage.getItem('driverBooking');
       let checkDriverArrive = await AsyncStorage.getItem(
         'ArrivedAtpickUpLocation',
@@ -99,9 +98,11 @@ export default function AskScreen({ route }) {
             endRide: endRide ? true : false,
           },
         });
-      } else {
+      }
+      else {
         let id = auth().currentUser?.uid;
-        firestore().collection('inlinedDriver').doc(id).update({
+        firestore().collection('inlinedDriver').doc(id).set({
+          id: id,
           inlined: false,
         });
       }
@@ -221,7 +222,7 @@ export default function AskScreen({ route }) {
         </Modal>
       </View>
     );
-  }, [warningData,loading]);
+  }, [warningData, loading]);
 
   const getPassengerBookingData = async () => {
     let currentUser = auth().currentUser;
@@ -421,7 +422,11 @@ export default function AskScreen({ route }) {
           } else if (!checkEmpty.vehicleDetails) {
             setLoading(false);
             navigation.navigate('DriverRoutes', { screen: 'DriverVehicleAdd' });
-          } else {
+          }
+          else if (!checkEmpty.submitPaymentDetails) {
+            navigation.navigate('driverPaymentDetail');
+          }
+          else {
             setLoading(false);
             navigation.navigate('DriverRideOption');
           }

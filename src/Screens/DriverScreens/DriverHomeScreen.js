@@ -30,13 +30,8 @@ import { useIsFocused } from '@react-navigation/native';
 
 export default function DriverHomeScreen({ route }) {
 
-
-
   let navigation = useNavigation();
   let changeRoute = route.params
-
-    console.log(changeRoute,"change")
-
 
   const [passengerState, setPassengerState] = useState({
     pickupCords: {
@@ -187,12 +182,12 @@ export default function DriverHomeScreen({ route }) {
 
   useEffect(() => {
 
-    if(changeRoute){
-    setDriverStatus('online');
-    setStatus(0)
-    getLocationUpdates()
-  }
-  }, [focus,changeRoute]);
+    if (changeRoute) {
+      setDriverStatus('online');
+      setStatus(0)
+      getLocationUpdates()
+    }
+  }, [focus, changeRoute]);
 
   useEffect(() => {
     const backAction = () => {
@@ -325,6 +320,9 @@ export default function DriverHomeScreen({ route }) {
               }),
             );
           }, 30000);
+
+          return () => clearTimeout(interval)
+
         } else {
           // console.log('playback failed due to audio decoding errors');
         }
@@ -335,7 +333,7 @@ export default function DriverHomeScreen({ route }) {
         if (success) {
           // console.log('successfully finished playing');
 
-          setTimeout(() => {
+         let interval = setTimeout(() => {
             setRequestIds(
               passengerBookingData &&
               passengerBookingData.length > 0 &&
@@ -348,6 +346,8 @@ export default function DriverHomeScreen({ route }) {
               }),
             );
           }, 30000);
+
+          return () => clearTimeout(interval)
         } else {
           // console.log('playback failed due to audio decoding errors');
         }
@@ -408,7 +408,6 @@ export default function DriverHomeScreen({ route }) {
     }, 900);
     return () => clearInterval(interval);
   }, [passengerBookingData, requestTime]);
-
 
   const getDriverBookingData = async () => {
     try {
@@ -1442,7 +1441,7 @@ export default function DriverHomeScreen({ route }) {
           .then(() => {
             firestore().collection("login").doc(id).update({
               login: false
-            }).then(()=>{
+            }).then(() => {
               setLoader(false);
               ToastAndroid.show('Logout Successfully', ToastAndroid.SHORT);
               navigation.reset({
