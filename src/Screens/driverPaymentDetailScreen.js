@@ -109,41 +109,32 @@ function DriverPaymentDetail() {
                         id: account,
                     })
                     .then(res => {
+                        if (res?.data?.accountStatus.details_submitted) {
 
-
-                        if (res.status) {
-                            setPageLoading(true)
-                        }
-
-                        setTimeout(() => {
-
-                            if (res?.status && res?.data?.accountStatus?.capabilities?.transfers !== "active") {
-
-                                setPageLoading(false)
-                                ToastAndroid.show("Your details are not completed kindly submit the details again", ToastAndroid.SHORT)
-
+                            if (res.status) {
+                                setPageLoading(true)
                             }
 
-                        }, 120000)
-
-                        let { capabilities } = res.data.accountStatus;
-
-                        let { transfers, card_payments } = capabilities;
-
-                            console.log(capabilities,"capabilities")
-
-                        if (transfers == 'active' && card_payments == 'active') {
-
-                            firestore().collection("Drivers").doc(id).update({
-                                submitPaymentDetails: true
-                            }).then(() => {
-                                setVerifiedAccount(true)
-                                setPageLoading(false)
-                            }).catch((error) => {
-                                ToastAndroid.show(error.message, ToastAndroid.SHORT)
-                            })
 
 
+                            let { capabilities } = res.data.accountStatus;
+
+                            let { transfers, card_payments } = capabilities;
+
+
+                            if (transfers == 'active' && card_payments == 'active') {
+
+                                firestore().collection("Drivers").doc(id).update({
+                                    submitPaymentDetails: true
+                                }).then(() => {
+                                    setVerifiedAccount(true)
+                                    setPageLoading(false)
+                                }).catch((error) => {
+                                    ToastAndroid.show(error.message, ToastAndroid.SHORT)
+                                })
+
+
+                            }
                         }
                     })
                     .catch(error => {
@@ -161,8 +152,8 @@ function DriverPaymentDetail() {
     useEffect(() => {
 
         let interval = setInterval(() => {
-            if(accountId  && focus){
-            checkDriverDetailsSubmitted()
+            if (accountId && focus) {
+                checkDriverDetailsSubmitted()
             }
         }, 5000);
         return () => clearInterval(interval)
@@ -206,7 +197,7 @@ function DriverPaymentDetail() {
     return (
         pageLoading ? <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }} >
             <ActivityIndicator size={"large"} color={Colors.secondary} />
-            <Text style={{ fontSize: 16, textAlign: "center",color:Colors.black }} >Your details are being verified Kindly wait some minutes</Text>
+            <Text style={{ fontSize: 16, textAlign: "center", color: Colors.black }} >Your details are being verified Kindly wait some minutes</Text>
         </View> : <View style={{ flex: 1, backgroundColor: Colors.white }} >
 
             <View style={{ backgroundColor: Colors.secondary }} >

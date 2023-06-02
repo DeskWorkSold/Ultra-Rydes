@@ -57,9 +57,9 @@ function DriverHistory({ navigation }) {
             setLoading(false);
           }
         });
-        let sortedBookings = driverBookingData.length>0 && driverBookingData.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
-        sortedBookings = sortedBookings.length >0 && sortedBookings.reverse()
-        setBookingData(sortedBookings.length >0 ? sortedBookings : []);
+        let sortedBookings = driverBookingData.length > 0 && driverBookingData.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+        sortedBookings = sortedBookings.length > 0 && sortedBookings.reverse()
+        setBookingData(sortedBookings.length > 0 ? sortedBookings : []);
 
         setLoading(false);
       });
@@ -87,9 +87,9 @@ function DriverHistory({ navigation }) {
 
 
 
-        let sortedBookings = myNames.length>0 && myNames.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
-        sortedBookings = sortedBookings.length>0 && sortedBookings.reverse()
-        setCancelledBookingData(sortedBookings.length >0 ? sortedBookings : []);
+        let sortedBookings = myNames.length > 0 && myNames.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+        sortedBookings = sortedBookings.length > 0 && sortedBookings.reverse()
+        setCancelledBookingData(sortedBookings.length > 0 ? sortedBookings : []);
         setLoading(false);
       });
     setLoading(false);
@@ -141,6 +141,10 @@ function DriverHistory({ navigation }) {
         }
         let milesCharge = myDistance * e.mileCharge;
         let totalCharges = baseCharge + milesCharge;
+        serviceCharges = (totalCharges / 100) * e.creditCardCharge + e.serviceCharge;
+
+        totalCharges = totalCharges - serviceCharges
+
         items.fare = Number(totalCharges).toFixed(2);
         if (items.bidFare) {
           items.bidFare = (
@@ -231,6 +235,11 @@ function DriverHistory({ navigation }) {
         }
         let milesCharge = myDistance * e.mileCharge;
         let totalCharges = baseCharge + milesCharge;
+
+        serviceCharges = (totalCharges / 100) * e.creditCardCharge + e.serviceCharge;
+
+        totalCharges = totalCharges - serviceCharges
+
         items.fare = Number(totalCharges).toFixed(2);
         if (items?.bidFare) {
           items.bidFare = (

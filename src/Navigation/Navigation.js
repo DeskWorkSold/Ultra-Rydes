@@ -120,6 +120,7 @@ function PassengerRoutes() {
         component={PassengerWalletScreen}
         options={{
           headerShown: false,
+          unmountOnBlur:true
         }}
       />
       <Drawer.Screen

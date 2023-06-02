@@ -71,7 +71,7 @@ function PassengerFAQ({navigation}) {
           styles.button,
           {justifyContent: 'flex-start', width: '100%', alignItems: 'center'},
         ]}
-        onPress={() => Linking.openURL('mailto:ultraRydes@example.com')}
+        onPress={() => Linking.openURL('mailto:ultraRydes@gmail.com')}
       >
         <MaterialIcon name="email" size={20} color={COLORS.black} />
         <Text style={[styles.text, {marginLeft: 10}]}>Write to email</Text>

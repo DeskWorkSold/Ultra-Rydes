@@ -50,7 +50,7 @@ These Terms of Use shall be governed by and construed in accordance with the law
 Changes to Terms of Use:
 The App provider reserves the right to modify these Terms of Use at any time, without notice. Your continued use of the App after any such changes shall constitute your agreement to be bound by the modified Terms of Use.
 
-By using the App, you acknowledge that you have read, understood, and agree to be bound by these Terms of Use. If you have any questions or concerns about these Terms of Use, please contact us at ultrarydes@example.com.`,
+By using the App, you acknowledge that you have read, understood, and agree to be bound by these Terms of Use. If you have any questions or concerns about these Terms of Use, please contact us at ultrarydes@gmail.com.`,
   privacyPolicy: `At Ultra rydes, we are committed to protecting your privacy. This Privacy Policy describes how we collect, use, and share your personal information in connection with your use of the App.
 
 Information We Collect
@@ -95,7 +95,7 @@ Changes to this Privacy Policy
 We may modify this Privacy Policy from time to time, without notice. Your continued use of the App after any such changes shall constitute your agreement to be bound by the modified Privacy Policy.
 
 Contact Us
-If you have any questions or concerns about this Privacy Policy, please contact us at ultrarydes@example.com .`,
+If you have any questions or concerns about this Privacy Policy, please contact us at ultrarydes@gmail.com .`,
 }
 
 

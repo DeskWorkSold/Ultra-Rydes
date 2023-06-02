@@ -68,7 +68,7 @@ export default function PassengerHomeScreen({ navigation }) {
   const [result, setResult] = useState();
   const [appearBiddingOption, setAppearBiddingOption] = useState(false);
   const [wallet, setWallet] = useState(0);
-  const [bookingStatus,setBookingStatus] = useState(false)
+  const [bookingStatus, setBookingStatus] = useState(false)
   const [bidFare, setBidFare] = useState(null);
   const [toll, setToll] = useState(null);
   const [driverArrive, setDriverArrive] = useState({
@@ -262,7 +262,7 @@ export default function PassengerHomeScreen({ navigation }) {
             }
           }
 
-          if(myData?.carRating){
+          if (myData?.carRating) {
             setBookingStatus(true)
           }
         });
@@ -773,16 +773,15 @@ export default function PassengerHomeScreen({ navigation }) {
             distanceMinus = myDistance - 3;
             let addCharge = baseCharge;
             myfare = miles.mileCharge * distanceMinus + addCharge;
-
-            serviceCharges =
-              (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
-            Tfare = myfare + serviceCharges;
+            // serviceCharges =
+            //   (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
+            Tfare = myfare 
             Tfare = Tfare.toFixed(2);
             if (Tfare < baseCharge) {
               myfare = miles.mileCharge;
-              serviceCharges =
-                (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
-              Tfare = Math.round(myfare + serviceCharges);
+              // serviceCharges =
+              //   (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
+              Tfare = Math.round(myfare);
             }
 
             Tfare && setFare(Tfare?.toString());
@@ -856,7 +855,6 @@ export default function PassengerHomeScreen({ navigation }) {
   };
   const handlePayPress = () => {
     setButtonLoader(true);
-
     if (data?.passengerData?.pickupAddress.toLowerCase().includes('pakistan')) {
       let id = auth().currentUser.uid;
       let tip =
@@ -908,7 +906,6 @@ export default function PassengerHomeScreen({ navigation }) {
       } else if (myWallet < totalCharges) {
         let differenceAmount = Number(totalCharges) - Number(myWallet);
         differenceAmount = Number(differenceAmount).toFixed(2);
-
         firestore()
           .collection('passengerCards')
           .doc(id)
@@ -922,7 +919,6 @@ export default function PassengerHomeScreen({ navigation }) {
               savedCards.filter((e, i) => {
                 return e.default;
               });
-
             let customerData = {
               cardNumber: savedCards[0].cardNumber,
               expiryMonth: Number(savedCards[0].expiryMonth),
@@ -1021,7 +1017,7 @@ export default function PassengerHomeScreen({ navigation }) {
       }
       return;
     }
-    const apiKey = 'Tm3G6Mg6pqq2HQ6gb8rg4896GtGHpJJD';
+    const apiKey = 'LDTjNFPH4pfhF7Q4PQbPHQnJn9RhpLRM';
     const origin = data?.passengerData?.pickupAddress;
     const destination = data?.passengerData?.dropOffAddress;
     const apiEndpoint =
@@ -1680,7 +1676,7 @@ export default function PassengerHomeScreen({ navigation }) {
                     marginTop: 10,
                   },
                 ]}
-                onPress={()=>!buttonLoader && bookingComplete()}>
+                onPress={() => !buttonLoader && bookingComplete()}>
                 <Text
                   style={[styles.textStyle, { backgroundColor: Colors.primary }]}>
                   {buttonLoader ? (
@@ -1695,7 +1691,7 @@ export default function PassengerHomeScreen({ navigation }) {
         </Modal>
       </View>
     );
-  }, [showFeedBackModal, feedBack, buttonLoader,bookingStatus]);
+  }, [showFeedBackModal, feedBack, buttonLoader, bookingStatus]);
 
   const getMinutesAndDistance = result => {
     setMinutesAndDistanceDifference({
@@ -2095,9 +2091,6 @@ export default function PassengerHomeScreen({ navigation }) {
       });
   };
 
-
-  console.log(bookingStatus,"status")
-
   const getDriverCarPic = () => {
     let carPic = selectedDriver?.vehicleDetails?.vehiclePicFront
 
@@ -2118,7 +2111,6 @@ export default function PassengerHomeScreen({ navigation }) {
   }, [selectedDriver, route.params, focus])
 
 
-  console.log(selectedDriverCarPic, "car pcik")
 
 
   return (

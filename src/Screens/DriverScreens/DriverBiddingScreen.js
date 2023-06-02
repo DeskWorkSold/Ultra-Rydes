@@ -704,12 +704,15 @@ export default function DriverBiddingScreen({ navigation }) {
   const bookingComplete = (myTip, myToll) => {
     setButtonLoader(true);
 
-
-
     let uid = auth().currentUser.uid;
 
+    console.log(uid,"uid")
+
     firestore().collection("DriverstripeAccount").doc(uid).get().then(doc => {
+      console.log(doc,"d")
       let stripeAccountData = doc?.data()
+
+      console.log(stripeAccountData,"stripe")
 
       let stripeAccountId = stripeAccountData?.id
 
@@ -735,6 +738,7 @@ export default function DriverBiddingScreen({ navigation }) {
         accountId: stripeAccountId,
       };
 
+      console.log(myData,"data")
 
       axios
         .post(`${BASE_URI}tranferPayment`, myData)
@@ -848,6 +852,8 @@ export default function DriverBiddingScreen({ navigation }) {
         })
 
     }).catch((error) => {
+
+      console.log(error,"error")
 
       ToastAndroid.show(error.message, ToastAndroid.SHORT)
       setButtonLoader(false)
@@ -976,7 +982,7 @@ export default function DriverBiddingScreen({ navigation }) {
                   styles.button,
                   { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
-                onPress={() => bookingComplete(myTip, myToll)}>
+                onPress={() => !buttonLoader && bookingComplete(myTip, myToll)}>
                 <Text style={styles.textStyle}>
                   {buttonLoader ? (
                     <ActivityIndicator size={'large'} color={Colors.black} />
@@ -1015,7 +1021,7 @@ export default function DriverBiddingScreen({ navigation }) {
         let totalCharges = Number(baseCharge) + Number(milesCharge)
         serviceCharges =
           (totalCharges / 100) * e.creditCardCharge + e.serviceCharge;
-        let allCharges = Number(totalCharges) + Number(serviceCharges)
+        let allCharges = Number(totalCharges) 
         items.fare = Number(allCharges).toFixed(2);
         if (items && items?.bidFare) {
           items.bidFare =

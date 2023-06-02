@@ -183,7 +183,7 @@ export default function DrawerContentDriver({navigation}) {
         <View style={styles.fieldItemContainer}>
           <TouchableOpacity
             style={styles.fieldItem}
-            onPress={() => Linking.openURL('mailto:ultraRydes@example.com')}>
+            onPress={() => Linking.openURL('mailto:ultraRydes@gmail.com')}>
             <MaterialCommunityIcons
               name="headphones"
               size={25}

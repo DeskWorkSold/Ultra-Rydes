@@ -70,115 +70,120 @@ export default function DriverHomeScreen({ route }) {
   const focus = useIsFocused();
 
   useEffect(() => {
+    let createSound = null;
+
     if (requestLoader && focus) {
       setDing('');
-      return;
+      return () => {
+        if (createSound) {
+          createSound.release();
+        }
+      };
     }
 
     if (acceptRequest) {
       setDing('');
-      return;
+      return () => {
+        if (createSound) {
+          createSound.release();
+        }
+      };
     }
 
-    let createSound = new Sound(mytone, error => {
+    createSound = new Sound(mytone, error => {
       if (error) {
-        console.log('failed to load the sound', error);
+        console.log('Failed to load the sound', error);
         return;
       }
-      // if loaded successfully
-      // console.log(
-      //   'duration in seconds: ' +
-      //     createSound.getDuration() +
-      //     'number of channels: ' +
-      //     createSound.getNumberOfChannels(),
-      //   setDing(createSound),
-      //   // playPause()
-      // );
 
-      if (driverStatus == 'offline') {
+      // Loaded successfully
+      if (driverStatus === 'offline') {
         setDing('');
       }
-      if (driverStatus == 'online') {
+      if (driverStatus === 'online') {
         setDing(createSound);
       }
-
-      //   console.log(passengerBookingData.length, "" , requestIds.length)
-      //   if(passengerBookingData.length>requestIds.length){
-      // }
     });
-  }, [passengerBookingData, requestLoader, focus, driverStatus]);
+    return () => {
+      if (createSound) {
+        createSound.release();
+      }
+    };
+  }, [requestLoader, acceptRequest, focus, driverStatus,passengerBookingData]);
 
-  AppState.addEventListener('change', nextAppState => {
-    const currentUser = auth().currentUser;
-    if (!currentUser || !focus) {
-      return;
-    }
 
-    const driverId = currentUser?.uid;
-    if (nextAppState === 'background' || nextAppState == 'inactive') {
-      firestore()
-        .collection('Drivers')
-        .doc(driverId)
-        .get()
-        .then(driverDoc => {
-          if (!driverDoc._exists) {
-            return;
-          }
 
-          const driverData = driverDoc.data();
-          if (driverData.status === 'online') {
-            firestore()
-              .collection('inlinedDriver')
-              .doc(driverId)
-              .get()
-              .then(inlinedDoc => {
-                const inlinedData = inlinedDoc.data();
-                if (!inlinedData?.inlined) {
-                  // Update the driver's status to offline and clear their location
-                  removeLocationUpdates();
-                }
-              })
-              .catch(error => {
-                console.error('Error getting inlined driver document:', error);
-              });
-          }
-        })
-        .catch(error => {
-          console.error('Error getting driver document:', error);
-        });
-    } else if (nextAppState === 'active') {
-      firestore()
-        .collection('Drivers')
-        .doc(driverId)
-        .get()
-        .then(driverDoc => {
-          if (!driverDoc._exists || !focus) {
-            return;
-          }
-          const driverData = driverDoc.data();
-          if (driverData.status === 'offline') {
-            firestore()
-              .collection('inlinedDriver')
-              .doc(driverId)
-              .get()
-              .then(inlinedDoc => {
-                const inlinedData = inlinedDoc.data();
+  // AppState.addEventListener('change', nextAppState => {
+  //   const currentUser = auth().currentUser;
+  //   if (!currentUser || !focus) {
+  //     return;
+  //   }
 
-                if (!inlinedData?.inlined || !inlinedDoc?._exists) {
-                  // Update the driver's status to offline and clear their location
-                  getLocationUpdates();
-                }
-              })
-              .catch(error => {
-                console.error('Error getting inlined driver document:', error);
-              });
-          }
-        })
-        .catch(error => {
-          console.error('Error getting driver document:', error);
-        });
-    }
-  });
+  //   const driverId = currentUser?.uid;
+  //   if (nextAppState === 'background' || nextAppState == 'inactive') {
+  //     firestore()
+  //       .collection('Drivers')
+  //       .doc(driverId)
+  //       .get()
+  //       .then(driverDoc => {
+  //         if (!driverDoc._exists) {
+  //           return;
+  //         }
+
+  //         const driverData = driverDoc.data();
+  //         if (driverData.status === 'online') {
+  //           firestore()
+  //             .collection('inlinedDriver')
+  //             .doc(driverId)
+  //             .get()
+  //             .then(inlinedDoc => {
+  //               const inlinedData = inlinedDoc.data();
+  //               if (!inlinedData?.inlined) {
+  //                 // Update the driver's status to offline and clear their location
+  //                 removeLocationUpdates();
+  //               }
+  //             })
+  //             .catch(error => {
+  //               console.error('Error getting inlined driver document:', error);
+  //             });
+  //         }
+  //       })
+  //       .catch(error => {
+  //         console.error('Error getting driver document:', error);
+  //       });
+  //   } else if (nextAppState === 'active') {
+  //     firestore()
+  //       .collection('Drivers')
+  //       .doc(driverId)
+  //       .get()
+  //       .then(driverDoc => {
+  //         if (!driverDoc._exists || !focus) {
+  //           return;
+  //         }
+  //         const driverData = driverDoc.data();
+  //         if (driverData.status === 'offline') {
+  //           firestore()
+  //             .collection('inlinedDriver')
+  //             .doc(driverId)
+  //             .get()
+  //             .then(inlinedDoc => {
+  //               const inlinedData = inlinedDoc.data();
+
+  //               if (!inlinedData?.inlined || !inlinedDoc?._exists) {
+  //                 // Update the driver's status to offline and clear their location
+  //                 getLocationUpdates();
+  //               }
+  //             })
+  //             .catch(error => {
+  //               console.error('Error getting inlined driver document:', error);
+  //             });
+  //         }
+  //       })
+  //       .catch(error => {
+  //         console.error('Error getting driver document:', error);
+  //       });
+  //   }
+  // });
 
   useEffect(() => {
 
@@ -333,7 +338,7 @@ export default function DriverHomeScreen({ route }) {
         if (success) {
           // console.log('successfully finished playing');
 
-         let interval = setTimeout(() => {
+          let interval = setTimeout(() => {
             setRequestIds(
               passengerBookingData &&
               passengerBookingData.length > 0 &&
@@ -1248,7 +1253,10 @@ export default function DriverHomeScreen({ route }) {
 
           let milesCharge = myDistance * e.mileCharge;
           let totalCharges = baseCharge + milesCharge;
-          items.fare = totalCharges.toFixed(2);
+
+          serviceCharges = (totalCharges / 100) * e.creditCardCharge + e.serviceCharge;
+
+          items.fare = totalCharges.toFixed(2) - (serviceCharges).toFixed(2)
           if (item && !item.passengerData) {
             items.bidFare = (
               (Number(items.fare) * percentageBid) /

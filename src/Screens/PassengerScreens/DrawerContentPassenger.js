@@ -220,8 +220,7 @@ export default function DrawerContentPassenger({ navigation }) {
                   <TouchableOpacity
                     style={styles.fieldItem}
                     onPress={() =>
-                      Linking.openURL('mailto:ultraRydes@example.com')
-                    }>
+                      Linking.openURL('mailto:ultraRydes@gmail.com')}>
                     <MaterialCommunityIcons
                       name="headphones"
                       size={25}

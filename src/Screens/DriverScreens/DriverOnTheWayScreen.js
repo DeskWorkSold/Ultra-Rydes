@@ -343,36 +343,46 @@ export default function DriverOnTheWay() {
   }, [requestLoader]);
 
   useEffect(() => {
-    if (requestLoader) {
+    let createSound = null;
+
+    if (requestLoader && focus) {
       setDing('');
-      return;
+      return () => {
+        if (createSound) {
+          createSound.release();
+        }
+      };
     }
 
     if (acceptRequest) {
       setDing('');
-      return;
+      return () => {
+        if (createSound) {
+          createSound.release();
+        }
+      };
     }
-    let createSound = new Sound(mytone, error => {
+
+    createSound = new Sound(mytone, error => {
       if (error) {
-        console.log('failed to load the sound', error);
+        console.log('Failed to load the sound', error);
         return;
       }
-      // if loaded successfully
-      // console.log(
-      //   'duration in seconds: ' +
-      //     createSound.getDuration() +
-      //     'number of channels: ' +
-      //     createSound.getNumberOfChannels(),
-      //   setDing(createSound),
-      //   // playPause()
-      // );
-      setDing(createSound);
 
-      //   console.log(passengerBookingData.length, "" , requestIds.length)
-      //   if(passengerBookingData.length>requestIds.length){
-      // }
+      // Loaded successfully
+      if (driverStatus === 'offline') {
+        setDing('');
+      }
+      if (driverStatus === 'online') {
+        setDing(createSound);
+      }
     });
-  }, [passengersData, requestLoader]);
+    return () => {
+      if (createSound) {
+        createSound.release();
+      }
+    };
+  }, [requestLoader, , focus, passengersData]);
 
   const checkRouteData = () => {
     data = JSON.parse(data);
@@ -1479,6 +1489,8 @@ export default function DriverOnTheWay() {
                   }
                   let milesCharge = myDistance * e.mileCharge;
                   let totalCharges = baseCharge + milesCharge;
+                  serviceCharges = (totalCharges / 100) * e.creditCardCharge + e.serviceCharge;
+                  totalCharges = totalCharges - serviceCharges
                   items.fare = totalCharges.toFixed(2);
                   if (item && !item.passengerData) {
                     items.bidFare = (
