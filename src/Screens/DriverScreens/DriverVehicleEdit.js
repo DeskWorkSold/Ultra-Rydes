@@ -61,7 +61,7 @@ export default function DriverVehicleEdit({navigation, route}) {
   const fetchCategories = async () => {
     firestore()
       .collection('Categories')
-      .doc('8w6hVPveXKR6kTvYVWwy')
+      .doc('8w6hVPveXKR6kTvYabcde')
       .onSnapshot(documentSnapshot => {
         const GetUserData = documentSnapshot.data();
         // console.log(GetUserData.categories[0].categoryName);

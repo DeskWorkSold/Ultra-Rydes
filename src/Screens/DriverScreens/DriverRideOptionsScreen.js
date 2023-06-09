@@ -1,8 +1,9 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Text,
   View,
   StyleSheet,
+  ToastAndroid,
   Image,
   TouchableOpacity,
   Dimensions,
@@ -10,25 +11,110 @@ import {
 import CustomHeader from '../../Components/CustomHeader';
 import Colors from '../../Constants/Colors';
 import CustomButton from '../../Components/CustomButton';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import messaging from '@react-native-firebase/messaging';
 
 let height = Dimensions.get('window').height;
 
-function DriverRideOption({navigation}) {
+function DriverRideOption({ navigation }) {
 
-  
+
+  const getNotificationPermission = async () => {
+    let id = auth().currentUser.uid;
+
+    messaging()
+      .hasPermission()
+      .then(enabled => {
+        if (enabled) {
+
+          messaging()
+            .getToken()
+            .then(fcmToken => {
+              if (fcmToken) {
+                firestore()
+                  .collection('DriverToken')
+                  .doc(id)
+                  .set({
+                    token: fcmToken,
+                    id: id,
+                    create_date: new Date(),
+                  })
+                  .then(() => {
+                    console.log('token succssfully saved');
+                  })
+                  .catch(error => {
+                    console.log(error);
+                  });
+              } else {
+                console.log("driver doesn't have a device token yet");
+              }
+            });
+        } else {
+          console.log('Permission Denied');
+          ToastAndroid.show("Notification Permission not satisfied", ToastAndroid.SHORT)
+        }
+      });
+  };
+
+  useEffect(() => {
+    getNotificationPermission()
+  }, [])
+
+
+
   const routeToTakesRides = () => {
-    navigation.navigate('DriverRoutes', {
-      screen: 'DriverHomeScreen',
-    });
+
+    let id = auth().currentUser.uid
+
+
+    firestore().collection("Drivers").doc(id).get().then((doc) => {
+
+      let data = doc.data()
+
+
+      if (data.driverStatus == "pending") {
+        ToastAndroid.show("Your documents has not yet verified you will be able to take rides after your document verification", ToastAndroid.SHORT)
+      }
+      else if (data?.driverStatus == "blocked") {
+        ToastAndroid.show("Your account has been blocked by the admin if you don't know the reason kindly contact to admin", ToastAndroid.SHORT)
+      } else {
+        navigation.navigate('DriverRoutes', {
+          screen: 'DriverHomeScreen',
+        });
+      }
+    })
   };
 
   const routeToOnTheWay = () => {
-    navigation.navigate('DriverRoutes', {
-      screen: 'DriverOnTheWayScreen',
-    });
+
+    let id = auth().currentUser.uid
+
+    firestore().collection("Drivers").doc(id).get().then((doc) => {
+
+      let data = doc.data()
+
+      if (data.driverStatus == "pending") {
+        ToastAndroid.show("Your documents has not yet verified you will be able to take rides after your document verification", ToastAndroid.SHORT)
+      }
+      else if (data?.driverStatus == "blocked") {
+        ToastAndroid.show("Your account has been blocked by the admin if you don't know the reason kindly contact to admin", ToastAndroid.SHORT)
+      } else {
+        navigation.navigate('DriverRoutes', {
+          screen: 'DriverOnTheWayScreen',
+        });
+
+      }
+
+
+    })
+
+
+
+
   };
   return (
-    <View style={{flex: 1, backgroundColor: Colors.white}}>
+    <View style={{ flex: 1, backgroundColor: Colors.white }}>
       <CustomHeader
         iconname={navigation.canGoBack() ? 'chevron-back-circle' : null}
         color={Colors.fontColor}
@@ -45,14 +131,14 @@ function DriverRideOption({navigation}) {
         </View>
         <View style={styles.midContainer}>
           <Image
-            style={[styles.img, {height: height * 0.2}]}
+            style={[styles.img, { height: height * 0.2 }]}
             resizeMode="contain"
             source={require('../../Assets/Images/askImg.png')}
           />
         </View>
         <View style={styles.bottomContainer}>
           <CustomButton text="On the way" onPress={() => routeToOnTheWay()} />
-          <View style={{marginVertical: 10}}></View>
+          <View style={{ marginVertical: 10 }}></View>
           <CustomButton
             text="Take Rides"
             bgColor

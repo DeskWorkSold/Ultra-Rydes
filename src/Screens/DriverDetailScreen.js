@@ -342,9 +342,7 @@ export default function DriverDetailScreen({navigation}) {
     let minutes = new Date().getMinutes();
     let userEmail = auth().currentUser?.email;
     userEmail && setEmail(userEmail);
-
     userEmail && setLoginFromEmail(true);
-
     if (minutes <= 15 || minutes >= 45) {
       setRating(5);
     } else {
@@ -352,7 +350,6 @@ export default function DriverDetailScreen({navigation}) {
     }
   }, []);
 
-  console.log(profilePicUrl, 'profiel');
 
   //docments upload functions end
   const strongRegex = new RegExp(
@@ -475,6 +472,7 @@ export default function DriverDetailScreen({navigation}) {
 
         let url = await storage().ref(profilePicture).getDownloadURL();
 
+      
         firestore()
           .collection('Drivers')
           .doc(CurrentUser.uid)

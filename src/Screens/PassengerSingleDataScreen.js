@@ -158,7 +158,6 @@ function PassengerHistorySingleData({navigation, route}) {
             borderRadius: 10,
             borderWidth: 2,
             borderColor: Colors.primary,
-            height: '58%',
             marginBottom:20
           }}>
           {data && data.passengerData && (
@@ -214,6 +213,18 @@ function PassengerHistorySingleData({navigation, route}) {
               </Text>
 
             </View>
+
+
+            <View style={{ flexDirection: 'row', marginTop: 3 }}>
+                            <Text style={[styles.text, { fontSize: 16 }]}>
+                                    BookingId:{' '}
+                                    <Text style={{ color: Colors.black, fontSize: 14 }}>
+                                        {' '}
+                                        {data?.bookingId}{' '}
+                                    </Text>
+                                </Text>
+                                    </View>
+
             <View style={{flexDirection: 'row', marginTop: 3}}>
               <Text style={[styles.text, {fontSize: 16}]}>
                 pickup:{' '}

@@ -109,7 +109,7 @@ export default function DriverHomeScreen({ route }) {
         createSound.release();
       }
     };
-  }, [requestLoader, acceptRequest, focus, driverStatus,passengerBookingData]);
+  }, [requestLoader, acceptRequest, focus, driverStatus, passengerBookingData]);
 
 
 
@@ -610,8 +610,10 @@ export default function DriverHomeScreen({ route }) {
 
 
 
+
   useEffect(() => {
     getDriverBookingData();
+
   }, []);
 
   useEffect(() => {
@@ -627,7 +629,13 @@ export default function DriverHomeScreen({ route }) {
   }, [driverStatus, driverData, focus]);
 
   const getDriverData = () => {
-    const currentUserUid = auth().currentUser.uid;
+    const currentUser = auth().currentUser
+
+    if (!currentUser) {
+      return
+    }
+
+    let currentUserUid = currentUser.uid
 
     firestore()
       .collection('Drivers')
@@ -910,9 +918,26 @@ export default function DriverHomeScreen({ route }) {
     }
   };
 
-  const AcceptRequest = item => {
+
+  const generateRandomID = (length) => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    console.log(result, "result")
+
+    return result;
+  };
+
+
+  const AcceptRequest = async item => {
     const Userid = item?.id ?? item?.passengerData?.id;
 
+    
     firestore()
       .collection('Request')
       .doc(Userid)
@@ -926,6 +951,7 @@ export default function DriverHomeScreen({ route }) {
             .doc(passengerData?.id)
             .update({
               requestStatus: 'accepted',
+              status: "riding"
             })
             .then(() => {
               ToastAndroid.show(
@@ -1211,7 +1237,6 @@ export default function DriverHomeScreen({ route }) {
   const removeLocationUpdates = async () => {
     if (watchId !== null) {
       Geolocation.clearWatch(watchId);
-      Geolocation.stopObserving(watchId);
       updateOfflineOnFirebase();
     }
   };
@@ -1347,7 +1372,7 @@ export default function DriverHomeScreen({ route }) {
                 { width: '50%', textAlign: 'center' },
               ]}>
               Fare:
-              <Text style={styles.itemLocStyle}>${items.fare}</Text>
+              <Text style={styles.itemLocStyle}>${Number(items.fare).toFixed(2)}</Text>
             </Text>
             <Text
               style={[

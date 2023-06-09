@@ -344,35 +344,45 @@ export default function DriverBiddingScreen({ navigation }) {
     ) {
       let driverData = { ...myDriverData };
       driverData.currentLocation = driverCurrentLocation;
-      if (passengerData.bidFare > 0) {
-        firestore()
-          .collection('Request')
-          .doc(passengerData.id)
-          .update({
-            myDriversData: driverData,
-          })
-          .then(() => {
-            setLoading(false);
-            console.log('location send in firebase');
-          })
-          .catch(error => {
-            console.log(error, 'error');
-          });
-      } else {
-        firestore()
-          .collection('Request')
-          .doc(passengerData.id)
-          .update({
-            driverData: myDriverData,
-          })
-          .then(() => {
-            setLoading(false);
-            console.log('location send in firebase');
-          })
-          .catch(error => {
-            console.log(error, 'error');
-          });
-      }
+
+      firestore().collection("Request").doc(route?.params?.data?.passengerData?.id).get().then(doc => {
+        let data = doc.data()
+        let rideCancelByPassenger = data?.rideCancelByPassenger
+        if (!rideCancelByPassenger) {
+          if (passengerData.bidFare > 0) {
+            firestore()
+              .collection('Request')
+              .doc(passengerData.id)
+              .update({
+                myDriversData: driverData,
+              })
+              .then(() => {
+                setLoading(false);
+                console.log('location send in firebase');
+              })
+              .catch(error => {
+                console.log(error, 'error');
+              });
+          } else {
+            firestore()
+              .collection('Request')
+              .doc(passengerData.id)
+              .update({
+                driverData: myDriverData,
+              })
+              .then(() => {
+                setLoading(false);
+                console.log('location send in firebase');
+              })
+              .catch(error => {
+                console.log(error, 'error');
+              });
+          }
+        }
+
+      })
+
+
     }
   };
 
@@ -706,13 +716,13 @@ export default function DriverBiddingScreen({ navigation }) {
 
     let uid = auth().currentUser.uid;
 
-    console.log(uid,"uid")
+    console.log(uid, "uid")
 
     firestore().collection("DriverstripeAccount").doc(uid).get().then(doc => {
-      console.log(doc,"d")
+      console.log(doc, "d")
       let stripeAccountData = doc?.data()
 
-      console.log(stripeAccountData,"stripe")
+      console.log(stripeAccountData, "stripe")
 
       let stripeAccountId = stripeAccountData?.id
 
@@ -738,7 +748,7 @@ export default function DriverBiddingScreen({ navigation }) {
         accountId: stripeAccountId,
       };
 
-      console.log(myData,"data")
+      console.log(myData, "data")
 
       axios
         .post(`${BASE_URI}tranferPayment`, myData)
@@ -853,19 +863,12 @@ export default function DriverBiddingScreen({ navigation }) {
 
     }).catch((error) => {
 
-      console.log(error,"error")
+      console.log(error, "error")
 
       ToastAndroid.show(error.message, ToastAndroid.SHORT)
       setButtonLoader(false)
 
     })
-
-
-
-
-
-
-
   };
 
   const DropOffModal = useCallback((tip, toll) => {
@@ -919,8 +922,8 @@ export default function DriverBiddingScreen({ navigation }) {
                 <Text style={{ fontSize: 16, color: 'yellow', width: '100%' }}>
                   $
                   {data?.passengerData
-                    ? data?.passengerData?.fare
-                    : data.bidFare}
+                    ? (Number(data?.passengerData?.fare).toFixed(2))
+                    : Number(data?.bidFare).toFixed(2)}
                 </Text>
               </Text>
               <Text
@@ -1021,7 +1024,7 @@ export default function DriverBiddingScreen({ navigation }) {
         let totalCharges = Number(baseCharge) + Number(milesCharge)
         serviceCharges =
           (totalCharges / 100) * e.creditCardCharge + e.serviceCharge;
-        let allCharges = Number(totalCharges) 
+        let allCharges = Number(totalCharges)
         items.fare = Number(allCharges).toFixed(2);
         if (items && items?.bidFare) {
           items.bidFare =
@@ -1031,83 +1034,96 @@ export default function DriverBiddingScreen({ navigation }) {
       }
     });
 
-    let cancelRide = {
-      passengerData: items,
-      driverData: myDriverData,
-      rideCancelByDriver: true,
-      reasonForCancelRide: driverReasonForCancelRide,
-      date: new Date(),
-    };
-    firestore()
-      .collection('Request')
-      .doc(route.params?.data?.id ? route.params?.data?.id : passengerData.id)
-      .update({
+
+    firestore().collection("Request").doc(items.id).get().then((doc) => {
+      let data = doc.data()
+
+      let bookingId = data?.bookingId
+
+      let cancelRide = {
+        passengerData: items,
+        driverData: myDriverData,
+        bookingId: bookingId,
         rideCancelByDriver: true,
-        myDriversData: null,
-        requestStatus: null,
-        driverArriveAtPickupLocation: null,
-        driverData: null,
-        requestDate: new Date()
-      })
-      .then(() => {
-        firestore()
-          .collection('RideCancel')
-          .doc(myDriverData.id)
-          .set(
-            {
-              cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
-            },
-            { merge: true },
-          )
-          .then(() => {
-            firestore()
-              .collection('inlinedDriver')
-              .doc(myDriverData.id)
-              .update({
-                inlined: false,
-              })
-              .then(async () => {
-                setButtonLoader(false);
-                AsyncStorage.removeItem('driverBooking');
-                AsyncStorage.removeItem('ArrivedAtpickUpLocation');
-                AsyncStorage.removeItem('startRide');
-                AsyncStorage.removeItem('EndRide');
-                ToastAndroid.show(
-                  'Your ride has been succesfully cancelled',
-                  ToastAndroid.SHORT,
-                );
-                let startRide = await AsyncStorage.getItem('onTheWayRideStart');
-                JSON.parse(startRide);
-                if (startRide) {
-                  navigation.navigate('DriverRoutes', {
-                    screen: 'DriverOnTheWayScreen',
-                    params: {
-                      data: startRide
-                    }
-                  });
-                } else {
-                  navigation.navigate('DriverRoutes', {
-                    screen: 'DriverHomeScreen',
-                    params: {
-                      data: "changed route"
-                    }
-                  });
-                }
-              })
-              .catch(error => {
-                console.log(error);
-                setButtonLoader(false);
-              });
-          })
-          .catch(error => {
-            console.log(error, 'errorr');
-            setButtonLoader(false);
-          });
-      })
-      .catch(error => {
-        console.log(error, 'error');
-        setButtonLoader(false);
-      });
+        reasonForCancelRide: driverReasonForCancelRide,
+        date: new Date(),
+      };
+      firestore()
+        .collection('Request')
+        .doc(route.params?.data?.id ? route.params?.data?.id : passengerData.id)
+        .update({
+          rideCancelByDriver: true,
+          myDriversData: null,
+          requestStatus: null,
+          driverArriveAtPickupLocation: null,
+          status: "cancelled",
+          driverData: null,
+          requestDate: new Date()
+        })
+        .then(() => {
+          firestore()
+            .collection('RideCancel')
+            .doc(myDriverData.id)
+            .set(
+              {
+                cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
+              },
+              { merge: true },
+            )
+            .then(() => {
+              firestore()
+                .collection('inlinedDriver')
+                .doc(myDriverData.id)
+                .update({
+                  inlined: false,
+                })
+                .then(async () => {
+                  setButtonLoader(false);
+                  AsyncStorage.removeItem('driverBooking');
+                  AsyncStorage.removeItem('ArrivedAtpickUpLocation');
+                  AsyncStorage.removeItem('startRide');
+                  AsyncStorage.removeItem('EndRide');
+                  ToastAndroid.show(
+                    'Your ride has been succesfully cancelled',
+                    ToastAndroid.SHORT,
+                  );
+                  let startRide = await AsyncStorage.getItem('onTheWayRideStart');
+                  JSON.parse(startRide);
+                  if (startRide) {
+                    navigation.navigate('DriverRoutes', {
+                      screen: 'DriverOnTheWayScreen',
+                      params: {
+                        data: startRide
+                      }
+                    });
+                  } else {
+                    navigation.navigate('DriverRoutes', {
+                      screen: 'DriverHomeScreen',
+                      params: {
+                        data: "changed route"
+                      }
+                    });
+                  }
+                })
+                .catch(error => {
+                  console.log(error);
+                  setButtonLoader(false);
+                });
+            })
+            .catch(error => {
+              console.log(error, 'errorr');
+              setButtonLoader(false);
+            });
+        })
+        .catch(error => {
+          console.log(error, 'error');
+          setButtonLoader(false);
+        });
+    }).catch((error) => {
+      ToastAndroid.show(error.message, ToastAndroid.SHORT)
+    })
+
+
   };
 
   const cancelRideModal = useCallback(() => {
@@ -1264,7 +1280,7 @@ export default function DriverBiddingScreen({ navigation }) {
                             bottom: -40,
                           },
                         ]}
-                        onPress={() => cancelBookingByDriver()}>
+                        onPress={() => !buttonLoader && cancelBookingByDriver()}>
                         <Text
                           style={[
                             styles.textStyle,
@@ -2220,7 +2236,7 @@ export default function DriverBiddingScreen({ navigation }) {
                       ? route?.params?.data?.bidFare
                       : route?.params?.data?.bidFare
                         ? route?.params?.bidFare
-                        : route?.params?.data?.passengerData?.fare
+                        : Number(route?.params?.data?.passengerData?.fare).toFixed(2)
                   }`}
               />
               {driverBidFare && (

@@ -369,13 +369,7 @@ export default function DriverOnTheWay() {
         return;
       }
 
-      // Loaded successfully
-      if (driverStatus === 'offline') {
-        setDing('');
-      }
-      if (driverStatus === 'online') {
-        setDing(createSound);
-      }
+
     });
     return () => {
       if (createSound) {
@@ -1006,8 +1000,27 @@ export default function DriverOnTheWay() {
     }
   };
 
-  const AcceptRequest = item => {
+  const generateRandomID = (length) => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    console.log(result, "result")
+
+    return result;
+  };
+
+
+
+  const AcceptRequest = async item => {
+
+
     const Userid = item?.id ?? item?.passengerData?.id;
+
 
     firestore()
       .collection('Request')
@@ -1022,6 +1035,7 @@ export default function DriverOnTheWay() {
             .doc(passengerData.id)
             .update({
               requestStatus: 'accepted',
+              status: "riding",
             })
             .then(() => {
               ToastAndroid.show(

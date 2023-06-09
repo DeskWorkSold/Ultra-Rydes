@@ -307,6 +307,7 @@ export default function PassengerHomeScreen({ navigation }) {
                   .doc(id)
                   .set({
                     token: fcmToken,
+                    id: id,
                     create_date: new Date(),
                   })
                   .then(() => {
@@ -520,7 +521,7 @@ export default function PassengerHomeScreen({ navigation }) {
   const fetchData = async () => {
     firestore()
       .collection('Categories')
-      .doc('8w6hVPveXKR6kTvYVWwy')
+      .doc('8w6hVPveXKR6kTvYabcde')
       .onSnapshot(documentSnapshot => {
         const GetUserData = documentSnapshot.data();
         let carsData = { ...GetUserData };
@@ -585,7 +586,23 @@ export default function PassengerHomeScreen({ navigation }) {
       })
       .catch(error => console.warn(error));
   };
-  const checkValidation = () => {
+
+
+  // const generateRandomID = (length) => {
+  //   let result = '';
+  //   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  //   const charactersLength = characters.length;
+
+  //   for (let i = 0; i < length; i++) {
+  //     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  //   }
+
+  //   console.log(result, "result")
+
+  //   return result;
+  // };
+
+  const checkValidation = async () => {
 
 
     if (Object.keys(pickupCords).length === 0) {
@@ -621,6 +638,8 @@ export default function PassengerHomeScreen({ navigation }) {
     }
 
 
+    // let bookingId = await generateRandomID(15)
+
     if (!bidFare) {
       let id = auth().currentUser.uid;
       let passengerPersonalDetails = '';
@@ -637,6 +656,7 @@ export default function PassengerHomeScreen({ navigation }) {
             selectedCar: dummyDataCat.filter((e, i) => e.selected),
             distance: distance,
             minutes: minutes,
+            // bookingId: bookingId,
             fare: fare,
             bidFare: bidFare,
             pickupAddress: pickupAddress,
@@ -644,6 +664,7 @@ export default function PassengerHomeScreen({ navigation }) {
             additionalDetails: additionalDetails,
             id: CurrentUserUid,
             passengerPersonalDetails: passengerPersonalData,
+            status: "pending",
             requestDate: new Date(),
           };
           navigation.navigate('PassengerFindRide', myData);
@@ -675,6 +696,7 @@ export default function PassengerHomeScreen({ navigation }) {
             minutes: minutes,
             fare: fare,
             bidFare: bidFare,
+            // bookingId: bookingId,
             pickupAddress: pickupAddress,
             dropOffAddress: dropOffAddress,
             additionalDetails: additionalDetails,
@@ -775,7 +797,7 @@ export default function PassengerHomeScreen({ navigation }) {
             myfare = miles.mileCharge * distanceMinus + addCharge;
             // serviceCharges =
             //   (myfare / 100) * miles.creditCardCharge + miles.serviceCharge;
-            Tfare = myfare 
+            Tfare = myfare
             Tfare = Tfare.toFixed(2);
             if (Tfare < baseCharge) {
               myfare = miles.mileCharge;
@@ -1344,8 +1366,9 @@ export default function PassengerHomeScreen({ navigation }) {
       const uid = auth().currentUser.uid;
 
       let warning = {
-        message: 'Kindly fix your car urgent',
+        message: `Your car has been recently given the lowest rating either your car is dirty or it has got some mechanical issues you are directed to fix it before taking another ride.`,
         complaintId: uid,
+        driverId: route?.params?.driverData?.id,
         data: new Date(),
       };
 
@@ -1385,10 +1408,12 @@ export default function PassengerHomeScreen({ navigation }) {
 
     firestore().collection('Request').doc(id).update({
       bookingStatus: 'complete',
+      status: "completed"
     });
 
     let myData = {
       booking: 'complete',
+      bookingId: route?.params?.passengerData?.bookingId,
       passengerData: route.params.passengerData,
       driverData: route.params.driverData,
       carRating: carRatingStar,
@@ -1763,11 +1788,16 @@ export default function PassengerHomeScreen({ navigation }) {
         { merge: true },
       )
       .then(() => {
+
+        console.log(route?.params, "iddd")
+
         let cancelRide = {
           passengerData: route.params.passengerData,
           driverData: route.params.driverData,
+          bookingId: route?.params?.passengerData?.bookingId,
           rideCancelByPassenger: true,
           reasonForCancelRide: passengerReasonForCancelRide,
+
           date: new Date()
         };
         firestore()
@@ -1778,13 +1808,14 @@ export default function PassengerHomeScreen({ navigation }) {
             myDriversData: null,
             driverData: null,
             requestStatus: null,
+            status: "cancelled",
             driverArriveAtPickUpLocation: null,
             requestDate: new Date()
           })
           .then(() => {
             firestore()
               .collection('RideCancel')
-              .doc(route.params.passengerData.id)
+              .doc(route?.params?.passengerData?.id)
               .set(
                 {
                   cancelledRides: firestore.FieldValue.arrayUnion(cancelRide),
@@ -1847,6 +1878,7 @@ export default function PassengerHomeScreen({ navigation }) {
         let data = doc.data();
 
         if (data && data.rideCancelByDriver && selectedDriver && Object.keys(selectedDriver).length > 0) {
+
           ToastAndroid.show(
             'Ride has been cancelled by Driver',
             ToastAndroid.SHORT,
@@ -2045,7 +2077,7 @@ export default function PassengerHomeScreen({ navigation }) {
                           },
                         ]}
                         onPress={() =>
-                          cancelBookingByPassenger(passengerReasonForCancelRide)
+                          !buttonLoader && cancelBookingByPassenger(passengerReasonForCancelRide)
                         }>
                         <Text
                           style={[
@@ -2445,7 +2477,7 @@ export default function PassengerHomeScreen({ navigation }) {
                   <TextInput
                     placeholder="Fare"
                     placeholderTextColor={Colors.gray}
-                    value={`${pickupAddress && dropOffAddress && "$"}${data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData && fare ? fare : data?.passengerData.bidFare
+                    value={`${pickupAddress && dropOffAddress && "$"}${data && !data?.driverData && bidFare ? bidFare : data && !data?.driverData && fare ? fare : data?.passengerData?.bidFare
                       ? data?.passengerData?.bidFare : data?.passengerData?.fare ? data?.passengerData?.fare
                         : Object.keys(selectedDriver).length > 0 &&
                           selectedDriver.bidFare

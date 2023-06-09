@@ -176,6 +176,11 @@ function DriverHistory({ navigation }) {
           <Text style={[styles.text, { marginTop: 5 }]}>
             {item.date.toDate().toString().slice(0, 15)}
           </Text>
+          {item?.bookingId && <Text
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
+            numberOfLines={1}>
+           Booking Id: {item?.bookingId}
+          </Text>}
           <Text
             style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}>
@@ -288,6 +293,11 @@ function DriverHistory({ navigation }) {
           }>
           {/* Date is mentioned Here */}
           <Text style={[styles.text, { marginTop: 5 }]}>{item.date.toDate().toString().slice(0, 15)}</Text>
+          <Text
+            style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
+            numberOfLines={1}>
+            {item?.bookingId}
+          </Text>
           <Text
             style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}>

@@ -75,7 +75,10 @@ function DriverPaymentDetail() {
             firestore()
                 .collection('DriverstripeAccount')
                 .doc(id)
-                .set(res.data)
+                .set({
+                    id: res.data.id,
+                    uid: id
+                })
                 .then(() => {
                     setLoading(false);
                     setAccountId(res.data)
@@ -115,8 +118,6 @@ function DriverPaymentDetail() {
                                 setPageLoading(true)
                             }
 
-
-
                             let { capabilities } = res.data.accountStatus;
 
                             let { transfers, card_payments } = capabilities;
@@ -131,6 +132,7 @@ function DriverPaymentDetail() {
                                     setPageLoading(false)
                                 }).catch((error) => {
                                     ToastAndroid.show(error.message, ToastAndroid.SHORT)
+                                    setPageLoading(false)
                                 })
 
 
@@ -190,7 +192,16 @@ function DriverPaymentDetail() {
 
     const goToMainPage = () => {
 
-        navigation.replace("DriverRideOption")
+        let id = auth().currentUser.uid
+
+        firestore().collection("Drivers").doc(id).update({
+        driverStatus: "pending"
+        }).then(() => {
+            navigation.replace("DriverRideOption")
+        }).catch((error) => {
+            ToastAndroid.show(error.message, ToastAndroid.SHORT)
+        })
+
 
     }
 

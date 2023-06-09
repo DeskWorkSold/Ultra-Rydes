@@ -44,6 +44,7 @@ function DriverHistorySingleDataScreen({ navigation, route }) {
     if (profilePic?.length) {
       const url = await storage().ref(profilePic).getDownloadURL();
       setDriverProfilePicUrl(url);
+      setLoader(false)
     }
   };
 
@@ -53,8 +54,6 @@ function DriverHistorySingleDataScreen({ navigation, route }) {
       setPassengerProfilePicUrl(url);
     }
   };
-
-
 
   useEffect(() => {
     driverProfilePicUrl && setLoader(false);
@@ -219,7 +218,6 @@ function DriverHistorySingleDataScreen({ navigation, route }) {
                 padding: 10,
                 paddingRight: 0,
                 backgroundColor: Colors.primary,
-                height: '52%',
                 justifyContent: 'center',
               }}>
               <View style={{ flexDirection: 'row' }}>
@@ -237,6 +235,15 @@ function DriverHistorySingleDataScreen({ navigation, route }) {
                     .getMinutes()}`}
                 </Text>
               </View>
+              <View style={{ flexDirection: 'row', marginTop: 3 }}>
+                                <Text style={[styles.text, { fontSize: 16 }]}>
+                                    Booking Id:
+                                    <Text style={{ color: Colors.black, fontSize: 14 }}>
+
+                                        {data?.bookingId}
+                                    </Text>
+                              </Text>
+                            </View>
               <View style={{ flexDirection: 'row', marginTop: 3 }}>
                 <Text style={[styles.text, { fontSize: 16 }]}>
                   pickup:

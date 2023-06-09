@@ -33,7 +33,14 @@ export default function AskScreen({ route }) {
   const [activeDriverData, setActiveDriverData] = useState({});
   const focus = useIsFocused();
   const getDriverData = () => {
-    let id = auth().currentUser.uid;
+    let currentUser = auth().currentUser
+
+    if (!currentUser) {
+      return
+    }
+
+    let id = currentUser.id
+
     firestore()
       .collection('Drivers')
       .doc(id)
@@ -56,6 +63,7 @@ export default function AskScreen({ route }) {
     }
     return true;
   };
+
   const backHandler = BackHandler.addEventListener(
     'hardwareBackPress',
     backAction,
@@ -63,6 +71,11 @@ export default function AskScreen({ route }) {
   const getDriverBookingData = async () => {
     try {
       let currentUser = auth().currentUser;
+
+      if (!currentUser) {
+        return
+      }
+
       let id = currentUser?.uid;
       let data = await AsyncStorage.getItem('driverBooking');
       let checkDriverArrive = await AsyncStorage.getItem(
@@ -111,7 +124,14 @@ export default function AskScreen({ route }) {
     }
   };
   useEffect(() => {
-    const uid = auth().currentUser.uid;
+    const currentUser = auth().currentUser
+
+    if (!currentUser) {
+      return
+    }
+
+    let uid = currentUser.uid
+
     firestore()
       .collection('warning')
       .doc(uid)
@@ -182,6 +202,10 @@ export default function AskScreen({ route }) {
   };
 
   let warningModal = useCallback(() => {
+
+    console.log(warningData, "warning")
+
+
     return (
       <View style={styles.centeredView}>
         <Modal
@@ -189,7 +213,7 @@ export default function AskScreen({ route }) {
           transparent={true}
           visible={warningData && warningData.length > 0}>
           <View style={styles.centeredView}>
-            <View style={[styles.modalView, { height: Dimensions.get("window").height > 700 ? '60%' : Dimensions.get("window").height > 600 ? "70%" : "90%" }]}>
+            <View style={[styles.modalView, { height: Dimensions.get("window").height > 700 ? '60%' : Dimensions.get("window").height > 600 ? "75%" : "90%" }]}>
               <View>
                 <Icon size={80} color="white" name="warning" />
               </View>
@@ -199,9 +223,7 @@ export default function AskScreen({ route }) {
               </Text>
               <Text
                 style={[styles.modalText, { fontSize: 18, fontWeight: '900' }]}>
-                Your car has been recently given the lowest rating either your
-                car is dirty or it has got some mechanical issues you are
-                directed to fix it before taking another ride..
+                {warningData[0].message}
               </Text>
               <TouchableOpacity
                 style={[
@@ -225,10 +247,14 @@ export default function AskScreen({ route }) {
   }, [warningData, loading]);
 
   const getPassengerBookingData = async () => {
-    let currentUser = auth().currentUser;
 
-    let id = currentUser?.uid;
+
     try {
+      let currentUser = auth().currentUser;
+      if (!currentUser) {
+        return
+      }
+      let id = currentUser?.uid;
       let data = await AsyncStorage.getItem('passengerBooking');
       data = JSON.parse(data);
       let checkDriverArrive = await AsyncStorage.getItem('driverArrive');
@@ -252,6 +278,11 @@ export default function AskScreen({ route }) {
   const checkPassengerRequestToDriver = async () => {
     let currentUser = auth().currentUser;
 
+    if (!currentUser) {
+      return
+    }
+
+
     let id = currentUser?.uid;
 
     let passengerRequestData = await firestore()
@@ -261,7 +292,6 @@ export default function AskScreen({ route }) {
       .then(async doc => {
         if (doc._exists) {
           let data = doc.data();
-
           if (
             data &&
             data.bookingStatus !== 'complete' &&
@@ -340,8 +370,6 @@ export default function AskScreen({ route }) {
     try {
       let startRide = await AsyncStorage.getItem('onTheWayRideStart');
       JSON.parse(startRide);
-
-      console.log(startRide, "ride")
 
       if (startRide && Object.keys(startRide.length > 0)) {
         navigation.navigate('DriverRoutes', {
@@ -437,50 +465,17 @@ export default function AskScreen({ route }) {
   };
   const signOutHandler = async () => {
 
-    let currentUser = auth().currentUser
+    try {
+      let currentUser = auth().currentUser
 
-    let id = currentUser?.uid
 
-    const user = await GoogleSignin.isSignedIn();
 
-    if (user) {
 
-      GoogleSignin.signOut().then(() => {
+      setLoading(true)
+      let id = currentUser?.uid
 
-        firestore().collection("login").doc(id).update({
-          login: false
-        }).then(() => {
-          navigation.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'GetStartedScreen',
-              },
-            ],
-          });
-        })
-      })
+      if (!id) {
 
-    }
-
-    await auth()
-      .signOut()
-      .then(() => {
-        firestore().collection("login").doc(id).update({
-          login: false
-        }).then(async () => {
-
-          navigation.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'GetStartedScreen',
-              },
-            ],
-          });
-        })
-      })
-      .catch(() => {
         navigation.reset({
           index: 0,
           routes: [
@@ -489,7 +484,66 @@ export default function AskScreen({ route }) {
             },
           ],
         });
-      });
+
+      }
+
+
+      const user = await GoogleSignin.isSignedIn();
+      if (user) {
+
+        GoogleSignin.signOut().then(() => {
+
+          firestore().collection("login").doc(id).update({
+            login: false
+          }).then(() => {
+            setLoading(false)
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'GetStartedScreen',
+                },
+              ],
+            });
+          }).catch((error) => {
+            setLoading(false)
+          })
+        })
+        return
+      }
+
+      console.log(id, "idddd")
+
+      await auth()
+        .signOut()
+        .then(() => {
+          firestore().collection("login").doc(id).update({
+            login: false
+          }).then(async () => {
+
+            navigation.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'GetStartedScreen',
+                },
+              ],
+            });
+          })
+        })
+        .catch(() => {
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'GetStartedScreen',
+              },
+            ],
+          });
+        })
+    } catch (error) {
+      console.log(error, "error")
+    }
   };
   return (
     <View style={{ flex: 1, backgroundColor: Colors.white }}>
@@ -519,7 +573,7 @@ export default function AskScreen({ route }) {
             textAlign: 'center',
             fontWeight: '800',
           }}>
-          Logout
+          {loading ? <ActivityIndicator size={30} color={Colors.secondary} /> : "Logout"}
         </Text>
       </TouchableOpacity>
       <View style={styles.container}>

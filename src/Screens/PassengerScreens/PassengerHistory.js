@@ -147,6 +147,8 @@ function PassengerHistory({ navigation }) {
         >
           {/* Date is mentioned Here */}
           <Text style={[styles.text, { marginTop: 5 }]}>{stringDate}</Text>
+          <Text style={[styles.text, { marginTop: 5 }]}>{item?.bookingId}</Text>
+
           <Text
             style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}
@@ -218,6 +220,7 @@ function PassengerHistory({ navigation }) {
         >
           {/* Date is mentioned Here */}
           <Text style={[styles.text, { marginTop: 5 }]}>{stringDate}</Text>
+          <Text style={[styles.text, { marginTop: 5 }]}>{item?.bookingId}</Text>
           <Text
             style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}

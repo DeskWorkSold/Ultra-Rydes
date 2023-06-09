@@ -1,4 +1,4 @@
-import React, {useLayoutEffect, useEffect, useState} from 'react';
+import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   Text,
   TouchableOpacity,
@@ -13,15 +13,15 @@ import {
 import CustomButton from '../../Components/CustomButton';
 import Colors from '../../Constants/Colors';
 import firestore from '@react-native-firebase/firestore';
-import {getPreciseDistance} from 'geolib';
+import { getPreciseDistance } from 'geolib';
 import Icon from 'react-native-vector-icons/AntDesign';
-import {useIsFocused} from '@react-navigation/native';
-import {BackHandler} from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import { BackHandler } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useNavigation} from '@react-navigation/native';
-import {useRef} from 'react';
-export default function PassengerFindRide({route}) {
+import { useNavigation } from '@react-navigation/native';
+import { useRef } from 'react';
+export default function PassengerFindRide({ route }) {
   let passengerData = route.params;
 
   const focus = useIsFocused();
@@ -121,27 +121,27 @@ export default function PassengerFindRide({route}) {
         setRequest(false);
         setNoDriverData(true);
 
-          firestore().collection("Request").doc(passengerData?.id).delete().then((res)=>{
+        firestore().collection("Request").doc(passengerData?.id).delete().then((res) => {
 
-            let AsyncpassengerData = JSON.stringify(passengerData);
-            AsyncStorage.setItem('passengerData', AsyncpassengerData);
-            navigation.navigate('PassengerRoutes', {
-              screen: 'PassengerHomeScreen',
-              params: {
-                passengerData: passengerData,
-              },
-            });
-            ToastAndroid.show(
-              'Drivers are not available right now. Request again after some time.',
-              ToastAndroid.SHORT,
-            );
-          }).catch((error)=>{
-            ToastAndroid.show(
-              error?.message,
-              ToastAndroid.SHORT,
-            );
-            
-          })
+          let AsyncpassengerData = JSON.stringify(passengerData);
+          AsyncStorage.setItem('passengerData', AsyncpassengerData);
+          navigation.navigate('PassengerRoutes', {
+            screen: 'PassengerHomeScreen',
+            params: {
+              passengerData: passengerData,
+            },
+          });
+          ToastAndroid.show(
+            'Drivers are not available right now. Request again after some time.',
+            ToastAndroid.SHORT,
+          );
+        }).catch((error) => {
+          ToastAndroid.show(
+            error?.message,
+            ToastAndroid.SHORT,
+          );
+
+        })
       }
     };
 
@@ -541,9 +541,9 @@ export default function PassengerFindRide({route}) {
             if (
               Number(pickupMileDistance) <= 5 &&
               Number(passengerDropAndDriverDropMileDis) <
-                Number(passengerpickAndDriverDropMileDis) &&
+              Number(passengerpickAndDriverDropMileDis) &&
               Number(DriverPickAndDriveDropMileDis) >=
-                Number(passengerPickAndPassengerDropMileDis) &&
+              Number(passengerPickAndPassengerDropMileDis) &&
               Number(passengerDropAndDriverDropMileDis) < remainingDis &&
               myDriverData.status == 'online' &&
               myDriverData?.currentLocation?.latitude &&
@@ -696,7 +696,32 @@ export default function PassengerFindRide({route}) {
       },
     });
   }, []);
-  const AccecptOffer = acceptDriver => {
+
+
+  const generateRandomID = (length) => {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    console.log(result, "result")
+
+    return result;
+  };
+
+
+
+
+  const AccecptOffer = async (acceptDriver) => {
+
+
+    let bookingId = await generateRandomID(15)
+
+    passengerData.bookingId = bookingId
+
     if (passengerData && passengerData.bidFare) {
       if (
         driverData &&
@@ -706,20 +731,25 @@ export default function PassengerFindRide({route}) {
         acceptDriver.selected = true;
         acceptDriver.requestStatus = 'accepted';
 
+
+
         firestore()
           .collection('Request')
           .doc(passengerData.id)
           .update({
             myDriversData: acceptDriver,
+            bookingId: bookingId,
             requestStatus: 'accepted',
-            rideCancelByDriver:false,
-            rideCancelByPassenger:false
+            rideCancelByDriver: false,
+            rideCancelByPassenger: false,
+            status: "riding"
           })
           .then(() => {
             navigation
               .navigate('PassengerHomeScreen', {
                 passengerData: passengerData,
                 driverData: acceptDriver,
+                bookingId: bookingId
               })
               .catch(error => {
                 console.log(error, 'error');
@@ -749,9 +779,11 @@ export default function PassengerFindRide({route}) {
           .doc(passengerData.id)
           .update({
             myDriversData: mySelectedDriver,
+            bookingId: bookingId,
             requestStatus: 'accepted',
-            rideCancelByDriver:false,
-            rideCancelByPassenger:false
+            status: "riding",
+            rideCancelByDriver: false,
+            rideCancelByPassenger: false
           })
           .then(res => {
             navigation.navigate('PassengerRoutes', {
@@ -759,6 +791,8 @@ export default function PassengerFindRide({route}) {
               params: {
                 passengerData: passengerData,
                 driverData: acceptDriver,
+                bookingId: bookingId
+
               },
             });
           })
@@ -773,6 +807,7 @@ export default function PassengerFindRide({route}) {
         .doc(passengerData.id)
         .set({
           passengerData: passengerData,
+          bookingId: bookingId,
           driverData: acceptDriver,
           requestDate: new Date(),
         })
@@ -798,18 +833,18 @@ export default function PassengerFindRide({route}) {
         setRequest(false);
 
         firestore().collection("Request").doc(passengerData?.id).update({
-          driverData : null
-        }).then(()=>{
+          driverData: null
+        }).then(() => {
           ToastAndroid.show(
             'This driver is not available right now',
             ToastAndroid.SHORT,
           );
-        }).catch((error)=>{
+        }).catch((error) => {
           ToastAndroid.show(
             error.message,
             ToastAndroid.SHORT,
           );
-          
+
         })
 
       }, 35000);
@@ -927,7 +962,7 @@ export default function PassengerFindRide({route}) {
     item.distance = myDistance;
   };
 
-  const rideRequests = ({item, index}) => {
+  const rideRequests = ({ item, index }) => {
     let data = route.params;
     if (data.bidFare) {
       data?.selectedCar[0]?.carMiles?.map((e, i) => {
@@ -986,7 +1021,7 @@ export default function PassengerFindRide({route}) {
           <View style={styles.innerItemsUpper}>
             <View style={styles.imgContainer}>
               <Image
-                source={{uri: item.url}}
+                source={{ uri: item.url }}
                 resizeMode="cover"
                 style={styles.proPic}
               />
@@ -997,8 +1032,8 @@ export default function PassengerFindRide({route}) {
                 <Text style={styles.driverNameText}>
                   {item.firstName + item.lastName}
                 </Text>
-                <View style={{flexDirection: 'row'}}>
-                  <Text style={[styles.driverNameText, {fontWeight: '800'}]}>
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={[styles.driverNameText, { fontWeight: '800' }]}>
                     {item.rating}
                   </Text>
                   <Icon name="star" size={20} color="yellow" />
@@ -1006,14 +1041,14 @@ export default function PassengerFindRide({route}) {
               </View>
             </View>
             <View style={styles.priceContainer}>
-              <View style={{alignItems: 'flex-end'}}>
+              <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.priceText}>
                   ${passengerData.bidFare ? Number(passengerData.bidFare) : passengerData.fare}
                 </Text>
-                <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                <Text style={{ color: 'black', fontSize: 14, fontWeight: '600' }}>
                   {item.minutes} minutes away
                 </Text>
-                <Text style={{color: 'black', fontSize: 14, fontWeight: '600'}}>
+                <Text style={{ color: 'black', fontSize: 14, fontWeight: '600' }}>
                   {item.distance} miles away
                 </Text>
               </View>
@@ -1040,22 +1075,22 @@ export default function PassengerFindRide({route}) {
     );
   };
 
-  
-let flag = false;
 
-flag =
-  driverData.length > 0 &&
-  driverData.map((e, i) => {
+  let flag = false;
+
+  flag =
+    driverData.length > 0 &&
+    driverData.map((e, i) => {
       let flag2 =
         driverNotAvailable.length > 0 &&
         driverNotAvailable.some((j, ind) => {
-            return e.id == j;
+          return e.id == j;
         });
-  
+
       return flag2;
     });
 
-  let checkAllNotAvailableDrivers = flag&& flag.length>0 && flag.every((e,i)=> e == true)
+  let checkAllNotAvailableDrivers = flag && flag.length > 0 && flag.every((e, i) => e == true)
 
 
   return (driverData.length == 0 || checkAllNotAvailableDrivers) && !passengerData.bidFare ? (
@@ -1066,7 +1101,7 @@ flag =
         height: '90%',
       }}>
       <ActivityIndicator size={100} color={Colors.black} />
-      <Text style={{color: 'black', marginTop: 10}}>
+      <Text style={{ color: 'black', marginTop: 10 }}>
         {' '}
         Finding Driver Please wait!{' '}
       </Text>
@@ -1074,7 +1109,7 @@ flag =
   ) : (
     <View>
       {(driverData && driverData.length > 0 && passengerData.bidFare) ||
-      (!request && !loader) ? (
+        (!request && !loader) ? (
         <View>
           {showCardForm ? (
             PaymentFormCard()
@@ -1097,7 +1132,7 @@ flag =
             height: '90%',
           }}>
           <ActivityIndicator color="black" size={100} />
-          <Text style={{color: 'black', marginTop: 10}}>
+          <Text style={{ color: 'black', marginTop: 10 }}>
             {' '}
             Finding Driver Please wait!{' '}
           </Text>

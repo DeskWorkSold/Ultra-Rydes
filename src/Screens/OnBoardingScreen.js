@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { SafeAreaView, StyleSheet, Dimensions, StatusBar, FlatList, View, ImageBackground, Image, Text, TouchableOpacity, useWindowDimensions } from 'react-native'
 import Colors from '../Constants/Colors'
+import { widthPercentageToDP } from 'react-native-responsive-screen';
 
 
 
@@ -12,19 +13,19 @@ const slides = [
         id: '1',
         image: require('../Assets/Images/Destination.png'),
         title: 'Choose Your Destination',
-        subtitle: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. "
+        subtitle: "Passengers can effortlessly select their desired drop-off points,"
     },
     {
         id: '2',
         image: require('../Assets/Images/YourRide.png'),
         title: 'Check Your Ride',
-        subtitle: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. "
+        subtitle: "Ensure safety and peace of mind with our ride verification."
     },
     {
         id: '3',
         image: require('../Assets/Images/EnjoyYourRide.png'),
         title: 'Enjoy Your Ride',
-        subtitle: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. "
+        subtitle: "Sit back, relax, and savor a comfortable journey with Ultra Rydes."
     }
 ]
 
@@ -65,7 +66,7 @@ export default function OnBoardingScreen({ navigation }) {
                 />
                 <View style={styles.textContainer}>
                     <Text style={styles.title}>{item.title}</Text>
-                    <Text style={styles.subtitle}>{item.subtitle}</Text>
+                    <Text style={[styles.subtitle,{maxWidth:"60%"}]} numberOfLines={2} >{item.subtitle}</Text>
                 </View>
             </View>
         )
@@ -132,7 +133,8 @@ export default function OnBoardingScreen({ navigation }) {
 
 const styles = StyleSheet.create({
     container: {
-        alignItems: 'center'
+        alignItems: 'center',
+        flex:1.
     },
     centerItems: {
         flex: 1,
@@ -180,7 +182,7 @@ const styles = StyleSheet.create({
     subtitle: {
         color: Colors.black,
         fontSize: 10,
-        maxWidth: '60%',
+        maxWidth: '100%',
         textAlign: 'center',
         fontFamily: 'Poppins-Medium',
         lineHeight: 20,
@@ -192,7 +194,9 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     textContainer: {
-        alignItems: 'center'
+        alignItems: 'center',
+        width:"100%"
+        
     },
     UpperContainer: {
         flex: 1,
