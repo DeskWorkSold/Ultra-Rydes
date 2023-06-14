@@ -148,9 +148,7 @@ function DriverPaymentDetail() {
         } catch (error) {
 
         }
-
     }
-
     useEffect(() => {
 
         let interval = setInterval(() => {
@@ -195,7 +193,7 @@ function DriverPaymentDetail() {
         let id = auth().currentUser.uid
 
         firestore().collection("Drivers").doc(id).update({
-        driverStatus: "pending"
+            driverStatus: "verified"
         }).then(() => {
             navigation.replace("DriverRideOption")
         }).catch((error) => {

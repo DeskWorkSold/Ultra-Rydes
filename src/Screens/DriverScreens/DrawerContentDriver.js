@@ -1,15 +1,15 @@
-import React, {useState, useEffect} from 'react';
-import {Text, StyleSheet, View, Image, TouchableOpacity, ScrollView} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Text, StyleSheet, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CustomButton from '../../Components/CustomButton';
 import firestore from '@react-native-firebase/firestore';
-import auth, {firebase} from '@react-native-firebase/auth';
+import auth, { firebase } from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
 import Colors from '../../Constants/Colors';
-import {Linking} from 'react-native';
+import { Linking } from 'react-native';
 
-export default function DrawerContentDriver({navigation}) {
+export default function DrawerContentDriver({ navigation }) {
   const [driverData, setDriverData] = useState('');
   const [profilePicUrl, setProfilePicUrl] = useState('');
   useEffect(() => {
@@ -38,8 +38,8 @@ export default function DrawerContentDriver({navigation}) {
         .collection('Drivers')
         .doc(CurrentUser?.uid)
         .update({
-          status: 'online',
-          // currentLocation: null,
+          status: 'offline',
+          currentLocation: null,
         })
         .then(() => {
           const checkData = firestore()
@@ -68,134 +68,134 @@ export default function DrawerContentDriver({navigation}) {
   return (
     <View style={styles.rootContainer}>
       <ScrollView>
-      <View style={styles.upperContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate('DriverDetailsEdit', {
-              driverData: driverData,
-              profilePicUrl: profilePicUrl,
-            });
-          }}>
-          <Image
-            source={
-              profilePicUrl
-                ? {uri: profilePicUrl}
-                : require('../../Assets/Images/dummyPic.png')
-            }
-            style={styles.proPicStyles}
-          />
-        </TouchableOpacity>
-        <Text style={styles.proName}>
-          {driverData.firstName} {driverData.lastName}
-        </Text>
-      </View>
-      <View style={styles.fieldContainer}>
-        <View style={styles.fieldItemContainer}>
+        <View style={styles.upperContainer}>
           <TouchableOpacity
-            style={styles.fieldItem}
             onPress={() => {
-              navigation.navigate('DriverHomeScreen');
-            }}>
-            <MaterialCommunityIcons
-              name="city"
-              size={25}
-              color={Colors.white}
-            />
-            <Text style={styles.fieldItemText}>Home</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.fieldItemContainer}>
-          <TouchableOpacity
-            style={styles.fieldItem}
-            onPress={() => {
-              navigation.navigate('DriverHistory');
-            }}>
-            <MaterialCommunityIcons
-              name="history"
-              size={25}
-              color={Colors.white}
-            />
-            <Text style={styles.fieldItemText}>History</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.fieldItemContainer}>
-          <TouchableOpacity
-            style={styles.fieldItem}
-            onPress={() => {
-              navigation.navigate('DriverSafetyScreen');
-            }}>
-            <MaterialCommunityIcons
-              name="security"
-              size={25}
-              color={Colors.white}
-            />
-            <Text style={styles.fieldItemText}>Safety</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.fieldItemContainer}>
-          <TouchableOpacity
-            style={styles.fieldItem}
-            onPress={() => {
-              navigation.navigate('DriverVehicleEdit', {
-                vehicleDetails: driverData.vehicleDetails,
+              navigation.navigate('DriverDetailsEdit', {
+                driverData: driverData,
+                profilePicUrl: profilePicUrl,
               });
             }}>
-            <Ionicons
-              name="md-car-sport-sharp"
-              size={25}
-              color={Colors.white}
+            <Image
+              source={
+                profilePicUrl
+                  ? { uri: profilePicUrl }
+                  : require('../../Assets/Images/dummyPic.png')
+              }
+              style={styles.proPicStyles}
             />
-            <Text style={styles.fieldItemText}>Vehicle</Text>
           </TouchableOpacity>
+          <Text style={styles.proName}>
+            {driverData.firstName} {driverData.lastName}
+          </Text>
         </View>
-        <View style={styles.fieldItemContainer}>
-          <TouchableOpacity
-            style={styles.fieldItem}
-            onPress={() => {
-              navigation.navigate('SettingsDriver');
-            }}>
-            <Ionicons name="settings-outline" size={25} color={Colors.white} />
-            <Text style={styles.fieldItemText}>Setting</Text>
-          </TouchableOpacity>
+        <View style={styles.fieldContainer}>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => {
+                navigation.navigate('DriverHomeScreen');
+              }}>
+              <MaterialCommunityIcons
+                name="city"
+                size={25}
+                color={Colors.white}
+              />
+              <Text style={styles.fieldItemText}>Home</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => {
+                navigation.navigate('DriverHistory');
+              }}>
+              <MaterialCommunityIcons
+                name="history"
+                size={25}
+                color={Colors.white}
+              />
+              <Text style={styles.fieldItemText}>History</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => {
+                navigation.navigate('DriverSafetyScreen');
+              }}>
+              <MaterialCommunityIcons
+                name="security"
+                size={25}
+                color={Colors.white}
+              />
+              <Text style={styles.fieldItemText}>Safety</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => {
+                navigation.navigate('DriverVehicleEdit', {
+                  vehicleDetails: driverData.vehicleDetails,
+                });
+              }}>
+              <Ionicons
+                name="md-car-sport-sharp"
+                size={25}
+                color={Colors.white}
+              />
+              <Text style={styles.fieldItemText}>Vehicle</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => {
+                navigation.navigate('SettingsDriver');
+              }}>
+              <Ionicons name="settings-outline" size={25} color={Colors.white} />
+              <Text style={styles.fieldItemText}>Setting</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => {
+                navigation.navigate('DriverWalletScreen');
+              }}>
+              <Ionicons name="wallet" size={25} color={Colors.white} />
+              <Text style={styles.fieldItemText}>Wallet</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => navigation.navigate('DriverFAQScreen')}>
+              <MaterialCommunityIcons
+                name="message-question-outline"
+                size={25}
+                color={Colors.white}
+              />
+              <Text style={styles.fieldItemText}>FAQ</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.fieldItemContainer}>
+            <TouchableOpacity
+              style={styles.fieldItem}
+              onPress={() => Linking.openURL('mailto:ultraRydes@gmail.com')}>
+              <MaterialCommunityIcons
+                name="headphones"
+                size={25}
+                color={Colors.white}
+              />
+              <Text style={styles.fieldItemText}>Support</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.btnContainer}>
+            <CustomButton text="Passenger Mode" onPress={passengerModeHandler} />
+          </View>
         </View>
-        <View style={styles.fieldItemContainer}>
-          <TouchableOpacity
-            style={styles.fieldItem}
-            onPress={() => {
-              navigation.navigate('DriverWalletScreen');
-            }}>
-            <Ionicons name="wallet" size={25} color={Colors.white} />
-            <Text style={styles.fieldItemText}>Wallet</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.fieldItemContainer}>
-          <TouchableOpacity
-            style={styles.fieldItem}
-            onPress={() => navigation.navigate('DriverFAQScreen')}>
-            <MaterialCommunityIcons
-              name="message-question-outline"
-              size={25}
-              color={Colors.white}
-            />
-            <Text style={styles.fieldItemText}>FAQ</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.fieldItemContainer}>
-          <TouchableOpacity
-            style={styles.fieldItem}
-            onPress={() => Linking.openURL('mailto:ultraRydes@gmail.com')}>
-            <MaterialCommunityIcons
-              name="headphones"
-              size={25}
-              color={Colors.white}
-            />
-            <Text style={styles.fieldItemText}>Support</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.btnContainer}>
-          <CustomButton text="Passenger Mode" onPress={passengerModeHandler} />
-        </View>
-      </View>
       </ScrollView>
     </View>
   );
