@@ -179,7 +179,7 @@ function DriverHistory({ navigation }) {
           {item?.bookingId && <Text
             style={[styles.text, { paddingTop: 5, fontSize: 14 }]}
             numberOfLines={1}>
-           Booking Id: {item?.bookingId}
+            Booking Id: {item?.bookingId}
           </Text>}
           <Text
             style={[styles.text, { paddingTop: 5, fontSize: 14 }]}

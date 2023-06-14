@@ -4,16 +4,6 @@ export const BASE_URI = 'https://calm-trunks-bear.cyclic.app/api/';
 
 
 
-
-
-
-
-
-
-
-
-
-
 let categories = [
     {
         carImage : "https://firebasestorage.googleapis.com/v0/b/ultrarydes.appspot.com/o/categories%2FCar1.png?alt=media&token=a1b0e9eb-a986-4a0e-ac2d-05cac1bc0275",

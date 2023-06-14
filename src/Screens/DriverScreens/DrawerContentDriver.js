@@ -38,8 +38,8 @@ export default function DrawerContentDriver({navigation}) {
         .collection('Drivers')
         .doc(CurrentUser?.uid)
         .update({
-          status: 'offline',
-          currentLocation: null,
+          status: 'online',
+          // currentLocation: null,
         })
         .then(() => {
           const checkData = firestore()

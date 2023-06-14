@@ -468,9 +468,6 @@ export default function AskScreen({ route }) {
     try {
       let currentUser = auth().currentUser
 
-
-
-
       setLoading(true)
       let id = currentUser?.uid
 

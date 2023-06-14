@@ -949,23 +949,15 @@ export default function PassengerHomeScreen({ navigation }) {
               amount: differenceAmount,
             };
 
-            const timeout = 10000; // 5 seconds
-            let timedOut = false;
 
-            // Set a timeout for the API request
-            const timeoutId = setTimeout(() => {
-              timedOut = true;
-              // Show an error message to the user
-              setButtonLoader(false);
-              ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
-            }, timeout);
+
             axios
               .post(`${BASE_URI}dopayment`, customerData)
               .then(res => {
                 clearTimeout(timeoutId);
                 let data = res.data;
                 let { result, status } = data;
-                if (!status && !timedOut) {
+                if (!status) {
                   setButtonLoader(false);
                   ToastAndroid.show(data.message, ToastAndroid.SHORT);
                   return;
@@ -1014,26 +1006,26 @@ export default function PassengerHomeScreen({ navigation }) {
                         );
                       })
                       .catch(error => {
-                        if (!timedOut) {
-                          setButtonLoader(false);
-                          ToastAndroid.show(error.message, ToastAndroid.SHORT);
-                        }
+
+                        setButtonLoader(false);
+                        ToastAndroid.show(error.message, ToastAndroid.SHORT);
+
                       });
                   })
                   .catch(error => {
-                    if (!timedOut) {
-                      setButtonLoader(false);
-                      console.log(error);
-                      ToastAndroid.show(error.message, ToastAndroid.SHORT);
-                    }
+
+                    setButtonLoader(false);
+                    console.log(error);
+                    ToastAndroid.show(error.message, ToastAndroid.SHORT);
+
                   });
               })
               .catch(error => {
-                if (!timedOut) {
-                  setButtonLoader(false);
-                  console.log(error, 'error');
-                  ToastAndroid.show('error occurs', ToastAndroid.SHORT);
-                }
+
+                setButtonLoader(false);
+                console.log(error, 'error');
+                ToastAndroid.show('error occurs', ToastAndroid.SHORT);
+
               });
           });
       }
@@ -1064,15 +1056,16 @@ export default function PassengerHomeScreen({ navigation }) {
     })
       .then(response => response.json())
       .then(res => {
-        let tolls = res?.routes[0];
+        let tolls = res?.routes[0].tolls;
         let totalToll =
-          tolls && tolls.length > 0 && tolls.map((e, i) => e.cashCost);
+          tolls && tolls.length > 0 && tolls.map((e, i) => e.cashCost ? e.cashCost : 0);
         let totalTollChargeToPassenger =
           totalToll && totalToll.length > 0
             ? totalToll.reduce((previous, current) => {
               return previous + current;
             })
             : 0;
+
         let id = auth().currentUser.uid;
         let tip =
           data?.passengerData?.passengerPersonalDetails?.tipOffered ??
@@ -1150,23 +1143,23 @@ export default function PassengerHomeScreen({ navigation }) {
                 amount: differenceAmount,
               };
 
-              const timeout = 10000; // 5 seconds
-              let timedOut = false;
+              // const timeout = 10000; // 5 seconds
+              // let timedOut = false;
 
-              // Set a timeout for the API request
-              const timeoutId = setTimeout(() => {
-                timedOut = true;
-                // Show an error message to the user
-                setButtonLoader(false);
-                ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
-              }, timeout);
+              // // Set a timeout for the API request
+              // const timeoutId = setTimeout(() => {
+              //   timedOut = true;
+              // Show an error message to the user
+              // setButtonLoader(false);
+              // ToastAndroid.show('Request timed out', ToastAndroid.SHORT);
+              // }, timeout);
               axios
                 .post(`${BASE_URI}dopayment`, customerData)
                 .then(res => {
-                  clearTimeout(timeoutId);
+                  // clearTimeout(timeoutId);
                   let data = res.data;
                   let { result, status } = data;
-                  if (!status && !timedOut) {
+                  if (!status) {
                     setButtonLoader(false);
                     ToastAndroid.show(data.message, ToastAndroid.SHORT);
                     return;
@@ -1215,31 +1208,33 @@ export default function PassengerHomeScreen({ navigation }) {
                           );
                         })
                         .catch(error => {
-                          if (!timedOut) {
-                            setButtonLoader(false);
-                            ToastAndroid.show(
-                              error.message,
-                              ToastAndroid.SHORT,
-                            );
-                          }
+
+                          setButtonLoader(false);
+                          ToastAndroid.show(
+                            error.message,
+                            ToastAndroid.SHORT,
+                          );
+
                         });
                     })
                     .catch(error => {
-                      if (!timedOut) {
-                        setButtonLoader(false);
-                        console.log(error);
-                        ToastAndroid.show(error.message, ToastAndroid.SHORT);
-                      }
+
+                      setButtonLoader(false);
+                      console.log(error);
+                      ToastAndroid.show(error.message, ToastAndroid.SHORT);
+
                     });
                 })
                 .catch(error => {
-                  if (!timedOut) {
-                    setButtonLoader(false);
-                    console.log(error, 'error');
-                    ToastAndroid.show('error occurs', ToastAndroid.SHORT);
-                  }
+                  setButtonLoader(false);
+                  console.log("Internal Server Error", 'error');
+                  ToastAndroid.show('Internal Server Error', ToastAndroid.SHORT);
+
                 });
-            });
+            }).catch((error) => {
+              setButtonLoader(false)
+              ToastAndroid.show(error.message, ToastAndroid.SHORT)
+            })
         }
       })
       .catch(error => {
@@ -1789,7 +1784,6 @@ export default function PassengerHomeScreen({ navigation }) {
       )
       .then(() => {
 
-        console.log(route?.params, "iddd")
 
         let cancelRide = {
           passengerData: route.params.passengerData,
@@ -2105,7 +2099,6 @@ export default function PassengerHomeScreen({ navigation }) {
     );
   }, [cancelRide, reasonForCancelRide, input, buttonLoader]);
 
-
   const getTollAmount = () => {
     let id = auth().currentUser?.uid;
     firestore()
@@ -2114,6 +2107,7 @@ export default function PassengerHomeScreen({ navigation }) {
       .get()
       .then(res => {
         let myToll = res.data();
+
         myToll = myToll.tollAmount;
         if (myToll) {
           setToll(myToll);
@@ -2142,9 +2136,6 @@ export default function PassengerHomeScreen({ navigation }) {
 
   }, [selectedDriver, route.params, focus])
 
-
-
-
   return (
     <View style={styles.container}>
       {loading ? (
@@ -2158,7 +2149,7 @@ export default function PassengerHomeScreen({ navigation }) {
               iconname={'menu'}
               color={Colors.white}
               rightButton={
-                driverArrive?.pickupLocation || data?.driverArriveAtPickUpLocation ? "" :
+                driverArriveAtPickUpLocation || data?.driverArriveAtPickupLocation ? "" :
                   selectedDriver
                     ? 'show'
                     : ''

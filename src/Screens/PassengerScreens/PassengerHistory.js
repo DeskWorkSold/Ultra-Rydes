@@ -41,12 +41,14 @@ function PassengerHistory({ navigation }) {
       .doc(id)
       .get()
       .then(doc => {
-        if (doc.exists) {
+        if (doc._exists) {
           let data = doc.data();
-          let sortedBookings = data?.bookingData.length>0 && data?.bookingData?.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
-          sortedBookings = sortedBookings.length>0 && sortedBookings.reverse()
-          setBookingData(sortedBookings.length >0 ? sortedBookings : []);
+          let sortedBookings = data?.bookingData.length > 0 && data?.bookingData?.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+          sortedBookings = sortedBookings.length > 0 && sortedBookings.reverse()
+          setBookingData(sortedBookings.length > 0 ? sortedBookings : []);
           setLoading(false);
+        } else {
+          setLoading(false)
         }
       });
   };
@@ -57,24 +59,30 @@ function PassengerHistory({ navigation }) {
       .collection('RideCancel')
       .get()
       .then(doc => {
-        const id = auth().currentUser.uid;
-        let data = doc._docs;
-        console.log(data, 'data');
-        let myNames = [];
-        data = data.forEach((e, i) => {
-          let myData = e._data.cancelledRides;
-          myData &&
-            myData.length > 0 &&
-            myData.map((j, ind) => {
-              if (j.passengerData.id == id) {
-                myNames.push(j);
-              }
-            });
-        });
-        let sortedBookings = myNames.length > 0 && myNames.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
-        sortedBookings = sortedBookings.reverse()
-        setCancelledBookingData(sortedBookings.length >0 ? sortedBookings : []);
-        setLoading(false);
+
+        if (doc._exists) {
+
+          const id = auth().currentUser.uid;
+          let data = doc._docs;
+
+          let myNames = [];
+          data = data.forEach((e, i) => {
+            let myData = e._data.cancelledRides;
+            myData &&
+              myData.length > 0 &&
+              myData.map((j, ind) => {
+                if (j.passengerData.id == id) {
+                  myNames.push(j);
+                }
+              });
+          });
+          let sortedBookings = myNames.length > 0 && myNames.sort((a, b) => (a.date).toDate().getTime() - (b.date).toDate().getTime());
+          sortedBookings = sortedBookings.reverse()
+          setCancelledBookingData(sortedBookings.length > 0 ? sortedBookings : []);
+          setLoading(false);
+        } else {
+          setLoading(false)
+        }
       });
   };
 
