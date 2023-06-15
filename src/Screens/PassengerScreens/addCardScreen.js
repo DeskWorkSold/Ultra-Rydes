@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 
 import {
   View,
@@ -16,11 +16,11 @@ import CustomButton from '../../Components/CustomButton';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import axios from 'axios';
-import {BASE_URI} from '../../Constants/Base_uri';
+import { BASE_URI } from '../../Constants/Base_uri';
 
-function AddCard({navigation}) {
+function AddCard({ navigation }) {
 
-console.log(auth().currentUser.uid)
+  console.log(auth().currentUser.uid)
 
   const [cardDetail, setCardDetail] = useState({
     cardHolderName: '',
@@ -43,6 +43,10 @@ console.log(auth().currentUser.uid)
       ToastAndroid.show('Invalid Expiry month', ToastAndroid.SHORT);
       return;
     }
+    if (cardDetail.cardNumber.length !== 20) {
+      ToastAndroid.show('Invalid Card Number', ToastAndroid.SHORT);
+      return;
+    }
 
     let currentYear = new Date().getFullYear();
     currentYear = currentYear.toString();
@@ -60,12 +64,12 @@ console.log(auth().currentUser.uid)
     } else {
       setLoading(true);
       let id = auth().currentUser.uid;
-      let Details = {...cardDetail};
+      let Details = { ...cardDetail };
       Details.cardNumber = Details.cardNumber.replace(/ /g, '');
       axios
         .post(`${BASE_URI}generateToken`, Details)
         .then(res => {
-          let {data} = res;
+          let { data } = res;
           if (!data.status) {
             ToastAndroid.show(data.message, ToastAndroid.SHORT);
             setLoading(false);
@@ -83,7 +87,7 @@ console.log(auth().currentUser.uid)
                 {
                   savedCards: firestore.FieldValue.arrayUnion(savedCards),
                 },
-                {merge: true},
+                { merge: true },
               )
               .then(() => {
                 setLoading(false);
@@ -124,13 +128,13 @@ console.log(auth().currentUser.uid)
     // Add a space after every 4 digits
     text = text.replace(/(\d{4})/g, '$1 ');
 
-    setCardDetail({...cardDetail, cardNumber: text});
+    setCardDetail({ ...cardDetail, cardNumber: text });
   };
 
   return (
-    <View style={{width: '100%', paddingHorizontal: 20, marginTop: 30}}>
+    <View style={{ width: '100%', paddingHorizontal: 20, marginTop: 30 }}>
       <ScrollView>
-        <View style={{width: '100%'}}>
+        <View style={{ width: '100%' }}>
           <Text
             style={[
               styles.text,
@@ -176,13 +180,13 @@ console.log(auth().currentUser.uid)
           </Text>
 
           <Text
-            style={[styles.text, {textAlign: 'left', color: Colors.secondary}]}
+            style={[styles.text, { textAlign: 'left', color: Colors.secondary }]}
           >
             Card Holder Name
           </Text>
           <TextInput
             onChangeText={e =>
-              setCardDetail({...cardDetail, cardHolderName: e})
+              setCardDetail({ ...cardDetail, cardHolderName: e })
             }
             placeholder="Enter name..."
             placeholderTextColor={Colors.black}
@@ -197,9 +201,9 @@ console.log(auth().currentUser.uid)
             }}
           />
         </View>
-        <View style={{width: '100%', marginTop: 10}}>
+        <View style={{ width: '100%', marginTop: 10 }}>
           <Text
-            style={[styles.text, {textAlign: 'left', color: Colors.secondary}]}
+            style={[styles.text, { textAlign: 'left', color: Colors.secondary }]}
           >
             Card Number
           </Text>
@@ -221,15 +225,15 @@ console.log(auth().currentUser.uid)
             }}
           />
         </View>
-        <View style={{width: '100%', marginTop: 10}}>
+        <View style={{ width: '100%', marginTop: 10 }}>
           <Text
-            style={[styles.text, {textAlign: 'left', color: Colors.secondary}]}
+            style={[styles.text, { textAlign: 'left', color: Colors.secondary }]}
           >
             Expiry Month
           </Text>
           <TextInput
             keyboardType="numeric"
-            onChangeText={e => setCardDetail({...cardDetail, expiryMonth: e})}
+            onChangeText={e => setCardDetail({ ...cardDetail, expiryMonth: e })}
             placeholder="Enter expiry month..."
             maxLength={2}
             placeholderTextColor={Colors.black}
@@ -244,16 +248,16 @@ console.log(auth().currentUser.uid)
             }}
           />
         </View>
-        <View style={{width: '100%', marginTop: 10}}>
+        <View style={{ width: '100%', marginTop: 10 }}>
           <Text
-            style={[styles.text, {textAlign: 'left', color: Colors.secondary}]}
+            style={[styles.text, { textAlign: 'left', color: Colors.secondary }]}
           >
             Expiry Year
           </Text>
           <TextInput
             keyboardType="numeric"
             maxLength={2}
-            onChangeText={e => setCardDetail({...cardDetail, expiryYear: e})}
+            onChangeText={e => setCardDetail({ ...cardDetail, expiryYear: e })}
             placeholder="Enter expiry year..."
             placeholderTextColor={Colors.black}
             style={{
@@ -267,9 +271,9 @@ console.log(auth().currentUser.uid)
             }}
           />
         </View>
-        <View style={{width: '100%', marginTop: 10}}>
+        <View style={{ width: '100%', marginTop: 10 }}>
           <Text
-            style={[styles.text, {textAlign: 'left', color: Colors.secondary}]}
+            style={[styles.text, { textAlign: 'left', color: Colors.secondary }]}
           >
             CVC
           </Text>
@@ -277,7 +281,7 @@ console.log(auth().currentUser.uid)
             placeholder="Enter cvc..."
             keyboardType="numeric"
             maxLength={3}
-            onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
+            onChangeText={e => setCardDetail({ ...cardDetail, cvc: e })}
             placeholderTextColor={Colors.black}
             style={{
               width: '100%',
@@ -290,7 +294,7 @@ console.log(auth().currentUser.uid)
             }}
           />
           <CustomButton
-            styleContainer={{width: '100%', marginTop: 20}}
+            styleContainer={{ width: '100%', marginTop: 20 }}
             text={
               loading ? (
                 <ActivityIndicator size={'small'} color={'black'} />

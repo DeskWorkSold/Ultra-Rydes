@@ -1,22 +1,22 @@
 import React from 'react';
-import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Colors from '../../Constants/Colors';
 import CustomHeader from '../../Components/CustomHeader';
 import CustomButton from '../../Components/CustomButton';
-import {Dimensions} from 'react-native';
-import {ScrollView, TextInput} from 'react-native-gesture-handler';
+import { Dimensions } from 'react-native';
+import { ScrollView, TextInput } from 'react-native-gesture-handler';
 import CustomCard from '../../Components/customCard';
-import {useState} from 'react';
+import { useState } from 'react';
 import PassengerCheckOutScreen from './passengerCheckOutScreen';
-import {ToastAndroid} from 'react-native';
+import { ToastAndroid } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-import {useEffect} from 'react';
-import {load} from 'npm';
+import { useEffect } from 'react';
+import { load } from 'npm';
 import axios from 'axios';
-import {BASE_URI} from '../../Constants/Base_uri';
+import { BASE_URI } from '../../Constants/Base_uri';
 
-function PaymentMethod({navigation, route}) {
+function PaymentMethod({ navigation, route }) {
   const [savedCards, setSavedCards] = React.useState(true);
   const [loader, setLoader] = React.useState(false);
 
@@ -87,6 +87,10 @@ function PaymentMethod({navigation, route}) {
       ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
     }
 
+    if (cardDetail.cardNumber.length !== 20) {
+      ToastAndroid.show('Invalid Card Number', ToastAndroid.SHORT);
+      return;
+    }
     if (Number(cardDetail.expiryMonth) > 12) {
       ToastAndroid.show('Invalid Expiry month', ToastAndroid.SHORT);
       return;
@@ -108,14 +112,14 @@ function PaymentMethod({navigation, route}) {
     } else {
       setLoader(true);
       let id = auth().currentUser.uid;
-      let Details = {...cardDetail};
+      let Details = { ...cardDetail };
       Details.cardNumber = Details.cardNumber.replace(/ /g, '');
 
       axios
         .post(`${BASE_URI}generateToken`, Details)
         .then(res => {
           console.log(res, 'res');
-          let {data} = res;
+          let { data } = res;
 
           if (!data.status) {
             ToastAndroid.show(data.message, ToastAndroid.SHORT);
@@ -133,7 +137,7 @@ function PaymentMethod({navigation, route}) {
                 {
                   savedCards: firestore.FieldValue.arrayUnion(savedCards),
                 },
-                {merge: true},
+                { merge: true },
               )
               .then(() => {
                 setLoader(false);
@@ -162,20 +166,20 @@ function PaymentMethod({navigation, route}) {
   const getSelectedCard = (selectedCard, ind) => {
     setSavedCardsData(
       savedCardsData &&
-        savedCardsData.length > 0 &&
-        savedCardsData.map((e, i) => {
-          if (ind == i) {
-            return {
-              ...e,
-              default: true,
-            };
-          } else {
-            return {
-              ...e,
-              default: false,
-            };
-          }
-        }),
+      savedCardsData.length > 0 &&
+      savedCardsData.map((e, i) => {
+        if (ind == i) {
+          return {
+            ...e,
+            default: true,
+          };
+        } else {
+          return {
+            ...e,
+            default: false,
+          };
+        }
+      }),
     );
   };
 
@@ -196,7 +200,7 @@ function PaymentMethod({navigation, route}) {
     firestore()
       .collection('passengerCards')
       .doc(id)
-      .set({savedCards: savedCardsData})
+      .set({ savedCards: savedCardsData })
       .then(res => {
         ToastAndroid.show(
           'This card has been successfully set to default',
@@ -217,11 +221,11 @@ function PaymentMethod({navigation, route}) {
     text = text.replace(/ /g, '');
     // Add a space after every 4 digits
     text = text.replace(/(\d{4})/g, '$1 ');
-    setCardDetail({...cardDetail, cardNumber: text});
+    setCardDetail({ ...cardDetail, cardNumber: text });
   };
 
   return (
-    <View style={{height: '100%'}}>
+    <View style={{ height: '100%' }}>
       <ScrollView>
         <View style={styles.headerContainer}>
           <CustomHeader
@@ -241,7 +245,7 @@ function PaymentMethod({navigation, route}) {
         )}
         {!savedCardsData || savedCards ? (
           <View
-            style={{flexDirection: 'row', alignItems: 'center', marginTop: 5}}
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}
           >
             <Text
               style={[
@@ -265,7 +269,7 @@ function PaymentMethod({navigation, route}) {
                 padding: 0,
               }}
               onPress={() => setSavedCards(false)}
-              btnTextStyle={{fontSize: savedCards ? 14 : 16}}
+              btnTextStyle={{ fontSize: savedCards ? 14 : 16 }}
               text={savedCards ? 'Add New card' : 'Add card'}
             />
           </View>
@@ -280,14 +284,14 @@ function PaymentMethod({navigation, route}) {
         )}
 
         {!savedCards ? (
-          <View style={{width: '100%', paddingHorizontal: 20, marginTop: 30}}>
-            <View style={{width: '95%'}}>
-              <Text style={[styles.text, {textAlign: 'left'}]}>
+          <View style={{ width: '100%', paddingHorizontal: 20, marginTop: 30 }}>
+            <View style={{ width: '95%' }}>
+              <Text style={[styles.text, { textAlign: 'left' }]}>
                 Card Holder Name
               </Text>
               <TextInput
                 onChangeText={e =>
-                  setCardDetail({...cardDetail, cardHolderName: e})
+                  setCardDetail({ ...cardDetail, cardHolderName: e })
                 }
                 placeholder="Enter name..."
                 placeholderTextColor={Colors.black}
@@ -302,8 +306,8 @@ function PaymentMethod({navigation, route}) {
                 }}
               />
             </View>
-            <View style={{width: '95%', marginTop: 10}}>
-              <Text style={[styles.text, {textAlign: 'left'}]}>
+            <View style={{ width: '95%', marginTop: 10 }}>
+              <Text style={[styles.text, { textAlign: 'left' }]}>
                 Card Number
               </Text>
               <TextInput
@@ -324,15 +328,15 @@ function PaymentMethod({navigation, route}) {
                 }}
               />
             </View>
-            <View style={{width: '95%', marginTop: 10}}>
-              <Text style={[styles.text, {textAlign: 'left'}]}>
+            <View style={{ width: '95%', marginTop: 10 }}>
+              <Text style={[styles.text, { textAlign: 'left' }]}>
                 Expiry Month
               </Text>
               <TextInput
                 keyboardType="numeric"
                 maxLength={2}
                 onChangeText={e =>
-                  setCardDetail({...cardDetail, expiryMonth: e})
+                  setCardDetail({ ...cardDetail, expiryMonth: e })
                 }
                 placeholder="Enter expiry date..."
                 placeholderTextColor={Colors.black}
@@ -347,15 +351,15 @@ function PaymentMethod({navigation, route}) {
                 }}
               />
             </View>
-            <View style={{width: '95%', marginTop: 10}}>
-              <Text style={[styles.text, {textAlign: 'left'}]}>
+            <View style={{ width: '95%', marginTop: 10 }}>
+              <Text style={[styles.text, { textAlign: 'left' }]}>
                 Expiry Year
               </Text>
               <TextInput
                 keyboardType="numeric"
                 maxLength={2}
                 onChangeText={e =>
-                  setCardDetail({...cardDetail, expiryYear: e})
+                  setCardDetail({ ...cardDetail, expiryYear: e })
                 }
                 placeholder="Enter expiry date..."
                 placeholderTextColor={Colors.black}
@@ -370,13 +374,13 @@ function PaymentMethod({navigation, route}) {
                 }}
               />
             </View>
-            <View style={{width: '95%', marginTop: 10}}>
-              <Text style={[styles.text, {textAlign: 'left'}]}>CVC</Text>
+            <View style={{ width: '95%', marginTop: 10 }}>
+              <Text style={[styles.text, { textAlign: 'left' }]}>CVC</Text>
               <TextInput
                 placeholder="Enter cvc..."
                 keyboardType="number-pad"
                 maxLength={3}
-                onChangeText={e => setCardDetail({...cardDetail, cvc: e})}
+                onChangeText={e => setCardDetail({ ...cardDetail, cvc: e })}
                 placeholderTextColor={Colors.black}
                 style={{
                   width: '100%',
@@ -391,7 +395,7 @@ function PaymentMethod({navigation, route}) {
             </View>
           </View>
         ) : (
-          <ScrollView horizontal={true} style={{marginTop: 20}}>
+          <ScrollView horizontal={true} style={{ marginTop: 20 }}>
             {savedCardsData &&
               savedCardsData.length > 0 &&
               savedCardsData.map((e, i) => {
@@ -420,7 +424,7 @@ function PaymentMethod({navigation, route}) {
         >
           {!savedCards && (
             <CustomButton
-              styleContainer={{marginRight: 10, width: '90%'}}
+              styleContainer={{ marginRight: 10, width: '90%' }}
               text={
                 loader ? (
                   <ActivityIndicator size={'large'} color={Colors.black} />
