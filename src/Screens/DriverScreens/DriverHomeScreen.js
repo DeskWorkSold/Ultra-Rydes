@@ -467,7 +467,6 @@ export default function DriverHomeScreen({ route }) {
   const getRequestFromPassengers = () => {
     if (!inlinedDrivers && driverStatus == "online") {
       let requestData = [];
-
       firestore()
         .collection('Request')
         .get()
@@ -482,7 +481,7 @@ export default function DriverHomeScreen({ route }) {
             let requestRespondSeconds = requestSeconds + 32;
             let differenceSeconds = requestRespondSeconds - nowSeconds;
             data.timeLimit = differenceSeconds;
-            if (!data?.requestStatus) {
+            if (!data?.requestStatus && data?.status !== "blocked") {
               let dis = getPreciseDistance(
                 {
                   latitude:
@@ -505,9 +504,7 @@ export default function DriverHomeScreen({ route }) {
                       : driverData && state?.pickupCords?.longitude,
                 },
               );
-
               mileDistance = (dis / 1609.34).toFixed(2);
-
               if (data) {
                 let matchUid = false;
                 let uid = auth().currentUser.uid;
@@ -937,7 +934,7 @@ export default function DriverHomeScreen({ route }) {
   const AcceptRequest = async item => {
     const Userid = item?.id ?? item?.passengerData?.id;
 
-    
+
     firestore()
       .collection('Request')
       .doc(Userid)
@@ -1133,7 +1130,7 @@ export default function DriverHomeScreen({ route }) {
   };
 
   useEffect(() => {
-    setTimeout(() => {
+    let timeout = setTimeout(() => {
       if (requestLoader && focus) {
         firestore()
           .collection('Request')
@@ -1201,6 +1198,9 @@ export default function DriverHomeScreen({ route }) {
         setRequestLoader(false)
       }
     }, 30000);
+
+    return () => clearTimeout(timeout)
+
   }, [requestLoader, focus]);
 
   useEffect(() => {

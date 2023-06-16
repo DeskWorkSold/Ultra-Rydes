@@ -4,7 +4,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CustomButton from '../../Components/CustomButton';
 import firestore from '@react-native-firebase/firestore';
-import auth, { firebase } from '@react-native-firebase/auth';
+import auth from '@react-native-firebase/auth';
+import { ToastAndroid } from 'react-native';
 import storage from '@react-native-firebase/storage';
 import Colors from '../../Constants/Colors';
 import { Linking } from 'react-native';
@@ -45,14 +46,18 @@ export default function DrawerContentDriver({ navigation }) {
           const checkData = firestore()
             .collection('Passengers')
             .doc(CurrentUser.uid)
-            .onSnapshot(documentSnapshot => {
+            .get().then(documentSnapshot => {
               const checkEmpty = documentSnapshot.data();
               if (checkEmpty == null) {
                 // setLoading(false)
                 navigation.navigate('PassengerDetailScreen', {
                   uid: CurrentUser.uid,
                 });
-              } else {
+              }
+              else if (checkEmpty?.status == "blocked") {
+                ToastAndroid.show("You have been blocked if you don't know why have you been blocked contact to support team", ToastAndroid.SHORT)
+              }
+              else {
                 // setLoading(false)
                 navigation.navigate('PassengerRoutes', {
                   screen: 'PassengerHomeScreen',

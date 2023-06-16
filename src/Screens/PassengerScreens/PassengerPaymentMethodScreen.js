@@ -87,6 +87,8 @@ function PaymentMethod({ navigation, route }) {
       ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
     }
 
+    
+
     if (cardDetail.cardNumber.length !== 20) {
       ToastAndroid.show('Invalid Card Number', ToastAndroid.SHORT);
       return;

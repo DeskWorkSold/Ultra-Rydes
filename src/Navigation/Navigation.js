@@ -120,7 +120,7 @@ function PassengerRoutes() {
         component={PassengerWalletScreen}
         options={{
           headerShown: false,
-          unmountOnBlur:true
+          unmountOnBlur: true
         }}
       />
       <Drawer.Screen
@@ -218,7 +218,7 @@ function DriverRoutes() {
         component={DriverWalletScreen}
         options={{
           headerShown: false,
-          unmountOnBlur:true
+          unmountOnBlur: true
         }}
       />
     </Drawer.Navigator>
@@ -260,6 +260,7 @@ export default function Navigation() {
         <Stack.Screen
           name="DriverRideOption"
           component={DriverRideOption}
+          unmountOnBlur={true}
         />
         <Stack.Screen name="AddCardScreen" component={AddCard} />
         <Stack.Screen
@@ -341,7 +342,7 @@ export default function Navigation() {
           component={PredefinedPlaces}
         />
         <Stack.Screen
-        options={{unmountOnBlur:true}}
+          options={{ unmountOnBlur: true }}
           name="driverPaymentDetail"
           component={DriverPaymentDetail}
         />

@@ -20,7 +20,7 @@ export default function SettingsPassenger() {
     firestore()
       .collection('Passengers')
       .doc(id)
-      .onSnapshot(querySnapshot => {
+      .get().then(querySnapshot => {
         let data = querySnapshot.data();
 
         setPassengerData(data);

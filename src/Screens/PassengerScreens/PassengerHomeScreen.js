@@ -650,6 +650,12 @@ export default function PassengerHomeScreen({ navigation }) {
         .then(doc => {
           let passengerPersonalData = doc.data();
 
+
+          if (passengerPersonalData?.status == "blocked") {
+            ToastAndroid.show("You have been blocked if you don't know why have you been blocked contact to support team", ToastAndroid.LONG)
+            return
+          }
+
           let myData = {
             pickupCords: pickupCords,
             dropLocationCords: dropLocationCords,
@@ -688,6 +694,13 @@ export default function PassengerHomeScreen({ navigation }) {
         .get()
         .then(doc => {
           let passengerPersonalData = doc.data();
+
+
+          if (passengerPersonalData?.status == "blocked") {
+            ToastAndroid.show("You have been blocked if you don't know why have you been blocked contact to support team", ToastAndroid.SHORT)
+            return
+          }
+
           let myData = {
             pickupCords: pickupCords,
             dropLocationCords: dropLocationCords,

@@ -63,7 +63,7 @@ function DriverEarningScreen({route, navigation}) {
               ]}
             >
               Earning:
-              <Text style={{color: Colors.secondary}}> ${item.fare} </Text>
+              <Text style={{color: Colors.secondary}}> ${Number(item.fare).toFixed(2)} </Text>
             </Text>
             <Text
               style={[
@@ -86,7 +86,7 @@ function DriverEarningScreen({route, navigation}) {
               Toll:
               <Text style={{color: Colors.secondary}}>
                 {' '}
-                ${item?.toll ? item?.toll : 0}{' '}
+                ${item?.toll ? Number(item?.toll).toFixed(2) : 0}{' '}
               </Text>
             </Text>
           </TouchableOpacity>

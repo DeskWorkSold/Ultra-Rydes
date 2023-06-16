@@ -403,8 +403,13 @@ export default function AskScreen({ route }) {
 
   const passengerModeHandler = async () => {
     try {
+
+
+
       const CurrentUser = auth().currentUser;
-      const checkData = firestore()
+
+
+      firestore()
         .collection('Passengers')
         .doc(CurrentUser.uid)
         .get()
@@ -421,7 +426,11 @@ export default function AskScreen({ route }) {
               uid: CurrentUser.uid,
               email: email,
             });
-          } else {
+          } else if (checkEmpty?.status == "blocked") {
+            ToastAndroid.show("You have been blocked if you don't know why have you been blocked contact to support team", ToastAndroid.SHORT)
+          }
+
+          else {
             setLoading(false);
             navigation.navigate('PassengerRoutes', {
               screen: 'PassengerHomeScreen',

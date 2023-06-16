@@ -5,6 +5,7 @@ import {
   View,
   Image,
   TouchableOpacity,
+  ToastAndroid,
   ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -43,9 +44,6 @@ export default function DrawerContentPassenger({ navigation }) {
             .getDownloadURL();
           setProfilePicUrl(url);
         }
-
-
-
         setPassengerData(GetUserData);
         setLoading(false);
       });
@@ -53,16 +51,14 @@ export default function DrawerContentPassenger({ navigation }) {
   }, []);
 
 
-
-      AsyncStorage.getItem("passengerData").then((res)=>{
-        data = JSON.parse(res)
-        setMyPassengerData(res)
-      }).catch((error)=>{
-        console.log(error)
-      })
-      
-  console.log(mypassengerData,"myPassengerData")
-
+  useEffect(() => {
+    AsyncStorage.getItem("passengerData").then((res) => {
+      data = JSON.parse(res)
+      setMyPassengerData(res)
+    }).catch((error) => {
+      console.log(error)
+    })
+  }, [])
 
   const switchToDriverHandler = async () => {
     try {
@@ -81,7 +77,7 @@ export default function DrawerContentPassenger({ navigation }) {
             navigation.navigate('DriverRoutes', { screen: 'DriverVehicleAdd' });
           } else {
             setLoading(false);
-            navigation.navigate('DriverRoutes', { screen: 'DriverHomeScreen' });
+            navigation.navigate('DriverRideOption');
           }
         });
     } catch (err) {

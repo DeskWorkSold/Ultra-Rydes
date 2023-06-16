@@ -30,7 +30,7 @@ function DriverPaymentDetail() {
         firestore()
             .collection('Drivers')
             .doc(id)
-            .onSnapshot(querySnapshot => {
+            .get().then(querySnapshot => {
                 let data = querySnapshot.data();
                 setDriverData(data);
             });
@@ -193,7 +193,7 @@ function DriverPaymentDetail() {
         let id = auth().currentUser.uid
 
         firestore().collection("Drivers").doc(id).update({
-            driverStatus: "verified"
+            driverStatus: "pending"
         }).then(() => {
             navigation.replace("DriverRideOption")
         }).catch((error) => {

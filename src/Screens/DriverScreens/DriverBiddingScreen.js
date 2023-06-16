@@ -155,8 +155,6 @@ export default function DriverBiddingScreen({ navigation }) {
       'ArrivedAtpickUpLocation',
     );
 
-
-
     // let myDriverArrived;
     firestore()
       .collection('Request')
@@ -251,8 +249,6 @@ export default function DriverBiddingScreen({ navigation }) {
 
       if (distance > 3) {
 
-
-
         if (mileDistance < ((distance * 50) / 100)) {
 
           firestore().collection("Request").doc(data?.passengerData ? data?.passengerData?.id : data?.id).update({
@@ -265,12 +261,9 @@ export default function DriverBiddingScreen({ navigation }) {
       }
     }
 
-
-
-
     getCurrentLocation()
       .then(res => {
-        let { latitude, longitude, heading } = res;
+        let { latitude, longitude, heading } = res
         setDriverCurrentLocation({
           ...driverCurrentLocation,
           latitude: latitude,
@@ -628,7 +621,7 @@ export default function DriverBiddingScreen({ navigation }) {
               <View>
                 <Icon size={80} color="white" name="hand-stop-o" />
               </View>
-              <Text style={styles.modalText}>
+              <Text style={[styles.modalText,{color:Colors.white}]}>
                 Have you arrived at customer location?
               </Text>
               <TouchableOpacity
@@ -637,7 +630,7 @@ export default function DriverBiddingScreen({ navigation }) {
                   { marginBottom: 10, backgroundColor: Colors.primary },
                 ]}
                 onPress={() => !buttonLoader && sendArriveMessageToPassenger()}>
-                <Text style={styles.textStyle}>
+                <Text style={[styles.textStyle,{color:Colors.white}]}>
                   {buttonLoader ? (
                     <ActivityIndicator size={'large'} color={Colors.black} />
                   ) : (
@@ -667,7 +660,7 @@ export default function DriverBiddingScreen({ navigation }) {
               <View>
                 <Icon size={80} color="white" name="hand-stop-o" />
               </View>
-              <Text style={styles.modalText}>
+              <Text style={[styles.modalText,{color:Colors.white}]}>
                 Please Confirm the passenger's name : {data?.passengerData ? data?.passengerData?.passengerPersonalDetails?.firstName : data?.passengerPersonalDetails?.firstName}
               </Text>
               <View style={{ flexDirection: "row", width: "100%", marginTop: 30, justifyContent: "space-between" }} >
@@ -678,7 +671,7 @@ export default function DriverBiddingScreen({ navigation }) {
                     { marginBottom: 10, backgroundColor: Colors.primary, width: "49%", position: "static" },
                   ]}
                 >
-                  <Text style={styles.textStyle}>
+                  <Text style={[styles.textStyle,{color:Colors.white}]}>
                     {buttonLoader && confirm ? (
                       <ActivityIndicator size={'large'} color={Colors.black} />
                     ) : (
@@ -693,7 +686,7 @@ export default function DriverBiddingScreen({ navigation }) {
                   ]}
                   onPress={() => cancelBookingByDriver()}
                 >
-                  <Text style={styles.textStyle}>
+                  <Text style={[styles.textStyle,{color:Colors.white}]}>
                     {buttonLoader ? (
                       <ActivityIndicator size={'large'} color={Colors.white} />
                     ) : (
@@ -715,8 +708,6 @@ export default function DriverBiddingScreen({ navigation }) {
     setButtonLoader(true);
 
     let uid = auth().currentUser.uid;
-
-    console.log(uid, "uid")
 
     firestore().collection("DriverstripeAccount").doc(uid).get().then(doc => {
       console.log(doc, "d")
@@ -1773,26 +1764,14 @@ export default function DriverBiddingScreen({ navigation }) {
 
     }
 
-
-
-
     if (distance <= 3) {
-
-      if (mileDistance < ((distance * 75) / 100)) {
-        setEndRide(true);
-        setArriveDropOffLocation(false);
-        await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
-      }
-      else {
-        ToastAndroid.show("You have met the minimum requirement to end ride kindly proceed to destination location", ToastAndroid.SHORT)
-      }
+      setEndRide(true);
+      setArriveDropOffLocation(false);
+      await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
       return
     }
 
-
-
     if (distance > 3) {
-
 
       if (mileDistance < ((distance * 50) / 100)) {
         setEndRide(true);
@@ -1800,7 +1779,7 @@ export default function DriverBiddingScreen({ navigation }) {
         await AsyncStorage.setItem('EndRide', 'Ride End by Driver');
       }
       else {
-        ToastAndroid.show("You have met the minimum requirement to end ride kindly proceed to destination location", ToastAndroid.SHORT)
+        ToastAndroid.show("You have not met the minimum requirement to end ride kindly proceed to destination location", ToastAndroid.SHORT)
       }
     }
 
@@ -1980,7 +1959,7 @@ export default function DriverBiddingScreen({ navigation }) {
                   }}
                   title="Your Location"
                   description={
-                    minutesAndDistanceDifference.details.start_address
+                    minutesAndDistanceDifference?.details?.start_address
                   }
                   pinColor="blue">
                   <Image
@@ -1989,7 +1968,7 @@ export default function DriverBiddingScreen({ navigation }) {
                       width: 40,
                       height: 40,
                       transform: [
-                        { rotate: `${driverCurrentLocation.heading}deg` },
+                        { rotate: `${driverCurrentLocation?.heading}deg` },
                       ],
                     }}
                     resizeMode="contain"
@@ -2371,7 +2350,6 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
     borderBottomWidth: 1,
 
-    // paddingLeft: 10, //
   },
   centeredView: {
     flex: 1,
@@ -2422,5 +2400,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 30,
     fontWeight: '800',
+    color:Colors.white
   },
 });
