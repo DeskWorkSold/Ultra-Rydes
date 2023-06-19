@@ -476,12 +476,10 @@ export default function AskScreen({ route }) {
 
     try {
       let currentUser = auth().currentUser
-
-      setLoading(true)
       let id = currentUser?.uid
 
       if (!id) {
-
+        setLoading(true)
         navigation.reset({
           index: 0,
           routes: [
@@ -490,13 +488,14 @@ export default function AskScreen({ route }) {
             },
           ],
         });
-
+        return
       }
 
 
       const user = await GoogleSignin.isSignedIn();
-      if (user) {
 
+      if (user) {
+        setLoading(true)
         GoogleSignin.signOut().then(() => {
 
           firestore().collection("login").doc(id).update({
@@ -517,16 +516,28 @@ export default function AskScreen({ route }) {
         })
         return
       }
+      else {
+        setLoading(true)
+        auth()
+          .signOut()
+          .then(() => {
+            firestore().collection("login").doc(id).update({
+              login: false
+            }).then((res) => {
 
-      console.log(id, "idddd")
+              console.log(res, "res")
 
-      await auth()
-        .signOut()
-        .then(() => {
-          firestore().collection("login").doc(id).update({
-            login: false
-          }).then(async () => {
-
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: 'GetStartedScreen',
+                  },
+                ],
+              });
+            })
+          })
+          .catch(() => {
             navigation.reset({
               index: 0,
               routes: [
@@ -536,17 +547,7 @@ export default function AskScreen({ route }) {
               ],
             });
           })
-        })
-        .catch(() => {
-          navigation.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'GetStartedScreen',
-              },
-            ],
-          });
-        })
+      }
     } catch (error) {
       console.log(error, "error")
     }

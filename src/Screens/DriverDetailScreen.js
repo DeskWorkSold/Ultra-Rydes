@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import CustomHeader from '../Components/CustomHeader';
 import Colors from '../Constants/Colors';
-import {TextInput} from 'react-native-paper';
+import { TextInput } from 'react-native-paper';
 import CustomButton from '../Components/CustomButton';
 import ModalImg from '../Components/ModalImg';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -24,8 +24,8 @@ import firestore from '@react-native-firebase/firestore';
 import * as ImagePicker from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
 
-export default function DriverDetailScreen({navigation}) {
-  const {height, width} = useWindowDimensions();
+export default function DriverDetailScreen({ navigation }) {
+  const { height, width } = useWindowDimensions();
   const [loading, setLoading] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -472,7 +472,6 @@ export default function DriverDetailScreen({navigation}) {
 
         let url = await storage().ref(profilePicture).getDownloadURL();
 
-      
         firestore()
           .collection('Drivers')
           .doc(CurrentUser.uid)
@@ -497,9 +496,11 @@ export default function DriverDetailScreen({navigation}) {
           })
           .then(() => {
             console.log('User added!');
-          });
-        setLoading(false);
-        navigation.replace('DriverRoutes', {screen: 'DriverVehicleAdd'});
+            setLoading(false);
+            navigation.replace('DriverRoutes', { screen: 'DriverVehicleAdd' });
+          }).catch((error) => {
+            ToastAndroid.show(error?.message, ToastAndroid.SHORT)
+          })
       } catch (err) {
         console.log(err);
       }
@@ -535,14 +536,14 @@ export default function DriverDetailScreen({navigation}) {
             />
           </View>
           <ScrollView style={styles.rootContainer}>
-            <View style={{width: width}}>
+            <View style={{ width: width }}>
               <View style={styles.upperContainer}>
                 <Text style={styles.regText}>Driver Registration</Text>
                 <TouchableOpacity onPress={showModal1}>
                   <Image
                     style={styles.proPic}
                     resizeMode="contain"
-                    source={profilePicture ? {uri: profilePicture} : defaultImg}
+                    source={profilePicture ? { uri: profilePicture } : defaultImg}
                   />
                 </TouchableOpacity>
               </View>
@@ -707,7 +708,7 @@ export default function DriverDetailScreen({navigation}) {
                         resizeMode="contain"
                         source={
                           licenseFrontImg
-                            ? {uri: licenseFrontImg}
+                            ? { uri: licenseFrontImg }
                             : defaultDocImage
                         }
                       />
@@ -722,7 +723,7 @@ export default function DriverDetailScreen({navigation}) {
                         resizeMode="contain"
                         source={
                           licenseBackImg
-                            ? {uri: licenseBackImg}
+                            ? { uri: licenseBackImg }
                             : defaultDocImage
                         }
                       />

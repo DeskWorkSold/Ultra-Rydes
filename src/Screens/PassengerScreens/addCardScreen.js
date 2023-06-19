@@ -32,17 +32,18 @@ function AddCard({ navigation }) {
 
   const saveCard = () => {
     let values = Object.values(cardDetail);
+    let flag = values.some(e => e == '' || e == null);
 
-    let flag = values.some(e => e == '');
     if (flag) {
       ToastAndroid.show('Required fields are missing', ToastAndroid.SHORT);
+      return
     }
 
     if (Number(cardDetail.expiryMonth) > 12) {
       ToastAndroid.show('Invalid Expiry month', ToastAndroid.SHORT);
       return;
     }
-    if (cardDetail.cardNumber.length !== 20) {
+    if (cardDetail?.cardNumber?.length !== 20) {
       ToastAndroid.show('Invalid Card Number', ToastAndroid.SHORT);
       return;
     }
@@ -52,12 +53,12 @@ function AddCard({ navigation }) {
     currentYear = currentYear.slice(2);
     currentYear = Number(currentYear);
 
-    if (Number(cardDetail.expiryYear) < currentYear) {
+    if (Number(cardDetail?.expiryYear) < currentYear) {
       ToastAndroid.show('Invalid Expiry Year', ToastAndroid.SHORT);
       return;
     }
 
-    if (cardDetail.cvc.length < 3) {
+    if (cardDetail?.cvc?.length < 3) {
       ToastAndroid.show('Invalid CVC', ToastAndroid.SHORT);
       return;
     } else {
@@ -109,12 +110,11 @@ function AddCard({ navigation }) {
               .catch(error => {
                 setLoading(false);
 
-                console.log(error);
               });
           }
         })
         .catch(error => {
-          console.log(error, 'error');
+
           ToastAndroid.show(error.message, ToastAndroid.SHORT);
           setLoading(false);
         });

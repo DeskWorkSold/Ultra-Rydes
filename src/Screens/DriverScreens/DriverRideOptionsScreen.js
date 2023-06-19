@@ -27,7 +27,6 @@ function DriverRideOption({ navigation }) {
       .hasPermission()
       .then(enabled => {
         if (enabled) {
-
           messaging()
             .getToken()
             .then(fcmToken => {
@@ -77,7 +76,7 @@ function DriverRideOption({ navigation }) {
         ToastAndroid.show("Your documents has not yet verified you will be able to take rides after your document verification", ToastAndroid.SHORT)
       }
       else if (data?.driverStatus == "blocked") {
-        ToastAndroid.show("Your account has been blocked by the admin if you don't know the reason kindly contact to admin", ToastAndroid.SHORT)
+        ToastAndroid.show("Your account has been blocked by the admin if you don't know the reason kindly contact to ultrarydes support team", ToastAndroid.SHORT)
       } else {
         navigation.navigate('DriverRoutes', {
           screen: 'DriverHomeScreen',
@@ -98,7 +97,7 @@ function DriverRideOption({ navigation }) {
         ToastAndroid.show("Your documents has not yet verified you will be able to take rides after your document verification", ToastAndroid.SHORT)
       }
       else if (data?.driverStatus == "blocked") {
-        ToastAndroid.show("Your account has been blocked by the admin if you don't know the reason kindly contact to admin", ToastAndroid.SHORT)
+        ToastAndroid.show("Your account has been blocked by the admin if you don't know the reason kindly contact to Ultrarydes support team", ToastAndroid.SHORT)
       } else {
         navigation.navigate('DriverRoutes', {
           screen: 'DriverOnTheWayScreen',

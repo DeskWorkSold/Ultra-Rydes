@@ -47,7 +47,6 @@ function DriverPaymentDetail() {
                     let data = querySnapshot.data().id;
                     if (data) {
                         setAccountId(data)
-
                         data = JSON.stringify(data)
 
                         AsyncStorage.setItem("accountId", data)
@@ -72,6 +71,13 @@ function DriverPaymentDetail() {
         let id = auth().currentUser.uid;
         setLoading(true);
         axios.post(`${BASE_URI}createAccount`, driverData).then(res => {
+
+            if (res?.data?.status == false) {
+                ToastAndroid.show(res?.data?.message, ToastAndroid.LONG)
+                setLoading(false)
+                return
+            }
+
             firestore()
                 .collection('DriverstripeAccount')
                 .doc(id)
@@ -88,6 +94,7 @@ function DriverPaymentDetail() {
                     setLoading(false);
                 })
                 .catch(error => {
+                    console.log(error, "error")
                     setLoading(false);
                     ToastAndroid.show(error.message, ToastAndroid.SHORT);
                 });
@@ -112,6 +119,13 @@ function DriverPaymentDetail() {
                         id: account,
                     })
                     .then(res => {
+
+                        if (!res?.data?.status) {
+                            ToastAndroid.show(res?.data?.message, ToastAndroid.SHORT)
+                            setPageLoading(false)
+                            return
+                        }
+
                         if (res?.data?.accountStatus.details_submitted) {
 
                             if (res.status) {
@@ -177,11 +191,18 @@ function DriverPaymentDetail() {
                     .post(`${BASE_URI}accountLink`, { id: accountId })
                     .then(res => {
                         let data = res.data;
+
+                        if (!data?.status) {
+                            setLoading(false)
+                            ToastAndroid.show(data?.message, ToastAndroid.SHORT)
+                            return
+                        }
                         setLoading(false)
                         Linking.openURL(data.data.url);
                     })
                     .catch(error => {
                         setLoading(false)
+                        ToastAndroid.show("Unable to create account link",ToastAndroid.SHORT)
                         console.log(error);
                     });
             });
